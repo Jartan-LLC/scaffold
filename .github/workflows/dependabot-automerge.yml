@@ -16,3 +16,4 @@ jobs:
         with:
           target: minor
           merge-method: squash
+          use-github-auto-merge: true
