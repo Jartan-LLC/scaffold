@@ -40,3 +40,17 @@ jobs:
       # Example (Node):
       # - uses: actions/setup-node@v4
       # - run: npm ci && npm test
+
+  check:
+    if: always()
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          results=("${{ needs.lint.result }}" "${{ needs.test.result }}")
+          for r in "${results[@]}"; do
+            if [[ "$r" != "success" && "$r" != "skipped" ]]; then
+              echo "Check failed: $r"
+              exit 1
+            fi
+          done
