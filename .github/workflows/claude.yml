@@ -44,6 +44,10 @@ jobs:
             https://github.com/affaan-m/everything-claude-code.git
             https://github.com/JuliusBrussee/caveman.git
 
+          plugins: |
+            everything-claude-code@everything-claude-code
+            caveman@caveman
+
           claude_args: |
             --model claude-opus-4-6
             --dangerously-skip-permissions
