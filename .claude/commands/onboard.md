@@ -8,19 +8,23 @@ Configure this template repo for a new project.
 
 ## Process
 
-### 1. Read `README.md`
+### 1. Prerequisites
+
+Check `gh auth status`. If not authenticated, tell the user to run `gh auth login` before continuing — onboarding uses `gh` commands for repo configuration.
+
+### 2. Read `README.md`
 
 Read the post-fork checklist. This is the source of truth for what needs to change.
 
-### 2. Interview
+### 3. Interview
 
 Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), and any version corrections for training data. List the skills and agents that exist in `.claude/skills/` and `.claude/agents/` so the user can choose which to keep.
 
-### 3. Confirm
+### 4. Confirm
 
 Summarize what you understood and what changes you'll make. Wait for the user to confirm before proceeding.
 
-### 4. Apply
+### 5. Apply
 
 Work through every Required checklist item that can be automated. Also:
 
@@ -35,10 +39,10 @@ Work through every Required checklist item that can be automated. Also:
 
 For questions the user didn't have answers to (e.g., version corrections, verify commands), leave the placeholder comments in place — they are written so that Claude will fill them in naturally when the information is discovered during normal development. Only replace placeholders that have actual answers.
 
-### 5. Manual Steps
+### 6. Manual Steps
 
 Present both the Required items that need manual action (adding secrets) and the Recommended checklist items that require manual action in GitHub Settings.
 
-### 6. Cleanup
+### 7. Cleanup
 
 Ask the user if they want to delete this command file (`.claude/commands/onboard.md`). If yes, delete it.

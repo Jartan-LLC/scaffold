@@ -49,4 +49,6 @@ fi
 # pip install "headroom-ai[proxy]"
 # headroom init claude
 
+gh auth status 2>/dev/null || echo "Note: Run 'gh auth login' to enable GitHub CLI (gh pr, gh issue, etc.)"
+
 echo "Development environment setup complete!"
