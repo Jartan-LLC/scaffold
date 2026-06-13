@@ -3,7 +3,7 @@
 echo "Setting up development environment..."
 
 # Enable pnpm via corepack (ships with Node.js)
-corepack enable
+sudo corepack enable
 
 # Install Node.js dependencies from all package.json files
 while IFS= read -r -d '' pkg_file; do
