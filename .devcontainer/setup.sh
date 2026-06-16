@@ -26,8 +26,22 @@ while IFS= read -r -d '' pyproject_file; do
     pip install -e "$dir"
 done < <(find . -name "pyproject.toml" -type f -print0 2>/dev/null)
 
-# Fix ownership on Claude volume mount (fresh volumes are root-owned)
-sudo chown -R vscode:vscode /home/vscode/.claude || true
+# vscode-user-specific setup (volume mounts, ownership fixes)
+if [ "$(whoami)" = "vscode" ]; then
+    # Fix ownership on Claude volume mount (fresh volumes are root-owned)
+    sudo chown -R vscode:vscode "$HOME/.claude" || true
+
+    # Persist .claude.json across devcontainer rebuilds via the volume mount
+    if [ -d "$HOME/.claude" ]; then
+        if [ ! -f "$HOME/.claude/claude.json" ]; then
+            cp "$HOME/.claude.json" "$HOME/.claude/claude.json" 2>/dev/null || echo '{}' > "$HOME/.claude/claude.json"
+        fi
+        ln -sf "$HOME/.claude/claude.json" "$HOME/.claude.json"
+    fi
+
+    # Fix npm prefix ownership so Claude Code auto-update works
+    sudo chown -R vscode:vscode "$(npm prefix -g)" 2>/dev/null || true
+fi
 
 # Install Claude Code plugins (fallback for fresh Docker volumes)
 if command -v claude &> /dev/null; then
