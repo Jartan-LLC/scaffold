@@ -6,6 +6,7 @@ echo "Setting up development environment..."
 sudo corepack enable
 
 # Install Node.js dependencies from all package.json files
+echo "Installing Node.js dependencies..."
 while IFS= read -r -d '' pkg_file; do
     dir=$(dirname "$pkg_file")
     echo "  Installing from $dir..."
@@ -35,13 +36,13 @@ if [ "$(whoami)" = "vscode" ]; then
         # Persist ~/.claude.json across rebuilds by symlinking into the volume
         if [ ! -f "$HOME/.claude/claude.json" ]; then
             if [ -f "$HOME/.claude.json" ]; then
-                cp "$HOME/.claude.json" "$HOME/.claude/claude.json" || echo "Warning: could not seed claude.json" >&2
+                cp "$HOME/.claude.json" "$HOME/.claude/claude.json" || echo "Warning: could not copy .claude.json to volume" >&2
             else
-                echo '{}' > "$HOME/.claude/claude.json" || echo "Warning: could not seed claude.json" >&2
+                echo '{}' > "$HOME/.claude/claude.json" || echo "Warning: could not create claude.json stub" >&2
             fi
         fi
         if [ -f "$HOME/.claude/claude.json" ]; then
-            ln -sf "$HOME/.claude/claude.json" "$HOME/.claude.json"
+            ln -sf "$HOME/.claude/claude.json" "$HOME/.claude.json" || echo "Warning: could not create claude.json symlink; config will not persist across rebuilds" >&2
         else
             echo "Warning: claude.json not created; config will not persist across rebuilds" >&2
         fi
