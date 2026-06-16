@@ -21,7 +21,7 @@ jobs:
       # Example (Python):
       # - uses: actions/setup-python@v5
       #   with:
-      #     python-version: "3.13"
+      #     python-version: "3.12"
       # - run: pip install ruff && ruff check . && ruff format --check .
       #
       # Example (Node):
@@ -37,7 +37,7 @@ jobs:
       # Example (Python):
       # - uses: actions/setup-python@v5
       #   with:
-      #     python-version: "3.13"
+      #     python-version: "3.12"
       # - run: pip install -e '.[dev]' && pytest
       #
       # Example (Node):
