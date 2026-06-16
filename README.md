@@ -39,7 +39,9 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] When removing skills, update any agent files that reference them in their `skills:` frontmatter
 - [ ] Add secrets to your repo:
   - `ANTHROPIC_API_KEY` — for the Claude Code workflow
-  - `PAT` — a GitHub Personal Access Token with `repo` scope, used by the Claude Code workflow for checkout
+  - `APP_ID` — GitHub App ID (see below)
+  - `APP_PRIVATE_KEY` — GitHub App private key (see below)
+  - **GitHub App setup**: Create a GitHub App at https://github.com/settings/apps with permissions: Contents (Read & Write), Issues (Read & Write), Pull Requests (Read & Write). Install it on your repo, then store the App ID and generated private key as repo secrets.
 
 ### Recommended
 
