@@ -27,20 +27,27 @@ while IFS= read -r -d '' pyproject_file; do
 done < <(find . -name "pyproject.toml" -type f -print0 2>/dev/null)
 
 # vscode-user-specific setup (volume mounts, ownership fixes)
-if [ "$(whoami)" = "vscode" ]; then
-    # Fix ownership on Claude volume mount (fresh volumes are root-owned)
-    sudo chown -R vscode:vscode "$HOME/.claude" || true
-
-    # Persist .claude.json across devcontainer rebuilds via the volume mount
+if [ "$USER" = "vscode" ]; then
     if [ -d "$HOME/.claude" ]; then
+        # Fix ownership on Claude volume mount (fresh volumes are root-owned)
+        sudo chown -R vscode:vscode "$HOME/.claude" || true
+
+        # Persist ~/.claude.json across rebuilds by symlinking into the volume
         if [ ! -f "$HOME/.claude/claude.json" ]; then
-            cp "$HOME/.claude.json" "$HOME/.claude/claude.json" 2>/dev/null || echo '{}' > "$HOME/.claude/claude.json"
+            if [ -f "$HOME/.claude.json" ]; then
+                cp "$HOME/.claude.json" "$HOME/.claude/claude.json"
+            else
+                echo '{}' > "$HOME/.claude/claude.json"
+            fi
         fi
         ln -sf "$HOME/.claude/claude.json" "$HOME/.claude.json"
     fi
 
     # Fix npm prefix ownership so Claude Code auto-update works
-    sudo chown -R vscode:vscode "$(npm prefix -g)" 2>/dev/null || true
+    npm_prefix="$(npm prefix -g 2>/dev/null)"
+    if [ -n "$npm_prefix" ]; then
+        sudo chown -R vscode:vscode "$npm_prefix" || true
+    fi
 fi
 
 # Install Claude Code plugins (fallback for fresh Docker volumes)
