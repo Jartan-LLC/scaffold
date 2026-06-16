@@ -9,21 +9,21 @@ sudo corepack enable
 while IFS= read -r -d '' pkg_file; do
     dir=$(dirname "$pkg_file")
     echo "  Installing from $dir..."
-    (cd "$dir" && pnpm install)
+    (cd "$dir" && pnpm install) || echo "Warning: pnpm install failed in $dir" >&2
 done < <(find . -name "package.json" -not -path "*/node_modules/*" -type f -print0 2>/dev/null)
 
 # Install Python dependencies from all requirements.txt files
 echo "Installing Python dependencies..."
 while IFS= read -r -d '' req_file; do
     echo "  Installing from $req_file..."
-    pip install -r "$req_file"
+    pip install -r "$req_file" || echo "Warning: pip install failed for $req_file" >&2
 done < <(find . -name "requirements.txt" -type f -print0 2>/dev/null)
 
 # Install Python dependencies from all pyproject.toml files (editable installs)
 while IFS= read -r -d '' pyproject_file; do
     dir=$(dirname "$pyproject_file")
     echo "  Installing from $dir..."
-    pip install -e "$dir"
+    pip install -e "$dir" || echo "Warning: pip install failed for $dir" >&2
 done < <(find . -name "pyproject.toml" -type f -print0 2>/dev/null)
 
 # vscode-user-specific setup (volume mounts, ownership fixes)
@@ -40,14 +40,20 @@ if [ "$(whoami)" = "vscode" ]; then
                 echo '{}' > "$HOME/.claude/claude.json" || echo "Warning: could not seed claude.json" >&2
             fi
         fi
-        [ -f "$HOME/.claude/claude.json" ] && ln -sf "$HOME/.claude/claude.json" "$HOME/.claude.json"
+        if [ -f "$HOME/.claude/claude.json" ]; then
+            ln -sf "$HOME/.claude/claude.json" "$HOME/.claude.json"
+        else
+            echo "Warning: claude.json not created; config will not persist across rebuilds" >&2
+        fi
     fi
 
     # Fix npm prefix ownership so Claude Code auto-update works
     npm_prefix="$(npm prefix -g 2>/dev/null)"
-    npm_owner="$(stat -c '%U' "$npm_prefix" 2>/dev/null)"
-    if [ -n "$npm_prefix" ] && [ -n "$npm_owner" ] && [ "$npm_owner" = "root" ]; then
-        sudo chown -R vscode:vscode "$npm_prefix" || true
+    if [ -n "$npm_prefix" ]; then
+        npm_owner="$(stat -c '%U' "$npm_prefix" 2>/dev/null)"
+        if [ -n "$npm_owner" ] && [ "$npm_owner" = "root" ]; then
+            sudo chown -R vscode:vscode "$npm_prefix" || echo "Warning: could not fix ownership on $npm_prefix" >&2
+        fi
     fi
 fi
 
@@ -55,13 +61,13 @@ fi
 if command -v claude &> /dev/null; then
     if ! claude plugin list 2>/dev/null | grep -q everything-claude-code; then
         echo "Installing everything-claude-code plugin..."
-        claude plugin marketplace add affaan-m/everything-claude-code || true
-        claude plugin install everything-claude-code@everything-claude-code --scope project || true
+        claude plugin marketplace add affaan-m/everything-claude-code || echo "Warning: could not add everything-claude-code from marketplace" >&2
+        claude plugin install everything-claude-code@everything-claude-code --scope project || echo "Warning: could not install everything-claude-code plugin" >&2
     fi
     if ! claude plugin list 2>/dev/null | grep -q caveman; then
         echo "Installing caveman plugin..."
-        claude plugin marketplace add JuliusBrussee/caveman || true
-        claude plugin install caveman@caveman --scope project || true
+        claude plugin marketplace add JuliusBrussee/caveman || echo "Warning: could not add caveman from marketplace" >&2
+        claude plugin install caveman@caveman --scope project || echo "Warning: could not install caveman plugin" >&2
     fi
 fi
 
