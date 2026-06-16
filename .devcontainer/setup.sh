@@ -3,57 +3,85 @@
 echo "Setting up development environment..."
 
 # Enable pnpm via corepack (ships with Node.js)
-sudo corepack enable
+sudo corepack enable || echo "Warning: corepack enable failed; pnpm may not be available" >&2
 
 # Install Node.js dependencies from all package.json files
+echo "Installing Node.js dependencies..."
 while IFS= read -r -d '' pkg_file; do
     dir=$(dirname "$pkg_file")
     echo "  Installing from $dir..."
-    (cd "$dir" && pnpm install)
-done < <(find . -name "package.json" -not -path "*/node_modules/*" -type f -print0 2>/dev/null)
+    (cd "$dir" && pnpm install) || echo "Warning: pnpm install failed in $dir" >&2
+done < <(find . -name "package.json" -not -path "*/node_modules/*" -type f -print0)
 
 # Install Python dependencies from all requirements.txt files
 echo "Installing Python dependencies..."
 while IFS= read -r -d '' req_file; do
     echo "  Installing from $req_file..."
-    pip install -r "$req_file"
-done < <(find . -name "requirements.txt" -type f -print0 2>/dev/null)
+    pip install -r "$req_file" || echo "Warning: pip install failed for $req_file" >&2
+done < <(find . -name "requirements.txt" -type f -print0)
 
 # Install Python dependencies from all pyproject.toml files (editable installs)
+echo "Installing Python editable packages..."
 while IFS= read -r -d '' pyproject_file; do
     dir=$(dirname "$pyproject_file")
     echo "  Installing from $dir..."
-    pip install -e "$dir"
-done < <(find . -name "pyproject.toml" -type f -print0 2>/dev/null)
+    pip install -e "$dir" || echo "Warning: pip install failed for $dir" >&2
+done < <(find . -name "pyproject.toml" -type f -print0)
 
 # vscode-user-specific setup (volume mounts, ownership fixes)
 if [ "$(whoami)" = "vscode" ]; then
-    # Fix ownership on Claude volume mount (fresh volumes are root-owned)
-    sudo chown -R vscode:vscode "$HOME/.claude" || true
-
-    # Persist .claude.json across devcontainer rebuilds via the volume mount
     if [ -d "$HOME/.claude" ]; then
+        # Fix ownership on Claude volume mount (fresh volumes are root-owned)
+        sudo chown -R vscode:vscode "$HOME/.claude" || echo "Warning: could not fix ownership on $HOME/.claude" >&2
+
+        # Persist ~/.claude.json across rebuilds by symlinking into the volume
         if [ ! -f "$HOME/.claude/claude.json" ]; then
-            cp "$HOME/.claude.json" "$HOME/.claude/claude.json" 2>/dev/null || echo '{}' > "$HOME/.claude/claude.json"
+            if [ -f "$HOME/.claude.json" ]; then
+                cp "$HOME/.claude.json" "$HOME/.claude/claude.json" || echo "Warning: could not copy .claude.json to volume" >&2
+            else
+                echo '{}' > "$HOME/.claude/claude.json" || echo "Warning: could not create claude.json stub" >&2
+            fi
         fi
-        ln -sf "$HOME/.claude/claude.json" "$HOME/.claude.json"
+        if [ -f "$HOME/.claude/claude.json" ]; then
+            ln -sf "$HOME/.claude/claude.json" "$HOME/.claude.json" || echo "Warning: could not create claude.json symlink; config will not persist across rebuilds" >&2
+        else
+            echo "Warning: claude.json not created; config will not persist across rebuilds" >&2
+        fi
+    else
+        echo "Warning: $HOME/.claude not found; config will not persist across rebuilds" >&2
     fi
 
     # Fix npm prefix ownership so Claude Code auto-update works
-    sudo chown -R vscode:vscode "$(npm prefix -g)" 2>/dev/null || true
+    npm_prefix="$(npm prefix -g 2>/dev/null)"
+    if [ -z "$npm_prefix" ]; then
+        echo "Warning: could not determine npm global prefix" >&2
+    elif [ -n "$npm_prefix" ]; then
+        npm_owner="$(stat -c '%U' "$npm_prefix" 2>/dev/null)"
+        if [ -n "$npm_owner" ] && [ "$npm_owner" = "root" ]; then
+            sudo chown -R vscode:vscode "$npm_prefix" || echo "Warning: could not fix ownership on $npm_prefix" >&2
+        fi
+    fi
 fi
 
 # Install Claude Code plugins (fallback for fresh Docker volumes)
 if command -v claude &> /dev/null; then
     if ! claude plugin list 2>/dev/null | grep -q everything-claude-code; then
         echo "Installing everything-claude-code plugin..."
-        claude plugin marketplace add affaan-m/everything-claude-code || true
-        claude plugin install everything-claude-code@everything-claude-code --scope project || true
+        if claude plugin marketplace add affaan-m/everything-claude-code; then
+            claude plugin install everything-claude-code@everything-claude-code --scope project \
+                || echo "Warning: 'claude plugin install everything-claude-code' failed" >&2
+        else
+            echo "Warning: 'claude plugin marketplace add affaan-m/everything-claude-code' failed; skipping install" >&2
+        fi
     fi
     if ! claude plugin list 2>/dev/null | grep -q caveman; then
         echo "Installing caveman plugin..."
-        claude plugin marketplace add JuliusBrussee/caveman || true
-        claude plugin install caveman@caveman --scope project || true
+        if claude plugin marketplace add JuliusBrussee/caveman; then
+            claude plugin install caveman@caveman --scope project \
+                || echo "Warning: 'claude plugin install caveman' failed" >&2
+        else
+            echo "Warning: 'claude plugin marketplace add JuliusBrussee/caveman' failed; skipping install" >&2
+        fi
     fi
 fi
 
@@ -63,6 +91,6 @@ fi
 # pip install "headroom-ai[proxy]"
 # headroom init claude
 
-gh auth status 2>/dev/null || echo "Note: Run 'gh auth login' to enable GitHub CLI (gh pr, gh issue, etc.)"
+gh auth status 2>/dev/null || echo "Warning: gh not authenticated. Run 'gh auth login' to enable GitHub CLI." >&2
 
 echo "Development environment setup complete!"
