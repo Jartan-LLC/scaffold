@@ -27,7 +27,7 @@ while IFS= read -r -d '' pyproject_file; do
 done < <(find . -name "pyproject.toml" -type f -print0 2>/dev/null)
 
 # vscode-user-specific setup (volume mounts, ownership fixes)
-if [ "$USER" = "vscode" ]; then
+if [ "$(whoami)" = "vscode" ]; then
     if [ -d "$HOME/.claude" ]; then
         # Fix ownership on Claude volume mount (fresh volumes are root-owned)
         sudo chown -R vscode:vscode "$HOME/.claude" || true
@@ -35,9 +35,9 @@ if [ "$USER" = "vscode" ]; then
         # Persist ~/.claude.json across rebuilds by symlinking into the volume
         if [ ! -f "$HOME/.claude/claude.json" ]; then
             if [ -f "$HOME/.claude.json" ]; then
-                cp "$HOME/.claude.json" "$HOME/.claude/claude.json"
+                cp "$HOME/.claude.json" "$HOME/.claude/claude.json" || echo "Warning: could not seed claude.json" >&2
             else
-                echo '{}' > "$HOME/.claude/claude.json"
+                echo '{}' > "$HOME/.claude/claude.json" || echo "Warning: could not seed claude.json" >&2
             fi
         fi
         ln -sf "$HOME/.claude/claude.json" "$HOME/.claude.json"
@@ -45,7 +45,7 @@ if [ "$USER" = "vscode" ]; then
 
     # Fix npm prefix ownership so Claude Code auto-update works
     npm_prefix="$(npm prefix -g 2>/dev/null)"
-    if [ -n "$npm_prefix" ]; then
+    if [ -n "$npm_prefix" ] && [ "$(stat -c '%U' "$npm_prefix")" = "root" ]; then
         sudo chown -R vscode:vscode "$npm_prefix" || true
     fi
 fi
