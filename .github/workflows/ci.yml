@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Shellcheck
-        run: find . -name "*.sh" -not -path "*/.git/*" -print0 | xargs -0 shellcheck
+        run: find . -name "*.sh" -not -path "*/.git/*" -not -path "*/node_modules/*" -not -path "*/vendor/*" -print0 | xargs -r -0 shellcheck
 
       # TODO: Add your lint/format commands
       # Example (Python):

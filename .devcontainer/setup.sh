@@ -3,7 +3,7 @@
 echo "Setting up development environment..."
 
 # Enable pnpm via corepack (ships with Node.js)
-sudo corepack enable
+sudo corepack enable || echo "Warning: corepack enable failed; pnpm may not be available" >&2
 
 # Install Node.js dependencies from all package.json files
 echo "Installing Node.js dependencies..."
@@ -11,21 +11,21 @@ while IFS= read -r -d '' pkg_file; do
     dir=$(dirname "$pkg_file")
     echo "  Installing from $dir..."
     (cd "$dir" && pnpm install) || echo "Warning: pnpm install failed in $dir" >&2
-done < <(find . -name "package.json" -not -path "*/node_modules/*" -type f -print0 2>/dev/null)
+done < <(find . -name "package.json" -not -path "*/node_modules/*" -type f -print0)
 
 # Install Python dependencies from all requirements.txt files
 echo "Installing Python dependencies..."
 while IFS= read -r -d '' req_file; do
     echo "  Installing from $req_file..."
     pip install -r "$req_file" || echo "Warning: pip install failed for $req_file" >&2
-done < <(find . -name "requirements.txt" -type f -print0 2>/dev/null)
+done < <(find . -name "requirements.txt" -type f -print0)
 
 # Install Python dependencies from all pyproject.toml files (editable installs)
 while IFS= read -r -d '' pyproject_file; do
     dir=$(dirname "$pyproject_file")
     echo "  Installing from $dir..."
     pip install -e "$dir" || echo "Warning: pip install failed for $dir" >&2
-done < <(find . -name "pyproject.toml" -type f -print0 2>/dev/null)
+done < <(find . -name "pyproject.toml" -type f -print0)
 
 # vscode-user-specific setup (volume mounts, ownership fixes)
 if [ "$(whoami)" = "vscode" ]; then
@@ -49,7 +49,7 @@ if [ "$(whoami)" = "vscode" ]; then
     fi
 
     # Fix npm prefix ownership so Claude Code auto-update works
-    npm_prefix="$(npm prefix -g 2>/dev/null)"
+    npm_prefix="$(npm prefix -g)" || echo "Warning: could not determine npm global prefix" >&2
     if [ -n "$npm_prefix" ]; then
         npm_owner="$(stat -c '%U' "$npm_prefix" 2>/dev/null)"
         if [ -n "$npm_owner" ] && [ "$npm_owner" = "root" ]; then
@@ -62,13 +62,21 @@ fi
 if command -v claude &> /dev/null; then
     if ! claude plugin list 2>/dev/null | grep -q everything-claude-code; then
         echo "Installing everything-claude-code plugin..."
-        claude plugin marketplace add affaan-m/everything-claude-code || echo "Warning: could not add everything-claude-code from marketplace" >&2
-        claude plugin install everything-claude-code@everything-claude-code --scope project || echo "Warning: could not install everything-claude-code plugin" >&2
+        if claude plugin marketplace add affaan-m/everything-claude-code; then
+            claude plugin install everything-claude-code@everything-claude-code --scope project \
+                || echo "Warning: 'claude plugin install everything-claude-code' failed" >&2
+        else
+            echo "Warning: 'claude plugin marketplace add affaan-m/everything-claude-code' failed; skipping install" >&2
+        fi
     fi
     if ! claude plugin list 2>/dev/null | grep -q caveman; then
         echo "Installing caveman plugin..."
-        claude plugin marketplace add JuliusBrussee/caveman || echo "Warning: could not add caveman from marketplace" >&2
-        claude plugin install caveman@caveman --scope project || echo "Warning: could not install caveman plugin" >&2
+        if claude plugin marketplace add JuliusBrussee/caveman; then
+            claude plugin install caveman@caveman --scope project \
+                || echo "Warning: 'claude plugin install caveman' failed" >&2
+        else
+            echo "Warning: 'claude plugin marketplace add JuliusBrussee/caveman' failed; skipping install" >&2
+        fi
     fi
 fi
 
@@ -78,6 +86,6 @@ fi
 # pip install "headroom-ai[proxy]"
 # headroom init claude
 
-gh auth status 2>/dev/null || echo "Note: Run 'gh auth login' to enable GitHub CLI (gh pr, gh issue, etc.)"
+gh auth status 2>/dev/null || echo "Warning: gh not authenticated. Run 'gh auth login' to enable GitHub CLI." >&2
 
 echo "Development environment setup complete!"
