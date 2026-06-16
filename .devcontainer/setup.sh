@@ -21,6 +21,7 @@ while IFS= read -r -d '' req_file; do
 done < <(find . -name "requirements.txt" -type f -print0)
 
 # Install Python dependencies from all pyproject.toml files (editable installs)
+echo "Installing Python editable packages..."
 while IFS= read -r -d '' pyproject_file; do
     dir=$(dirname "$pyproject_file")
     echo "  Installing from $dir..."
@@ -46,11 +47,15 @@ if [ "$(whoami)" = "vscode" ]; then
         else
             echo "Warning: claude.json not created; config will not persist across rebuilds" >&2
         fi
+    else
+        echo "Warning: $HOME/.claude not found; config will not persist across rebuilds" >&2
     fi
 
     # Fix npm prefix ownership so Claude Code auto-update works
-    npm_prefix="$(npm prefix -g)" || echo "Warning: could not determine npm global prefix" >&2
-    if [ -n "$npm_prefix" ]; then
+    npm_prefix="$(npm prefix -g 2>/dev/null)"
+    if [ -z "$npm_prefix" ]; then
+        echo "Warning: could not determine npm global prefix" >&2
+    elif [ -n "$npm_prefix" ]; then
         npm_owner="$(stat -c '%U' "$npm_prefix" 2>/dev/null)"
         if [ -n "$npm_owner" ] && [ "$npm_owner" = "root" ]; then
             sudo chown -R vscode:vscode "$npm_prefix" || echo "Warning: could not fix ownership on $npm_prefix" >&2
