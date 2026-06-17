@@ -41,8 +41,7 @@ Project conventions live in `.claude/skills/`. Check the relevant skill when wor
 - **github-conventions** — branches, commits, issue/PR templates
 - **logging-patterns** — log levels, formatting, structured output
 - **testing-patterns** — integration tests, fixture composition, canary markers
-
-When adding a new skill, add an entry here.
+- **recursive-development** — decomposing work into waves of parallel nested subagents with TDD, scope-based ownership, and review-fix cycles
 
 ## Verify
 
