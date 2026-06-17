@@ -7,7 +7,7 @@ user-invocable: false
 
 # GitHub Conventions
 
-CRITICAL: When referencing numbered items in comments or posts, avoid `#<number>` format — GitHub auto-links these to issues/PRs. Use "Item 1:", "Finding 1:", etc.
+CRITICAL: `#<number>` auto-links to issues/PRs on GitHub. Use `1.`/`2.`/`3.` for numbered lists and "Finding 1:"/"Item 1:" for labeled items — never `#1`, `#2`, `#3` as markers.
 
 ## Branches
 
