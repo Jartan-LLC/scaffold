@@ -19,13 +19,7 @@ user-invocable: false
 
 ## Module Split Criteria
 
-Split by **algorithm or domain**, not testability.
-
-Good splits: cycle detection + topological sort, formatting + event dispatch, JSON parser + regex parser + CSV parser.
-
-Bad splits: file discovery + file reading, parser wrapping a validator, output capture separate from execution.
-
-Goal: file structure that looks natural in a human-maintained codebase.
+See `recursive-development` skill for split principle and examples. Goal: natural, best-practice file structure.
 
 ## Contract Guidance
 

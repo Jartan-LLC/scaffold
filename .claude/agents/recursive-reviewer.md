@@ -28,15 +28,9 @@ Your prompt specifies scope. Adjust focus:
 
 ## Always Critical
 
-These are never judgment calls — always report as Critical:
+Every rule in the **Critical Rules** section of the `recursive-quality` skill is always Critical severity. Never downgrade these to Important or Suggestion.
 
-- Untyped/dynamic returns on public functions or protocol methods (e.g. `Any`, `object`, `interface{}`)
-- Unstructured collection returns where contracts define or should define a structured type
-- Hardcoded absolute paths in source or tests
-- Direct stderr writes from library code (not CLI entry points) — should use logging framework
-- Protocol methods with untyped parameters or returns
-
-For contract reviews: every protocol method must have fully typed signatures. If a protocol returns unstructured data where a result type should exist, that's Critical — it cascades to every downstream module.
+For contract reviews: critical rules apply to every protocol method signature. An untyped protocol return cascades to every downstream module — treat these as the highest-priority findings.
 
 ## Review Dimensions
 

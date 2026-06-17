@@ -32,6 +32,16 @@ Wave 0 contracts set the ceiling. Thin contracts → thin implementations.
 - All **internal result types** (aggregation results, pipeline outputs, structured returns) must be fully typed — the shape is known at design time
 - Contracts file contains: protocols, dataclasses, enums, type aliases, constants. No callable stubs.
 
+## Critical Rules
+
+These are never judgment calls. Implementers must not produce code that violates them. Reviewers must flag violations as Critical.
+
+- **Typed returns.** No untyped/dynamic returns (`Any`, `object`, `interface{}`) on public functions or protocol methods. Use the specific type or union.
+- **Structured returns.** No unstructured collection returns where contracts define or should define a structured type.
+- **No absolute paths.** No hardcoded absolute paths in source or tests. Use the language's path library with relative paths.
+- **Logging, not stderr.** Library code uses the language's logging framework with named loggers. Never write directly to stderr. Entry points configure level/format.
+- **Typed protocol signatures.** Protocol/interface method parameters and returns must be fully typed. Untyped signatures cascade to every downstream module.
+
 ## Quality Patterns
 
 - **Graceful degradation** — yield errors for bad input and continue. Don't crash the pipeline.
@@ -42,8 +52,6 @@ Wave 0 contracts set the ceiling. Thin contracts → thin implementations.
 - **Path abstractions** — use language's path library (`pathlib`, `path.join`, `std::path`). No string concatenation. No hardcoded absolute paths.
 - **Runtime versioning** — expose version programmatically. CLI supports `--version`.
 - **Test coverage** — configure with minimum threshold. Coverage config in project config file.
-- **Process group kills** — executors use `detached: true` + process group kill for timeouts.
-- **Double-resolve guards** — async callback wrappers use settle guards.
 - **Content-based detection** — auto-detect formats from content, not just file extensions.
 
 ## Anti-Patterns

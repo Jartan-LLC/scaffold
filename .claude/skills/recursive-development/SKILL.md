@@ -15,7 +15,22 @@ For existing projects, Wave 0 extends established patterns rather than creating 
 
 Default to nesting. Each nested agent has smaller context — faster and cheaper per-agent. A flat agent juggling 7 files costs more than 3 focused agents each handling 2-3 files.
 
-Nest when a module has 2+ independently testable concerns. Stop when atomic (single concern, single file).
+Nest when a module contains distinct algorithms or domains. Stop when atomic (single concern, single file). Split by **algorithm or domain**, not by testability alone.
+
+### When to split — examples
+
+The same principle applies at every level of recursion:
+
+**Split** (distinct algorithms or domains):
+- Parsers + filters + aggregation + formatters — different domains
+- Cycle detection + topological sort — different graph algorithms
+- JSONL parser + CLF parser + CSV parser — different parsing algorithms
+- Expression parser + predicate evaluator — syntax parsing vs logic evaluation
+
+**Don't split** (steps in one operation, or trivial wrappers):
+- File discovery + file reading + format detection — one operation ("load config")
+- A parser that just delegates to a validator — no distinct logic
+- Output capture separate from execution — capturing is part of executing
 
 | Role | Scope | Spawns when... |
 |------|-------|----------------|
