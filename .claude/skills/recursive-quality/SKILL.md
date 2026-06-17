@@ -49,7 +49,7 @@ These are never judgment calls. Implementers must not produce code that violates
 - **Logging** — use the language's framework (`logging`, `pino`, `log`). Library code uses named loggers, never writes stderr. Entry points configure level/format.
 - **Error handling** — union types for expected failures, exceptions for unexpected. Messages include field name, bad value, what was expected.
 - **Exception hierarchy** — base project exception + specific subtypes. Part of Wave 0 contracts.
-- **Path abstractions** — use language's path library (`pathlib`, `path.join`, `std::path`). No string concatenation. No hardcoded absolute paths.
+- **Cross-platform correctness** — use the language's path library (`pathlib`, `path.join`, `std::path`) for all file operations. Specify encoding explicitly on file I/O (e.g. `encoding="utf-8"`). No string path concatenation. No hardcoded absolute paths. No platform-specific assumptions.
 - **Runtime versioning** — expose version programmatically. CLI supports `--version`.
 - **Test coverage** — configure with minimum threshold. Coverage config in project config file.
 - **Content-based detection** — auto-detect formats from content, not just file extensions.

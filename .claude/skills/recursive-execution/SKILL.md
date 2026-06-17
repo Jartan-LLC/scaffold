@@ -31,7 +31,7 @@ Waves execute sequentially. Within each wave, agents run in parallel.
 
 ## Review-Fix Evaluation
 
-After each wave, evaluate through review:
+After each wave, spawn a `recursive-reviewer` scoped to the wave's output:
 
 **Post-Wave 0:** review contracts for richness — are interfaces complete enough for downstream modules? Fix gaps directly.
 

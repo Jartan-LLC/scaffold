@@ -43,6 +43,10 @@ Save to `.claude/workspace/wave-plan-<project-name>.md`.
 ## Implementation Plan — `<name>` <description>
 ### Issue Summary
 ### Language & Conventions
+### Language-Specific Standards
+(Standards shaped to this project's language and domain — specifics that all agents must follow.
+These go beyond generic conventions. Think about what a senior developer in this language would
+insist on in a code review.)
 ### Existing Patterns (existing projects only)
 ### Chosen Approach
 
