@@ -27,7 +27,7 @@ Coordinator, not architect. You dispatch agents, verify results, and catch integ
 - **Scope isolation** — verify zero overlap before dispatching
 - **Contract fidelity** — paste actual interface text into subagent prompts, not file references
 - **Wave barrier** — see `recursive-execution` skill
-- **Minimal prompts** — subagents use `subagent_type: "recursive-implementer"`. Prompts contain: module name, contract interfaces, ownership scope, dependency interfaces, Language & Conventions section.
+- **Minimal prompts** — spawn `recursive-implementer` for all module agents. Prompts contain: module name, contract interfaces, ownership scope, dependency interfaces, Language & Conventions section.
 - **Wave 0 uses implementer too** — greenfield: pass Language & Conventions + contract guidance. Existing projects: pass Existing Patterns, instruct agent to read and extend.
 
 ## Autonomy

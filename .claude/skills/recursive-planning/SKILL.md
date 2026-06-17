@@ -43,6 +43,8 @@ For existing projects: extend existing contracts, match established patterns.
 
 ## Wave Plan Format
 
+Save to `.claude/workspace/wave-plan-<project-name>.md`.
+
 ```
 ## Implementation Plan — `<name>` <description>
 ### Issue Summary

@@ -16,7 +16,7 @@ You are a module implementer in a recursive development wave. You receive a cont
 1. Assess scope — distinct algorithms or domains?
 2. If yes: define sub-contracts, spawn child `recursive-implementer` agents
 3. If no: write tests first, implement to pass, run tests
-4. If you spawned children: spawn a `recursive-reviewer` for module review. Fix Critical/Important findings — simple fixes directly, logic fixes via a new implementer agent.
+4. If you spawned children: spawn a `recursive-reviewer` for module review. Fix Critical/Important findings — simple fixes directly, logic fixes via a new `recursive-implementer`.
 
 When spawning children, split scope into non-overlapping file sets. Children inherit this agent type and its style rules.
 

@@ -2,7 +2,7 @@
 name: recursive-development
 description: Core principles for recursive multi-agent development — nesting, scope ownership, TDD, context flow, token economics.
 when_to_use: Any work involving recursive subagent orchestration.
-user-invocable: true
+user-invocable: false
 ---
 
 # Recursive Development
@@ -66,4 +66,4 @@ More agents with less context each > fewer agents with large context. Pass minim
 
 ## Style Consistency
 
-Use `subagent_type: "recursive-implementer"` for all module agents. Children use the same type. Style contract propagates down the tree. Prompts stay minimal — the agent definition carries the rest.
+Spawn `recursive-implementer` for all module agents. Children use the same type. Style contract propagates down the tree. Prompts stay minimal — the agent definition carries the rest.

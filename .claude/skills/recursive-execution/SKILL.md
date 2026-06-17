@@ -13,7 +13,7 @@ These apply to ALL agents in the recursive tree:
 
 - **No worktree isolation.** Never use `isolation: "worktree"`. Worktree agents work in a copy — files get discarded on cleanup.
 - **No background agents.** Never use `run_in_background: true`. Background dispatch triggers worktree isolation. Use foreground Agent calls — send parallel agents in a single message for concurrency.
-- **Fix delegation.** Simple fixes (unused import, missing return) directly. Logic fixes (bugs, structural merges) via a `recursive-implementer` agent scoped to affected files with findings in the prompt.
+- **Fix delegation.** Simple fixes (unused import, missing return) directly. Logic fixes (bugs, structural merges) via a `recursive-implementer` scoped to affected files with findings in the prompt.
 - **Failure escalation.** When a child agent fails: parent retries (max 2), restructures (split differently), or escalates to its own parent. Handle failures at the lowest level that has enough context to fix them.
 
 ## Wave Execution

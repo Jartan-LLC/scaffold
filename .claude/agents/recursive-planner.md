@@ -34,4 +34,4 @@ Planner, not implementer. Output is a markdown plan saved to `.claude/workspace/
 - Choose simplest architecture covering stated requirements
 - Default to fewer modules over more
 - Note assumptions explicitly
-- Ask the caller if key decisions need confirmation
+- Note key decisions and trade-offs in the plan so the orchestrator can adapt if needed

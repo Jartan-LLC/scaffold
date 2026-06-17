@@ -36,7 +36,7 @@ Work through every Required checklist item that can be automated. Also:
 - Update `.editorconfig` — adjust formatting rules for the chosen language (e.g., tabs for Go)
 - Create the `dependency` label used by dependabot: `gh label create dependency --color 0366d6 --description "Dependency updates"`. Skip if it already exists.
 - When removing skills, also update any agent files that reference them in their `skills:` frontmatter
-- Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match the chosen stack (language-specific skills for other languages, niche utilities, meta-skills). Keep universal skills enabled. If multiple plugins provide skills for the same domain, keep the more specific one and disable the other. Set disabled skills to `"off"`.
+- Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match the chosen stack. Keep universal skills enabled. Set disabled skills to `"off"`. Example: `"skillOverrides": { "go-review": "off", "springboot-patterns": "off" }`
 
 For questions the user didn't have answers to (e.g., version corrections, verify commands), leave the placeholder comments in place — they are written so that Claude will fill them in naturally when the information is discovered during normal development. Only replace placeholders that have actual answers.
 
