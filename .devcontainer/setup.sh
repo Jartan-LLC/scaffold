@@ -18,7 +18,7 @@ echo "Installing Python dependencies..."
 while IFS= read -r -d '' req_file; do
     echo "  Installing from $req_file..."
     pip install -r "$req_file" || echo "Warning: pip install failed for $req_file" >&2
-done < <(find . -name "requirements.txt" -type f -print0)
+done < <(find . -name "requirements.txt" -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.tox/*" -type f -print0)
 
 # Install Python dependencies from all pyproject.toml files (editable installs)
 echo "Installing Python editable packages..."
@@ -26,7 +26,7 @@ while IFS= read -r -d '' pyproject_file; do
     dir=$(dirname "$pyproject_file")
     echo "  Installing from $dir..."
     pip install -e "$dir" || echo "Warning: pip install failed for $dir" >&2
-done < <(find . -name "pyproject.toml" -type f -print0)
+done < <(find . -name "pyproject.toml" -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.tox/*" -type f -print0)
 
 # vscode-user-specific setup (volume mounts, ownership fixes)
 if [ "$(whoami)" = "vscode" ]; then
@@ -55,7 +55,7 @@ if [ "$(whoami)" = "vscode" ]; then
     npm_prefix="$(npm prefix -g 2>/dev/null)"
     if [ -z "$npm_prefix" ]; then
         echo "Warning: could not determine npm global prefix" >&2
-    elif [ -n "$npm_prefix" ]; then
+    else
         npm_owner="$(stat -c '%U' "$npm_prefix" 2>/dev/null)"
         if [ -n "$npm_owner" ] && [ "$npm_owner" = "root" ]; then
             sudo chown -R vscode:vscode "$npm_prefix" || echo "Warning: could not fix ownership on $npm_prefix" >&2
