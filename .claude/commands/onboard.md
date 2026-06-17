@@ -34,6 +34,7 @@ Work through every Required checklist item that can be automated. Also:
 - Update `.devcontainer/setup.sh` — add dependency installation for the chosen stack (e.g., `go mod download`, `cargo build`)
 - Update `.gitignore` — add language-specific patterns for the chosen stack
 - Update `.editorconfig` — adjust formatting rules for the chosen language (e.g., tabs for Go)
+- Create the `dependency` label used by dependabot: `gh label create dependency --color 0366d6 --description "Dependency updates"`. Skip if it already exists.
 - When removing skills, also update any agent files that reference them in their `skills:` frontmatter
 - Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match the chosen stack (language-specific skills for other languages, niche utilities, meta-skills). Keep universal skills enabled. If multiple plugins provide skills for the same domain, keep the more specific one and disable the other. Set disabled skills to `"off"`.
 

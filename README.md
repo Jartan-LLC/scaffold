@@ -34,9 +34,11 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Update `.github/SECURITY.md` — set supported versions and response timeline
 - [ ] Update `.github/ISSUE_TEMPLATE/config.yml` — replace `ORG/REPO` in contact link URLs with your GitHub org and repo name
 - [ ] Update `.github/dependabot.yml` — remove ecosystems you don't use, add ones you need, adjust directories if not at root
+- [ ] Create the `dependency` label — `gh label create dependency --color 0366d6 --description "Dependency updates"` (required by dependabot config)
 - [ ] Fill in `.github/workflows/ci.yml` — replace TODO comments with your lint and test commands
-- [ ] Create a `LICENSE` file
+- [ ] Create a `LICENSE` file — rename one of the included templates (`LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`) to `LICENSE`, fill in `[year]` and `[fullname]`, delete the others
 - [ ] When removing skills, update any agent files that reference them in their `skills:` frontmatter
+- [ ] Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match your stack
 - [ ] Add secrets to your repo:
   - `ANTHROPIC_API_KEY` — for the Claude Code workflow
   - `APP_ID` — GitHub App ID
