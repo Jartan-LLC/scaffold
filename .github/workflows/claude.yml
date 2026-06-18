@@ -55,7 +55,8 @@ jobs:
             https://github.com/JuliusBrussee/caveman.git
 
           plugins: |
-            github-conventions@grimoire
+            claudivis@grimoire
+            gitwise@grimoire
             memoria@grimoire
             praxis@grimoire
             pythonica@grimoire
