@@ -1,6 +1,6 @@
 # Project Template
 
-Starter template with dev container, Claude Code configuration, GitHub workflows, and project conventions.
+Production-ready project scaffold with a containerized dev environment, GitHub automation, and Claude Code as a development workflow agent.
 
 ## Getting Started
 
@@ -10,10 +10,14 @@ Run `/onboard` in Claude Code to set up this template for your project. It will 
 
 | Area | Contents |
 |------|----------|
-| `.devcontainer/` | Dev container with Claude Code CLI, Docker, GitHub CLI, desktop-lite |
-| `.claude/` | Agents, commands, skills, settings with plugins |
-| `.github/` | Issue forms, PR template, CI stub, Dependabot, Claude Code workflow, security policy |
-| `CLAUDE.md` | AI assistant rules, verification commands, skill index |
+| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite, Claude Code CLI |
+| `.claude/` | Claude Code plugins and configuration — dev workflow, code review, session memory, Python patterns, recursive development, token efficiency |
+| `.github/` | CI pipeline (lint + test stubs), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, issue/PR templates, security policy |
+| `.editorconfig` | Language-aware formatting — 4-space Python, 2-space JS/TS, tabs for Makefiles |
+| `.gitattributes` | Syntax-aware diffs for 20+ languages, binary normalization for lock files |
+| `.gitignore` | Comprehensive patterns for Node, Python, Docker, IDEs, env files, build artifacts |
+| `CLAUDE.md` | Project rules, anti-patterns, verification commands, skill index |
+| `LICENSE.*` | Three license templates (MIT, Apache-2.0, AGPL-3.0) — pick one during onboarding |
 
 ## Post-Fork Checklist
 
@@ -25,7 +29,7 @@ If you prefer to set up manually instead of using `/onboard`:
   - Project name and description (line 1 and 3)
   - Verify commands with your actual build/test/lint commands
   - Corrections with any version-specific overrides for your stack
-- [ ] Update `CLAUDE.md` Skills section — remove skills that don't apply to your project, add project-specific ones
+- [ ] Update `CLAUDE.md` Skills section — remove references that don't apply to your project
 - [ ] Update `.devcontainer/devcontainer.json` — change the desktop-lite password, add/remove language features and extensions for your stack
 - [ ] Update `.devcontainer/setup.sh` — add dependency installation for your stack
 - [ ] Update `.gitignore` — add language-specific patterns for your stack
@@ -34,9 +38,10 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Update `.github/SECURITY.md` — set supported versions and response timeline
 - [ ] Update `.github/ISSUE_TEMPLATE/config.yml` — replace `ORG/REPO` in contact link URLs with your GitHub org and repo name
 - [ ] Update `.github/dependabot.yml` — remove ecosystems you don't use, add ones you need, adjust directories if not at root
+- [ ] Create the `dependency` label — `gh label create dependency --color 0366d6 --description "Dependency updates"` (required by dependabot config)
 - [ ] Fill in `.github/workflows/ci.yml` — replace TODO comments with your lint and test commands
-- [ ] Create a `LICENSE` file
-- [ ] When removing skills, update any agent files that reference them in their `skills:` frontmatter
+- [ ] Create a `LICENSE` file — rename one of the included templates (`LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`) to `LICENSE`, fill in `[year]` and `[fullname]`, delete the others
+- [ ] Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match your stack
 - [ ] Add secrets to your repo:
   - `ANTHROPIC_API_KEY` — for the Claude Code workflow
   - `APP_ID` — GitHub App ID
@@ -60,6 +65,4 @@ If you prefer to set up manually instead of using `/onboard`:
 ### Cleanup
 
 - [ ] Replace this README with your own
-- [ ] Remove `.claude/skills/` entries that don't apply to your project type
-- [ ] Remove `.claude/agents/` entries that don't apply (e.g., `frontend-reviewer` for a CLI project)
 - [ ] Delete `.claude/commands/onboard.md`

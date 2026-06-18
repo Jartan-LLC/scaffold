@@ -34,15 +34,14 @@
 
 Project conventions live in `.claude/skills/`. Check the relevant skill when working in an unfamiliar area:
 
-- **api-error-patterns** — error response format, status codes
 - **claude-config** — agents vs skills vs commands
-- **docs-patterns** — writing style, structure, brevity
-- **frontend-patterns** — design tokens, mobile-first, component isolation
-- **github-conventions** — branches, commits, issue/PR templates
-- **logging-patterns** — log levels, formatting, structured output
-- **testing-patterns** — integration tests, fixture composition, canary markers
 
-When adding a new skill, add an entry here.
+Additional skills, agents, and commands are provided by plugins from [Jartan-LLC/grimoire](https://github.com/Jartan-LLC/grimoire):
+- **github-conventions** — branch naming, commit format, issue/PR templates
+- **memoria** — session memory and continuous learning
+- **praxis** — dev workflow: issue planning, implementation, PR creation, code review, conventions
+- **pythonica** — comprehensive Python development patterns, testing, packaging, Pydantic
+- **recursio** — recursive multi-agent development with TDD
 
 ## Verify
 
