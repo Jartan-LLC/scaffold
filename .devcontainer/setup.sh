@@ -65,24 +65,26 @@ fi
 
 # Install Claude Code plugins (fallback for fresh Docker volumes)
 if command -v claude &> /dev/null; then
-    if ! claude plugin list 2>/dev/null | grep -q everything-claude-code; then
-        echo "Installing everything-claude-code plugin..."
-        if claude plugin marketplace add affaan-m/everything-claude-code; then
-            claude plugin install everything-claude-code@everything-claude-code --scope project \
-                || echo "Warning: 'claude plugin install everything-claude-code' failed" >&2
-        else
-            echo "Warning: 'claude plugin marketplace add affaan-m/everything-claude-code' failed; skipping install" >&2
+    # Add plugin marketplaces
+    claude plugin marketplace add Jartan-LLC/grimoire 2>/dev/null \
+        || echo "Warning: 'claude plugin marketplace add Jartan-LLC/grimoire' failed" >&2
+    claude plugin marketplace add JuliusBrussee/caveman 2>/dev/null \
+        || echo "Warning: 'claude plugin marketplace add JuliusBrussee/caveman' failed" >&2
+
+    # Install plugins
+    for plugin in \
+        github-conventions@grimoire \
+        memoria@grimoire \
+        praxis@grimoire \
+        pythonica@grimoire \
+        recursio@grimoire \
+        caveman@caveman; do
+        if ! claude plugin list 2>/dev/null | grep -q "${plugin%%@*}"; then
+            echo "Installing $plugin..."
+            claude plugin install "$plugin" --scope project \
+                || echo "Warning: 'claude plugin install $plugin' failed" >&2
         fi
-    fi
-    if ! claude plugin list 2>/dev/null | grep -q caveman; then
-        echo "Installing caveman plugin..."
-        if claude plugin marketplace add JuliusBrussee/caveman; then
-            claude plugin install caveman@caveman --scope project \
-                || echo "Warning: 'claude plugin install caveman' failed" >&2
-        else
-            echo "Warning: 'claude plugin marketplace add JuliusBrussee/caveman' failed; skipping install" >&2
-        fi
-    fi
+    done
 fi
 
 # Optional: Headroom token compression proxy (https://github.com/chopratejas/headroom)
