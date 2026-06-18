@@ -63,28 +63,6 @@ if [ "$(whoami)" = "vscode" ]; then
     fi
 fi
 
-# Install Claude Code plugins (fallback for fresh Docker volumes)
-if command -v claude &> /dev/null; then
-    if ! claude plugin list 2>/dev/null | grep -q everything-claude-code; then
-        echo "Installing everything-claude-code plugin..."
-        if claude plugin marketplace add affaan-m/everything-claude-code; then
-            claude plugin install everything-claude-code@everything-claude-code --scope project \
-                || echo "Warning: 'claude plugin install everything-claude-code' failed" >&2
-        else
-            echo "Warning: 'claude plugin marketplace add affaan-m/everything-claude-code' failed; skipping install" >&2
-        fi
-    fi
-    if ! claude plugin list 2>/dev/null | grep -q caveman; then
-        echo "Installing caveman plugin..."
-        if claude plugin marketplace add JuliusBrussee/caveman; then
-            claude plugin install caveman@caveman --scope project \
-                || echo "Warning: 'claude plugin install caveman' failed" >&2
-        else
-            echo "Warning: 'claude plugin marketplace add JuliusBrussee/caveman' failed; skipping install" >&2
-        fi
-    fi
-fi
-
 # Optional: Headroom token compression proxy (https://github.com/chopratejas/headroom)
 # Reduces token usage 60-95% by compressing context sent to the LLM.
 # Uncomment to enable:
