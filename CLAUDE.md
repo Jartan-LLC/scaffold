@@ -41,10 +41,8 @@ Project conventions live in `.claude/skills/`. Check the relevant skill when wor
 - **github-conventions** — branches, commits, issue/PR templates
 - **logging-patterns** — log levels, formatting, structured output
 - **testing-patterns** — integration tests, fixture composition, canary markers
-- **recursive-development** — core principles: nesting, scope ownership, TDD, context flow, token economics
-- **recursive-planning** — wave plan design: module identification, dependency mapping, contract guidance
-- **recursive-quality** — quality patterns, anti-patterns, contract richness guidelines
-- **recursive-execution** — wave barriers, agent constraints, review-fix evaluation, language awareness
+
+Recursive development skills, agents, and commands are provided by the `recursion` plugin from [Jartan-LLC/grimoire](https://github.com/Jartan-LLC/grimoire).
 
 ## Verify
 

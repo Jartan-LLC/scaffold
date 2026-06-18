@@ -16,7 +16,8 @@
   },
   "enabledPlugins": {
     "everything-claude-code@everything-claude-code": true,
-    "caveman@caveman": true
+    "caveman@caveman": true,
+    "recursion@grimoire": true
   },
   "extraKnownMarketplaces": {
     "everything-claude-code": {
@@ -29,6 +30,12 @@
       "source": {
         "source": "github",
         "repo": "JuliusBrussee/caveman"
+      }
+    },
+    "grimoire": {
+      "source": {
+        "source": "github",
+        "repo": "Jartan-LLC/grimoire"
       }
     }
   }
