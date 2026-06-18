@@ -37,8 +37,10 @@ Project conventions live in `.claude/skills/`. Check the relevant skill when wor
 - **claude-config** — agents vs skills vs commands
 
 Additional skills, agents, and commands are provided by plugins from [Jartan-LLC/grimoire](https://github.com/Jartan-LLC/grimoire):
-- **praxis** — dev workflow: issue planning, implementation, PR creation, code review, conventions
 - **github-conventions** — branch naming, commit format, issue/PR templates
+- **memoria** — session memory and continuous learning
+- **praxis** — dev workflow: issue planning, implementation, PR creation, code review, conventions
+- **pythonica** — comprehensive Python development patterns, testing, packaging, Pydantic
 - **recursio** — recursive multi-agent development with TDD
 
 ## Verify

@@ -1,19 +1,13 @@
 {
   "enabledPlugins": {
-    "everything-claude-code@everything-claude-code": true,
     "caveman@caveman": true,
-    "recursio@grimoire": true,
-    "praxis@grimoire": true,
     "github-conventions@grimoire": true,
-    "memoria@grimoire": true
+    "memoria@grimoire": true,
+    "praxis@grimoire": true,
+    "pythonica@grimoire": true,
+    "recursio@grimoire": true
   },
   "extraKnownMarketplaces": {
-    "everything-claude-code": {
-      "source": {
-        "source": "github",
-        "repo": "affaan-m/everything-claude-code"
-      }
-    },
     "caveman": {
       "source": {
         "source": "github",
