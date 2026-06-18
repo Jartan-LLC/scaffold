@@ -17,7 +17,9 @@
   "enabledPlugins": {
     "everything-claude-code@everything-claude-code": true,
     "caveman@caveman": true,
-    "recursion@grimoire": true
+    "recursio@grimoire": true,
+    "praxis@grimoire": true,
+    "github-conventions@grimoire": true
   },
   "extraKnownMarketplaces": {
     "everything-claude-code": {
