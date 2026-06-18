@@ -32,12 +32,9 @@
 
 ## Skills
 
-Project conventions live in `.claude/skills/`. Check the relevant skill when working in an unfamiliar area:
-
-- **claude-config** — agents vs skills vs commands
-
-Additional skills, agents, and commands are provided by plugins from [Jartan-LLC/grimoire](https://github.com/Jartan-LLC/grimoire):
-- **github-conventions** — branch naming, commit format, issue/PR templates
+Skills, agents, and commands are provided by plugins from [Jartan-LLC/grimoire](https://github.com/Jartan-LLC/grimoire):
+- **claudivis** — how agents, skills, and commands work together
+- **gitwise** — branch naming, commit format, issue/PR templates
 - **memoria** — session memory and continuous learning
 - **praxis** — dev workflow: issue planning, implementation, PR creation, code review, conventions
 - **pythonica** — comprehensive Python development patterns, testing, packaging, Pydantic

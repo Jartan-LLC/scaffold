@@ -1,7 +1,8 @@
 {
   "enabledPlugins": {
     "caveman@caveman": true,
-    "github-conventions@grimoire": true,
+    "claudivis@grimoire": true,
+    "gitwise@grimoire": true,
     "memoria@grimoire": true,
     "praxis@grimoire": true,
     "pythonica@grimoire": true,
