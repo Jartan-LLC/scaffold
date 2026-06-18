@@ -51,11 +51,15 @@ jobs:
 
           plugin_marketplaces: |
             https://github.com/anthropics/claude-plugins-official.git
-            https://github.com/affaan-m/everything-claude-code.git
+            https://github.com/Jartan-LLC/grimoire.git
             https://github.com/JuliusBrussee/caveman.git
 
           plugins: |
-            everything-claude-code@everything-claude-code
+            github-conventions@grimoire
+            memoria@grimoire
+            praxis@grimoire
+            pythonica@grimoire
+            recursio@grimoire
             caveman@caveman
 
           claude_args: |
