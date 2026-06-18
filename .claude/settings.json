@@ -1,25 +1,11 @@
 {
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "if": "Bash(gh *)",
-            "command": "printf '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"Load the github-conventions skill before proceeding.\"}}'",
-            "statusMessage": "Checking GitHub conventions..."
-          }
-        ]
-      }
-    ]
-  },
   "enabledPlugins": {
     "everything-claude-code@everything-claude-code": true,
     "caveman@caveman": true,
     "recursio@grimoire": true,
     "praxis@grimoire": true,
-    "github-conventions@grimoire": true
+    "github-conventions@grimoire": true,
+    "memoria@grimoire": true
   },
   "extraKnownMarketplaces": {
     "everything-claude-code": {
