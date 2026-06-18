@@ -11,9 +11,23 @@ Run `/onboard` in Claude Code to set up this template for your project. It will 
 | Area | Contents |
 |------|----------|
 | `.devcontainer/` | Dev container with Claude Code CLI, Docker, GitHub CLI, desktop-lite |
-| `.claude/` | Agents, commands, skills, settings with plugins |
+| `.claude/` | Settings, local skills, and plugin configuration |
 | `.github/` | Issue forms, PR template, CI stub, Dependabot, Claude Code workflow, security policy |
 | `CLAUDE.md` | AI assistant rules, verification commands, skill index |
+
+### Plugins
+
+Skills, agents, and commands are provided by plugins from [Jartan-LLC/grimoire](https://github.com/Jartan-LLC/grimoire):
+
+| Plugin | What it provides |
+|--------|-----------------|
+| **github-conventions** | Branch naming, commit format, issue/PR templates, smart PreToolUse hook |
+| **memoria** | Session memory, cross-session context, instinct-based continuous learning |
+| **praxis** | Dev workflow commands (`/plan-issue`, `/implement-issue`, `/create-pr`, `/review-pr`), reviewer agents, convention skills |
+| **pythonica** | Python development patterns, testing, packaging, Pydantic, and more |
+| **recursio** | Recursive multi-agent development with TDD |
+
+Plugins are configured in `.claude/settings.json`. Use `skillOverrides` to disable plugins that don't match your stack.
 
 ## Post-Fork Checklist
 
@@ -25,7 +39,7 @@ If you prefer to set up manually instead of using `/onboard`:
   - Project name and description (line 1 and 3)
   - Verify commands with your actual build/test/lint commands
   - Corrections with any version-specific overrides for your stack
-- [ ] Update `CLAUDE.md` Skills section — remove skills that don't apply to your project, add project-specific ones
+- [ ] Update `CLAUDE.md` Skills section — remove plugin references that don't apply to your project
 - [ ] Update `.devcontainer/devcontainer.json` — change the desktop-lite password, add/remove language features and extensions for your stack
 - [ ] Update `.devcontainer/setup.sh` — add dependency installation for your stack
 - [ ] Update `.gitignore` — add language-specific patterns for your stack
@@ -37,7 +51,6 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Create the `dependency` label — `gh label create dependency --color 0366d6 --description "Dependency updates"` (required by dependabot config)
 - [ ] Fill in `.github/workflows/ci.yml` — replace TODO comments with your lint and test commands
 - [ ] Create a `LICENSE` file — rename one of the included templates (`LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`) to `LICENSE`, fill in `[year]` and `[fullname]`, delete the others
-- [ ] When removing skills, update any agent files that reference them in their `skills:` frontmatter
 - [ ] Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match your stack
 - [ ] Add secrets to your repo:
   - `ANTHROPIC_API_KEY` — for the Claude Code workflow
@@ -62,6 +75,4 @@ If you prefer to set up manually instead of using `/onboard`:
 ### Cleanup
 
 - [ ] Replace this README with your own
-- [ ] Remove `.claude/skills/` entries that don't apply to your project type
-- [ ] Remove `.claude/agents/` entries that don't apply (e.g., `frontend-reviewer` for a CLI project)
 - [ ] Delete `.claude/commands/onboard.md`
