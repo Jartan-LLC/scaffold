@@ -67,5 +67,7 @@ updates:
         update-types:
           - "minor"
           - "patch"
+        exclude-patterns:
+          - "python"
     cooldown:
       default-days: 3
