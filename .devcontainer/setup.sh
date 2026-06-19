@@ -10,7 +10,7 @@ echo "Installing Node.js dependencies..."
 while IFS= read -r -d '' pkg_file; do
     dir=$(dirname "$pkg_file")
     echo "  Installing from $dir..."
-    (cd "$dir" && pnpm install) || echo "Warning: pnpm install failed in $dir" >&2
+    (cd "$dir" && CI=true pnpm install) || echo "Warning: pnpm install failed in $dir" >&2
 done < <(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.pnpm-store/*" -type f -print0)
 
 # Install Python dependencies from all requirements.txt files
