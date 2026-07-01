@@ -32,6 +32,7 @@ Work through every Required checklist item that can be automated. Also:
 - License: rename the chosen `LICENSE.<type>` file to `LICENSE`, delete the others, and fill in `[year]` and `[fullname]`. Available: `LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`. If the user wants a different license or proprietary, delete all three and create the appropriate file.
 - Update `.devcontainer/devcontainer.json` — add/remove language features and extensions to match the chosen stack
 - Update `.devcontainer/post-create.sh` — add dependency installation for the chosen stack (e.g., `go mod download`, `cargo build`)
+- Update `.devcontainer/post-start.sh` — add commands that should run on each container start
 - Update `.gitignore` — add language-specific patterns for the chosen stack
 - Update `.editorconfig` — adjust formatting rules for the chosen language (e.g., tabs for Go)
 - Create the `dependency` label used by dependabot: `gh label create dependency --color 0366d6 --description "Dependency updates" 2>/dev/null || true`
