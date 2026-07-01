@@ -11,7 +11,7 @@ Run `/onboard` in Claude Code to set up this template for your project. It will 
 | Area | Contents |
 |------|----------|
 | `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite, Claude Code CLI |
-| `.claude/` | Claude Code plugins and configuration — dev workflow, code review, session memory, Python patterns, recursive development, token efficiency |
+| `.claude/` | Claude Code plugins and configuration — dev workflow, code review, session memory, Python patterns, recursive development, token efficiency, codebase-memory-mcp (structural code graph) |
 | `.github/` | CI pipeline (lint + test stubs), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, issue/PR templates, security policy |
 | `.editorconfig` | Language-aware formatting — 4-space Python, 2-space JS/TS, tabs for Makefiles |
 | `.gitattributes` | Syntax-aware diffs for 20+ languages, binary normalization for lock files |
