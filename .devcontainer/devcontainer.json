@@ -60,6 +60,6 @@
     }
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",
-  "postStartCommand": "sudo chmod 666 /var/run/docker-host.sock 2>/dev/null || true",
+  "postStartCommand": "sudo chmod 666 /var/run/docker-host.sock 2>/dev/null || true && if [ \"$CODESPACES\" = \"true\" ]; then grep -q 'HOST_PROJECT_PATH' ~/.bashrc 2>/dev/null || echo 'export HOST_PROJECT_PATH=\"$CONTAINER_WORKSPACE_FOLDER\"' >> ~/.bashrc; export HOST_PROJECT_PATH=\"$CONTAINER_WORKSPACE_FOLDER\"; fi",
   "postAttachCommand": "claude plugins marketplace update 2>/dev/null || true"
 }
