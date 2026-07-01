@@ -72,7 +72,7 @@ fi
 # Install codebase-memory-mcp (structural code graph for Claude Code)
 if ! command -v codebase-memory-mcp &>/dev/null; then
     echo "Installing codebase-memory-mcp..."
-    curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash || echo "Warning: codebase-memory-mcp install failed" >&2
+    (set -o pipefail; curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/c9dd016883c2f0bfdf4e01201897575195ef08bb/install.sh | bash) || echo "Warning: codebase-memory-mcp install failed" >&2
 fi
 
 gh auth status 2>/dev/null || echo "Warning: gh not authenticated. Run 'gh auth login' to enable GitHub CLI." >&2
