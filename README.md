@@ -10,8 +10,8 @@ Run `/onboard` in Claude Code to set up this template for your project. It will 
 
 | Area | Contents |
 |------|----------|
-| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite, Claude Code CLI |
-| `.claude/` | Claude Code plugins and configuration — dev workflow, code review, session memory, Python patterns, recursive development, token efficiency, codebase-memory-mcp (structural code graph) |
+| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite, Claude Code CLI, codebase-memory-mcp (structural code graph) |
+| `.claude/` | Claude Code plugins and configuration — dev workflow, code review, session memory, Python patterns, recursive development, token efficiency |
 | `.github/` | CI pipeline (lint + test stubs), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, issue/PR templates, security policy |
 | `.editorconfig` | Language-aware formatting — 4-space Python, 2-space JS/TS, tabs for Makefiles |
 | `.gitattributes` | Syntax-aware diffs for 20+ languages, binary normalization for lock files |
@@ -31,7 +31,8 @@ If you prefer to set up manually instead of using `/onboard`:
   - Corrections with any version-specific overrides for your stack
 - [ ] Update `CLAUDE.md` Skills section — remove references that don't apply to your project
 - [ ] Update `.devcontainer/devcontainer.json` — change the desktop-lite password, add/remove language features and extensions for your stack
-- [ ] Update `.devcontainer/setup.sh` — add dependency installation for your stack
+- [ ] Update `.devcontainer/post-create.sh` — add dependency installation for your stack
+- [ ] Update `.devcontainer/post-start.sh` — add commands that should run on each container start (Docker socket fix and Codespaces env overrides are included)
 - [ ] Update `.gitignore` — add language-specific patterns for your stack
 - [ ] Update `.editorconfig` — adjust formatting rules for your language (e.g., tabs for Go)
 - [ ] Update `.github/CODEOWNERS` — uncomment and set owner usernames/teams
