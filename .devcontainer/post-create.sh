@@ -25,7 +25,7 @@ echo "Installing Python editable packages..."
 while IFS= read -r -d '' pyproject_file; do
     dir=$(dirname "$pyproject_file")
     echo "  Installing from $dir..."
-    pip install -e "$dir" || echo "Warning: pip install failed for $dir" >&2
+    pip install -e "${dir}[dev]" || echo "Warning: pip install failed for $dir" >&2
 done < <(find . -name "pyproject.toml" -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.tox/*" -type f -print0)
 
 # vscode-user-specific setup (volume mounts, ownership fixes)
@@ -68,6 +68,12 @@ fi
 # Uncomment to enable:
 # pip install "headroom-ai[proxy]"
 # headroom init claude
+
+# Install codebase-memory-mcp (structural code graph for Claude Code)
+if ! command -v codebase-memory-mcp &>/dev/null; then
+    echo "Installing codebase-memory-mcp..."
+    (set -o pipefail; curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash -s -- --ui) || echo "Warning: codebase-memory-mcp install failed" >&2
+fi
 
 gh auth status 2>/dev/null || echo "Warning: gh not authenticated. Run 'gh auth login' to enable GitHub CLI." >&2
 

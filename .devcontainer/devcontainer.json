@@ -59,7 +59,7 @@
       }
     }
   },
-  "postCreateCommand": "bash .devcontainer/setup.sh",
-  "postStartCommand": "sudo chmod 666 /var/run/docker-host.sock 2>/dev/null || true",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "bash .devcontainer/post-start.sh",
   "postAttachCommand": "claude plugins marketplace update 2>/dev/null || true"
 }

@@ -41,3 +41,6 @@ logs/
 # Claude workspace (plans, scratch files)
 .claude/workspace/*
 !.claude/workspace/.gitkeep
+
+# Claude local settings (user-specific)
+.claude/settings.local.*

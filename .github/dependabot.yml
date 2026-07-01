@@ -69,5 +69,10 @@ updates:
           - "patch"
         exclude-patterns:
           - "python"
+    ignore:
+      - dependency-name: "python"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
     cooldown:
       default-days: 3
