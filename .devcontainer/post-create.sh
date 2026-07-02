@@ -75,6 +75,13 @@ if ! command -v codebase-memory-mcp &>/dev/null; then
     (set -o pipefail; curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash -s -- --ui) || echo "Warning: codebase-memory-mcp install failed" >&2
 fi
 
+# Enable codebase-memory-mcp auto-indexing (indexes each project on first MCP
+# session and re-indexes in the background on git changes). Guarded because the
+# install above is best-effort; idempotent, so it re-applies on every rebuild.
+if command -v codebase-memory-mcp &>/dev/null; then
+    codebase-memory-mcp config set auto_index true 2>/dev/null || echo "Warning: could not enable codebase-memory-mcp auto_index" >&2
+fi
+
 gh auth status 2>/dev/null || echo "Warning: gh not authenticated. Run 'gh auth login' to enable GitHub CLI." >&2
 
 echo "Development environment setup complete!"
