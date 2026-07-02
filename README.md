@@ -54,6 +54,11 @@ If you prefer to set up manually instead of using `/onboard`:
     4. Install the app on your repo
     5. Store the App ID and a generated private key as repo secrets
 
+- [ ] Set up publishing — only if you'll release packages/images (the workflows are dormant until then):
+  - **`publish-pypi.yml`** — requires a `pyproject.toml`. Create a `pypi` [Environment](https://docs.github.com/actions/deployment/targeting-different-environments) and configure [PyPI Trusted Publishing (OIDC)](https://docs.pypi.org/trusted-publishers/) for the package — no token secret. Optionally uncomment the tag-vs-version step and point it at your version source.
+  - **`publish-docker.yml`** — requires a `Dockerfile` at the repo root. Publishes multi-arch images to `ghcr.io/OWNER/REPO` using the built-in `GITHUB_TOKEN` — no secret needed.
+  - Both trigger on `v*` tags. Pushing such a tag **before** adding the manifest above will fail that workflow — add the package/`Dockerfile` first, or delete the workflow you don't need.
+
 ### Recommended
 
 - [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
