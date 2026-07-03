@@ -16,7 +16,8 @@ hooks; some need Docker (actionlint) and Node (markdownlint) — the devcontaine
 make check
 ```
 
-Runs the same checks CI does; all must pass before merge.
+Runs the same checks CI does (on your active interpreter — CI also sweeps the
+3.12/3.13 matrix); all must pass before merge.
 
 ## Conventions
 

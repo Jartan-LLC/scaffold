@@ -22,4 +22,6 @@ napoleon_numpy_docstring = False
 
 myst_enable_extensions = ["colon_fence", "deflist"]
 
+exclude_patterns = ["_build"]
+
 html_theme = "furo"

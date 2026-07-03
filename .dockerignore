@@ -15,16 +15,16 @@
 .env
 .env.*
 
-# Python caches / build artifacts
-__pycache__/
-*.py[cod]
+# Python caches / build artifacts (**/ so nested dirs like src/app/__pycache__ match)
+**/__pycache__/
+**/*.py[cod]
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
 .coverage
 dist/
 build/
-*.egg-info/
+**/*.egg-info/
 .venv/
 venv/
 

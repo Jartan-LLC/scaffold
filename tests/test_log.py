@@ -23,6 +23,12 @@ def test_plain_formatter_escapes_control_chars() -> None:
     assert "\\x00" in out  # escaped, not merely dropped
 
 
+def test_plain_formatter_escapes_message_newline() -> None:
+    out = PlainFormatter().format(_record("line1\nline2"))
+    assert "\n" not in out  # a message newline can't forge a new log line
+    assert "line1\\nline2" in out
+
+
 def test_json_formatter_is_single_line_json() -> None:
     out = JsonFormatter().format(_record("hello"))
     assert "\n" not in out
@@ -36,6 +42,19 @@ def test_json_formatter_escapes_control_chars() -> None:
     payload = json.loads(JsonFormatter().format(_record("x\x1by")))
     assert "\x1b" not in payload["message"]
     assert "\\x1b" in payload["message"]
+
+
+def test_json_formatter_escapes_message_newline() -> None:
+    payload = json.loads(JsonFormatter().format(_record("line1\nline2")))
+    assert "\n" not in payload["message"]  # decoded message can't forge a log line
+    assert payload["message"] == "line1\\nline2"
+
+
+def test_json_formatter_uses_utc_timestamps() -> None:
+    record = _record("hi")
+    record.created = 1609459200.0  # 2021-01-01T00:00:00Z
+    payload = json.loads(JsonFormatter().format(record))
+    assert payload["timestamp"].startswith("2021-01-01T00:00:00")  # UTC regardless of host TZ
 
 
 def test_setup_logging_plain_configures_root() -> None:
