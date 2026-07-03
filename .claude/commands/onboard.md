@@ -35,6 +35,8 @@ Work through every Required checklist item that can be automated. Also:
 - Update `.devcontainer/post-start.sh` — add commands that should run on each container start
 - Update `.gitignore` — add language-specific patterns for the chosen stack
 - Update `.editorconfig` — adjust formatting rules for the chosen language (e.g., tabs for Go)
+- If Python: rename the package stub — set `pyproject.toml` `name` + `description`, rename the `src/app/` directory to the import name (update `[tool.setuptools.packages.find]` if needed), and replace `tests/test_smoke.py` with a real test. If not Python: delete `pyproject.toml`, `src/`, `tests/`, and the `lint`/`typecheck`/`test`/`build` Python jobs in `.github/workflows/ci.yml` (and their entries in the `check` aggregator)
+- Fill in `CHANGELOG.md` — replace `ORG/REPO` in the `[Unreleased]` link with the GitHub org/repo
 - Create the `dependency` label used by dependabot: `gh label create dependency --color 0366d6 --description "Dependency updates" 2>/dev/null || true`
 - When removing skills, also update any agent files that reference them in their `skills:` frontmatter
 - Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match the chosen stack. If multiple plugins cover the same domain, keep the more specific one. Keep universal skills enabled. Set disabled skills to `"off"`. Example: `"skillOverrides": { "go-review": "off", "springboot-patterns": "off" }`

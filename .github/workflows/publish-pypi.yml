@@ -27,14 +27,14 @@ jobs:
           python-version: "3.12"
 
       # TODO: Fail the release if the git tag doesn't match your package version.
-      # Uncomment and point `ver=` at wherever your version is declared, e.g.
-      # src/PACKAGE/__init__.py (`__version__ = "..."`) or pyproject.toml.
+      # The shipped pyproject.toml keeps `version` static; uncomment to enforce it
+      # matches the tag. Repoint `ver=` if you declare the version elsewhere.
       # - name: Verify tag matches package version
       #   run: |
       #     tag="${GITHUB_REF_NAME#v}"
-      #     ver="$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/PACKAGE/__init__.py)"
+      #     ver="$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)"
       #     if [ "$tag" != "$ver" ]; then
-      #       echo "tag '$tag' does not match __version__ '$ver'"
+      #       echo "tag '$tag' does not match version '$ver'"
       #       exit 1
       #     fi
 
