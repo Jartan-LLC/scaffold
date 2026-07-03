@@ -14,7 +14,7 @@ import logging.config
 import time
 from datetime import UTC, datetime
 from types import TracebackType
-from typing import Any
+from typing import Any, Literal
 
 # Escape C0 control chars (except tab), CR/LF, DEL, and C1 controls — any of
 # which can drive terminal escape sequences or forge new log lines.
@@ -129,7 +129,7 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, default=str)
 
 
-def setup_logging(*, level: int = logging.INFO, fmt: str = "plain") -> None:
+def setup_logging(*, level: int = logging.INFO, fmt: Literal["plain", "json"] = "plain") -> None:
     """Configure the root logger once, at application startup.
 
     Args:

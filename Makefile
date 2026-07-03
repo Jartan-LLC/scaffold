@@ -40,6 +40,6 @@ check:  ## Run every CI check (lint, typecheck, test, build, audit, docs)
 	python -m build
 	python -m twine check dist/*
 	pip-audit
-	sphinx-build -W -b html docs docs/_build/html
+	$(MAKE) docs
 
 all: check  ## Alias for `check`

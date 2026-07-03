@@ -35,6 +35,11 @@ docs = [
     "furo>=2025.12",     # theme (CalVer — date floor, no semver major to cap)
 ]
 
+[tool.setuptools]
+# Bundle only the chosen LICENSE, not all three LICENSE.* templates. Empty until
+# a fork renames one template to LICENSE (setuptools' default glob would ship all).
+license-files = ["LICENSE"]
+
 # src-layout: package code lives under src/. Rename src/app/ to your package.
 [tool.setuptools.packages.find]
 where = ["src"]

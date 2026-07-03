@@ -30,7 +30,7 @@ Open a PR from `template-update` so CI runs before the changes land.
 |------|----------|
 | `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite, Claude Code CLI, codebase-memory-mcp (structural code graph) |
 | `.claude/` | Claude Code plugins and configuration — dev workflow, code review, session memory, Python patterns, recursive development, token efficiency |
-| `.github/` | CI pipeline (active Python lint/typecheck/test/build + dependency audit + docs build; Node & Docker jobs commented), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, publish/release + OpenSSF Scorecard workflows, issue/PR + code-of-conduct + security templates |
+| `.github/` | CI pipeline (active Python lint/typecheck/test/build + dependency audit + docs build; Node steps + Docker job commented), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, publish/release + OpenSSF Scorecard workflows, issue/PR + code-of-conduct + security templates |
 | `pyproject.toml` | Python packaging + tool config (ruff, pytest, pyright, codespell) — minimal src-layout stub; rename or delete |
 | `src/app/`, `tests/` | Placeholder package (CLI entry point + logging setup, PEP 561 typed) + smoke/logging tests so CI is green on first fork |
 | `Makefile`, `.pre-commit-config.yaml` | Task runner (`make lint`/`test`/`check`/`docs`) + local git hooks (ruff, codespell) |

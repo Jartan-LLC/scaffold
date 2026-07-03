@@ -6,7 +6,8 @@
 pip install -e '.[dev]'
 ```
 
-Requires Python 3.12+.
+Requires Python 3.12+. `make lint`/`make check` also shell out to Node (for
+markdownlint) — the devcontainer includes it; install Node if running outside it.
 
 ## Verify before opening a PR
 

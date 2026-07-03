@@ -107,10 +107,15 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - name: Audit dependencies for known CVEs
-        uses: pypa/gh-action-pip-audit@1220774d901786e6f652ae159f7b6bc8fea6d266 # v1.1.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
-          inputs: .
+          python-version: "3.12"
+
+      # Audit the full installed environment — package deps plus the dev/docs/build
+      # tools — mirroring `make check`, not just the (currently empty) declared deps.
+      - run: pip install -e '.[dev,docs]' build twine pip-audit
+      - name: Audit dependencies for known CVEs
+        run: pip-audit
 
   docs:
     runs-on: ubuntu-24.04
