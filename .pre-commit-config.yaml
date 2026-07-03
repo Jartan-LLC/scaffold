@@ -1,6 +1,5 @@
 # Local git hooks. Enable once with: pre-commit install
-# Keep `rev`s in sync with the tool versions in pyproject dev extras.
-# Bump all with: pre-commit autoupdate
+# These `rev`s pin the hook tool versions; bump them all with: pre-commit autoupdate
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.20

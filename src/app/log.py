@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import logging.config
+import time
 from datetime import UTC, datetime
 from types import TracebackType
 from typing import Any
@@ -53,6 +54,9 @@ class PlainFormatter(logging.Formatter):
     Neutralizes control chars in the message and traceback; a traceback's own
     newlines are preserved for readability.
     """
+
+    # Timestamps in UTC (stdlib default is local time) so plain and JSON agree.
+    converter = staticmethod(time.gmtime)
 
     def __init__(self) -> None:
         """Format records as ``<timestamp> <level> <logger> <message>``."""
@@ -109,8 +113,8 @@ class JsonFormatter(logging.Formatter):
             record: The log record being formatted.
 
         Returns:
-            A one-line JSON object with timestamp, level, logger, message, and
-            (when the record carries one) the exception text.
+            A one-line JSON object with timestamp, level, logger, message, and —
+            when the record carries them — the exception text and stack info.
         """
         payload: dict[str, Any] = {
             "timestamp": datetime.fromtimestamp(record.created, tz=UTC).isoformat(),
@@ -120,6 +124,8 @@ class JsonFormatter(logging.Formatter):
         }
         if record.exc_info:
             payload["exc"] = self.formatException(record.exc_info).translate(_EXC_ESCAPES)
+        if record.stack_info:
+            payload["stack"] = self.formatStack(record.stack_info).translate(_EXC_ESCAPES)
         return json.dumps(payload, default=str)
 
 

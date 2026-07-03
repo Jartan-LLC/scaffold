@@ -3,20 +3,8 @@
 import json
 import logging
 import sys
-from collections.abc import Iterator
-
-import pytest
 
 from app.log import JsonFormatter, PlainFormatter, setup_logging
-
-
-@pytest.fixture(autouse=True)
-def _restore_root_logger() -> Iterator[None]:  # pyright: ignore[reportUnusedFunction]  # invoked by pytest
-    root = logging.getLogger()
-    level, handlers = root.level, root.handlers[:]
-    yield
-    root.setLevel(level)
-    root.handlers[:] = handlers
 
 
 def _record(msg: str, name: str = "app.test") -> logging.LogRecord:
@@ -28,6 +16,7 @@ def test_plain_formatter_escapes_control_chars() -> None:
     assert "\x1b" not in out
     assert "\\x1b" in out
     assert "\x00" not in out
+    assert "\\x00" in out  # escaped, not merely dropped
 
 
 def test_json_formatter_is_single_line_json() -> None:
@@ -88,3 +77,19 @@ def test_json_formatter_escapes_exception_text() -> None:
     payload = json.loads(JsonFormatter().format(record))
     assert "\x1b" not in payload["exc"]  # decoded exc field is injection-safe
     assert "\\x1b" in payload["exc"]
+
+
+def test_json_formatter_emits_escaped_stack_info() -> None:
+    record = _record("op")
+    record.stack_info = "Stack (most recent call last):\n  frame\x1b[2Jhidden"
+    payload = json.loads(JsonFormatter().format(record))
+    assert payload["stack"]  # stack is present, not silently dropped
+    assert "\x1b" not in payload["stack"]  # decoded stack field is injection-safe
+    assert "\\x1b" in payload["stack"]
+
+
+def test_plain_formatter_uses_utc_timestamps() -> None:
+    record = _record("hi")
+    record.created = 1609459200.0  # 2021-01-01T00:00:00Z
+    out = PlainFormatter().format(record)
+    assert out.startswith("2021-01-01 00:00:00")  # UTC regardless of host TZ
