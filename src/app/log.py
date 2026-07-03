@@ -48,12 +48,10 @@ _SysExcInfo = (
 
 
 class PlainFormatter(logging.Formatter):
-    """Human-readable log formatter that neutralizes control characters.
+    """Human-readable formatter that escapes control characters.
 
-    Escapes control characters (terminal-escape and log-forging sequences) in
-    both the message and the exception traceback, so untrusted input logged via
-    ``logger.info(user_value)`` or ``logger.exception(...)`` cannot drive the
-    terminal or forge log lines. A traceback's own newlines are preserved.
+    Neutralizes control chars in the message and traceback; a traceback's own
+    newlines are preserved for readability.
     """
 
     def __init__(self) -> None:
@@ -96,11 +94,10 @@ class PlainFormatter(logging.Formatter):
 
 
 class JsonFormatter(logging.Formatter):
-    """Log formatter that emits one line of JSON per record, for aggregators.
+    """One line of JSON per record, for log aggregators.
 
-    ``json.dumps`` (default ``ensure_ascii=True``) escapes control characters in
-    every string it encodes, so the message and exception text are neutralized
-    without a separate escaping pass.
+    ``json.dumps`` escapes control chars in every string it encodes, so no
+    separate escaping pass is needed here.
     """
 
     def format(self, record: logging.LogRecord) -> str:
