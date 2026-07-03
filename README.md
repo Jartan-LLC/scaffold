@@ -28,9 +28,10 @@ Open a PR from `template-update` so CI runs before the changes land.
 |------|----------|
 | `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite, Claude Code CLI, codebase-memory-mcp (structural code graph) |
 | `.claude/` | Claude Code plugins and configuration — dev workflow, code review, session memory, Python patterns, recursive development, token efficiency |
-| `.github/` | CI pipeline (active Python lint/typecheck/test/build; Node & Docker jobs commented), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, publish/release workflows, issue/PR templates, security policy |
-| `pyproject.toml` | Python packaging + tool config (ruff, pytest, pyright) — minimal src-layout stub; rename or delete |
-| `src/app/`, `tests/` | Placeholder package + smoke test so CI is green on first fork |
+| `.github/` | CI pipeline (active Python lint/typecheck/test/build + dependency audit; Node & Docker jobs commented), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, publish/release + OpenSSF Scorecard workflows, issue/PR + code-of-conduct + security templates |
+| `pyproject.toml` | Python packaging + tool config (ruff, pytest, pyright, codespell) — minimal src-layout stub; rename or delete |
+| `src/app/`, `tests/` | Placeholder package (CLI entry point + logging setup, PEP 561 typed) + smoke/logging tests so CI is green on first fork |
+| `Makefile`, `.pre-commit-config.yaml` | Task runner (`make lint`/`test`/`check`) + local git hooks (ruff, codespell) |
 | `Dockerfile`, `.dockerignore` | Minimal Python image stub — pairs with `publish-docker.yml` |
 | `CHANGELOG.md`, `CONTRIBUTING.md` | Keep-a-Changelog skeleton and a Python contributor guide |
 | `.env.example`, `.prettierrc` | Env-var template and Prettier config (for JS/TS work) |
@@ -58,6 +59,7 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Update `.editorconfig` — adjust formatting rules for your language (e.g., tabs for Go)
 - [ ] Update `.github/CODEOWNERS` — uncomment and set owner usernames/teams
 - [ ] Update `.github/SECURITY.md` — set supported versions and response timeline
+- [ ] Update `.github/CODE_OF_CONDUCT.md` — set the enforcement contact (replace `[INSERT CONTACT METHOD]`)
 - [ ] Update `.github/ISSUE_TEMPLATE/config.yml` — replace `ORG/REPO` in contact link URLs with your GitHub org and repo name
 - [ ] Update `.github/dependabot.yml` — remove ecosystems you don't use, add ones you need, adjust directories if not at root
 - [ ] Create the `dependency` label — `gh label create dependency --color 0366d6 --description "Dependency updates"` (required by dependabot config)
@@ -86,6 +88,7 @@ If you prefer to set up manually instead of using `/onboard`:
   - All trigger on `v*` tags. `publish-pypi.yml` still fails until you rename the package and configure PyPI Trusted Publishing; delete whichever publish workflow (and its stub) you don't need.
 - [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
 - [ ] Enable CodeQL default setup (Settings > Security > Code scanning)
+- [ ] OpenSSF Scorecard (`.github/workflows/scorecard.yml`) needs a **public** repo to publish its score/badge — delete the workflow if the repo is private
 - [ ] Enable secret scanning with push protection (Settings > Security > Secret Protection)
 - [ ] Configure branch ruleset for `main` — require PR reviews, require CI to pass, block force pushes
 - [ ] Enable auto-merge (Settings > General > Allow auto-merge) — Dependabot minor/patch PRs auto-merge after CI passes
