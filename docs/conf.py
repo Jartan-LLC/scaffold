@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 project = "Project Docs"  # TODO(/onboard): your project name
 author = "Your Name"  # TODO(/onboard)
-project_copyright = "2026, Your Name"  # TODO(/onboard)
+project_copyright = "YEAR, Your Name"  # TODO(/onboard)
 
 extensions = [
     "sphinx.ext.autodoc",

@@ -53,9 +53,8 @@ If you prefer to set up manually instead of using `/onboard`:
 
 - [ ] Update `CLAUDE.md` — replace placeholder comments:
   - Project name and description (line 1 and 3)
-  - Verify commands with your actual build/test/lint commands
   - Corrections with any version-specific overrides for your stack
-- [ ] Update `CLAUDE.md` Skills section — remove references that don't apply to your project
+- [ ] Update `CLAUDE.md` Skills section — add project-specific skills/conventions as they emerge
 - [ ] Update `.devcontainer/devcontainer.json` — change the desktop-lite password, add/remove language features and extensions for your stack
 - [ ] Update `.devcontainer/post-create.sh` — add dependency installation for your stack
 - [ ] Update `.devcontainer/post-start.sh` — add commands that should run on each container start (Docker socket fix and Codespaces env overrides are included)

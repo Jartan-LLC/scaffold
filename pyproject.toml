@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 # TODO(/onboard): rename to your project's distribution name.
@@ -9,6 +9,9 @@ version = "0.0.0"
 description = "Project scaffold — replace during onboarding."
 readme = "README.md"
 requires-python = ">=3.12"
+# Ship whatever LICENSE* files exist; onboarding deletes the unchosen templates so
+# only the picked license ends up in the build (PEP 639).
+license-files = ["LICENSE*"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
@@ -35,18 +38,16 @@ docs = [
     "furo>=2025.12",     # theme (CalVer — date floor, no semver major to cap)
 ]
 
-[tool.setuptools]
-# Bundle only the chosen LICENSE, not all three LICENSE.* templates. Empty until
-# a fork renames one template to LICENSE (setuptools' default glob would ship all).
-license-files = ["LICENSE"]
+# src-layout: the wheel contains src/app (rename src/app/ to your package).
+# Hatchling ships the package's non-.py files (the py.typed PEP 561 marker)
+# automatically.
+[tool.hatch.build.targets.wheel]
+packages = ["src/app"]
 
-# src-layout: package code lives under src/. Rename src/app/ to your package.
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-# Ship the PEP 561 marker so installers/type-checkers see the package as typed.
-"*" = ["py.typed"]
+# Keep the sdist to source + tests, so conftest.py and its fixtures ship
+# consistently — not dev tooling like .github/ or .devcontainer/.
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests"]
 
 [tool.ruff]
 target-version = "py312"

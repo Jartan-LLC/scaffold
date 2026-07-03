@@ -4,7 +4,11 @@ import json
 import logging
 import sys
 
+import pytest
+
 from app.log import JsonFormatter, PlainFormatter, setup_logging
+
+pytestmark = pytest.mark.unit
 
 
 def _record(msg: str, name: str = "app.test") -> logging.LogRecord:
@@ -39,6 +43,7 @@ def test_setup_logging_plain_configures_root() -> None:
     root = logging.getLogger()
     assert root.level == logging.DEBUG
     assert root.handlers
+    assert isinstance(root.handlers[0].formatter, PlainFormatter)
 
 
 def test_setup_logging_json_uses_json_formatter() -> None:
