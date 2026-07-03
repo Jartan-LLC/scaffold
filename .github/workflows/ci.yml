@@ -96,6 +96,17 @@ jobs:
       - run: python -m build
       - run: python -m twine check dist/*
 
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Audit dependencies for known CVEs
+        uses: pypa/gh-action-pip-audit@1220774d901786e6f652ae159f7b6bc8fea6d266 # v1.1.0
+        with:
+          inputs: .
+
   # Integration tests against a docker-compose stack, with coverage uploaded as an
   # artifact. Uncomment once you add a docker-compose.test.yml (service `app`) and a
   # Dockerfile test target, and add `pytest-cov` to the dev extras. Then add
@@ -139,12 +150,12 @@ jobs:
     if: always()
     # When you uncomment integration-tests / docker above, add them to BOTH the
     # needs list and the results array below.
-    needs: [lint, typecheck, test, build]
+    needs: [lint, typecheck, test, build, audit]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - run: |
-          results=("${{ needs.lint.result }}" "${{ needs.typecheck.result }}" "${{ needs.test.result }}" "${{ needs.build.result }}")
+          results=("${{ needs.lint.result }}" "${{ needs.typecheck.result }}" "${{ needs.test.result }}" "${{ needs.build.result }}" "${{ needs.audit.result }}")
           for r in "${results[@]}"; do
             if [[ "$r" != "success" && "$r" != "skipped" ]]; then
               echo "Check failed: $r"
