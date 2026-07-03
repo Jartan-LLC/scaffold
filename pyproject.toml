@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# TODO(/onboard): rename to your project's distribution name.
+name = "app"
+version = "0.0.0"
+description = "Project scaffold — replace during onboarding."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+# The exact toolchain CI runs. Delete this whole file if the project isn't Python.
+dev = [
+    "ruff",    # linter + formatter
+    "pytest",  # test runner
+    "pyright", # static type checker
+]
+
+# src-layout: package code lives under src/. Rename src/app/ to your package.
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+markers = [
+    "unit: fast in-process test with no external services",
+    "integration: needs the docker-compose stack (see the commented integration-tests job in ci.yml)",
+]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
