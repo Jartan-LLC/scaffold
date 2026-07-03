@@ -33,6 +33,11 @@ jobs:
       - run: ruff format --check .
       - run: codespell
 
+      - name: Markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@fa0cd0f1a052f54da593c83860f2292982f5d142 # v23.2.0
+        with:
+          globs: "**/*.md"
+
       # Node/JS (secondary) — uncomment after adding package.json + committing a lockfile.
       # `prettier --check` is the generic part; drop `astro check` unless you use Astro.
       # - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9

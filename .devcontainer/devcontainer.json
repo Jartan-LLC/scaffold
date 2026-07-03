@@ -42,6 +42,7 @@
         "GitHub.vscode-pull-request-github",
         "ms-azuretools.vscode-docker",
         "esbenp.prettier-vscode",
+        "DavidAnson.vscode-markdownlint",
         "eamodio.gitlens"
       ],
       "settings": {

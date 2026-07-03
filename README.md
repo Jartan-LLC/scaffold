@@ -78,7 +78,7 @@ If you prefer to set up manually instead of using `/onboard`:
   - `APP_ID` — GitHub App ID
   - `APP_PRIVATE_KEY` — GitHub App private key
   - **GitHub App setup**:
-    1. Create a GitHub App at https://github.com/settings/apps
+    1. Create a GitHub App at <https://github.com/settings/apps>
     2. Under Permissions, grant Contents, Issues, and Pull Requests (Read & Write)
     3. Under Webhook, uncheck "Active" (not needed for this workflow)
     4. Install the app on your repo
