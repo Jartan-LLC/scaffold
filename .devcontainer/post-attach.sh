@@ -22,6 +22,7 @@ process.stdin.on("data", (d) => (input += d));
 process.stdin.on("end", () => {
   let plugins = [];
   try { plugins = JSON.parse(input); } catch (e) {}
+  if (!Array.isArray(plugins)) plugins = [];
   for (const p of plugins) {
     if (p && p.id) console.log(p.id, p.scope || "user");
   }
