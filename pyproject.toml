@@ -27,8 +27,42 @@ where = ["src"]
 target-version = "py312"
 line-length = 100
 
+# Comprehensive lint: bugs, security, perf, modernization, imports, naming.
+# `ruff format` owns formatting, so line length (E501) is left to it.
 [tool.ruff.lint]
-select = ["E", "F", "I", "W", "B", "UP", "SIM"]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort (import sorting)
+    "N",        # pep8-naming
+    "UP",       # pyupgrade (modern syntax)
+    "B",        # flake8-bugbear (likely bugs)
+    "A",        # flake8-builtins (shadowing builtins)
+    "C4",       # flake8-comprehensions
+    "DTZ",      # flake8-datetimez (tz-aware datetimes)
+    "T20",      # flake8-print (no stray print)
+    "PT",       # flake8-pytest-style
+    "RET",      # flake8-return
+    "SIM",      # flake8-simplify
+    "TID",      # flake8-tidy-imports
+    "PTH",      # flake8-use-pathlib
+    "PERF",     # perflint
+    "FURB",     # refurb (more modernization)
+    "PIE",      # flake8-pie
+    "ARG",      # unused arguments
+    "LOG", "G", # logging correctness
+    "ASYNC",    # async gotchas
+    "S",        # flake8-bandit (security)
+    "PL",       # pylint (C/E/R/W)
+    "RUF",      # ruff-specific
+]
+ignore = [
+    "E501", # line length is enforced by the formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]                 # allow re-exports
+"tests/**" = ["S101", "ARG", "PLR2004"]  # asserts, fixture args, magic values
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -41,4 +75,5 @@ markers = [
 [tool.pyright]
 include = ["src", "tests"]
 pythonVersion = "3.12"
-typeCheckingMode = "basic"
+# "standard" is pyright's default; bump to "strict" for the most thorough checks.
+typeCheckingMode = "standard"
