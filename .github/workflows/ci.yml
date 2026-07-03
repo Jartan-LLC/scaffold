@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -23,7 +23,7 @@ jobs:
 
       # TODO: Add your lint/format commands
       # Example (Python):
-      # - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      # - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
       #   with:
       #     python-version: "3.12"
       # - run: pip install ruff && ruff check . && ruff format --check .
@@ -33,14 +33,17 @@ jobs:
       # - run: npm ci && npm run lint
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # Uncomment to skip tests when lint fails — saves CI time on expensive
+    # suites, at the cost of not seeing lint and test failures in one run.
+    # needs: lint
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # TODO: Add your test commands
       # Example (Python):
-      # - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      # - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
       #   with:
       #     python-version: "3.12"
       # - run: pip install -e '.[dev]' && pytest
@@ -52,7 +55,7 @@ jobs:
   check:
     if: always()
     needs: [lint, test]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - run: |

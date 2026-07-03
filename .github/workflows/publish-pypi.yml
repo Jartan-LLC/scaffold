@@ -1,0 +1,47 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      # TODO: Fail the release if the git tag doesn't match your package version.
+      # Uncomment and point `ver=` at wherever your version is declared, e.g.
+      # src/PACKAGE/__init__.py (`__version__ = "..."`) or pyproject.toml.
+      # - name: Verify tag matches package version
+      #   run: |
+      #     tag="${GITHUB_REF_NAME#v}"
+      #     ver="$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/PACKAGE/__init__.py)"
+      #     if [ "$tag" != "$ver" ]; then
+      #       echo "tag '$tag' does not match __version__ '$ver'"
+      #       exit 1
+      #     fi
+
+      - run: pip install build twine
+
+      - run: python -m build
+
+      - run: python -m twine check dist/*
+
+      - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
