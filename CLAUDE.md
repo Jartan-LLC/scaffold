@@ -8,6 +8,7 @@
 - Read README.md and relevant docs before modifying unfamiliar code
 - Run Verify commands before declaring work done
 - Update docs and skills alongside code changes
+- Write Google-style docstrings for public modules, classes, and functions (enforced by ruff `D`) and full type annotations (enforced by pyright `strict`)
 - Write plans to `.claude/workspace/` in the project root for non-trivial changes
 
 ### Anti-patterns

@@ -36,6 +36,7 @@ select = [
     "F",        # pyflakes
     "I",        # isort (import sorting)
     "N",        # pep8-naming
+    "D",        # pydocstyle (docstring discipline; convention set below)
     "UP",       # pyupgrade (modern syntax)
     "B",        # flake8-bugbear (likely bugs)
     "A",        # flake8-builtins (shadowing builtins)
@@ -62,8 +63,13 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]                 # allow re-exports
-"tests/**" = ["S101", "ARG", "PLR2004"]  # asserts, fixture args, magic values
+"__init__.py" = ["F401"]                      # allow re-exports
+"tests/**" = ["S101", "ARG", "PLR2004", "D"]  # asserts, fixtures, magic values, docstrings
+
+[tool.ruff.lint.pydocstyle]
+# Google-style docstrings; this also disables the D rules that conflict with the
+# formatter and the mutually-incompatible D203/D211 and D212/D213 pairs.
+convention = "google"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -76,8 +82,9 @@ markers = [
 [tool.pyright]
 include = ["src", "tests"]
 pythonVersion = "3.12"
-# "standard" is pyright's default; bump to "strict" for the most thorough checks.
-typeCheckingMode = "standard"
+# "strict" is the most thorough; drop to "standard" (pyright's default) if
+# untyped third-party deps get noisy.
+typeCheckingMode = "strict"
 
 [tool.codespell]
 # Skip generated/legal/vendored text. Add false positives via:
