@@ -35,6 +35,8 @@ node_modules/
 # Tests — not needed in the runtime image
 tests/
 
-# Docs — keep README.md (pyproject `readme` points at it)
+# Docs — keep README.md (pyproject `readme` points at it). `*.md` only matches
+# the context root, so exclude the docs tree explicitly.
 *.md
+docs/
 !README.md

@@ -19,10 +19,9 @@ jobs:
           target: minor
           merge-method: squash
           use-github-auto-merge: true
-          # Don't auto-merge these — review manually. Docs stack (sphinx/myst/furo)
-          # is version-coupled + mid-ecosystem-transition; python is the base image.
-          exclude: |
-            python
-            sphinx
-            myst-parser
-            furo
+          # python's base-image guard lives in dependabot.yml (it ignores
+          # semver-minor/major), so no python PR reaches here — this is a backstop.
+          # Comma form is required: the action splits `exclude` on commas/semicolons
+          # only, so a YAML block scalar collapses to one string that matches nothing,
+          # silently disabling every exclusion.
+          exclude: python

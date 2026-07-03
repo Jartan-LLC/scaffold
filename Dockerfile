@@ -6,6 +6,10 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Create the non-root user up front so COPY can assign ownership directly —
+# avoids a `chown -R` sweep that re-runs on every source change.
+RUN useradd --create-home --uid 1000 appuser
+
 # Install the package. Copy only what the build needs first, for layer caching.
 # src-layout: pyproject + src/ must both be present before `pip install .`.
 COPY pyproject.toml README.md ./
@@ -13,10 +17,7 @@ COPY src/ ./src/
 RUN pip install --no-cache-dir .
 
 # Copy the rest of the project (respects .dockerignore).
-COPY . .
-
-# Run as a non-root user.
-RUN useradd --create-home --uid 1000 appuser && chown -R appuser:appuser /app
+COPY --chown=appuser:appuser . .
 USER appuser
 
 # TODO: set your start command, e.g.

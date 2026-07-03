@@ -96,8 +96,10 @@ class PlainFormatter(logging.Formatter):
 class JsonFormatter(logging.Formatter):
     """One line of JSON per record, for log aggregators.
 
-    ``json.dumps`` escapes control chars in every string it encodes, so no
-    separate escaping pass is needed here.
+    ``json.dumps`` escapes control chars in the JSON it emits, but a consumer
+    that *decodes* a field (e.g. ``jq -r '.exc'`` to a terminal) undoes that —
+    so the message and the traceback are escaped here too, keeping decoded
+    values injection-safe.
     """
 
     def format(self, record: logging.LogRecord) -> str:
@@ -117,7 +119,7 @@ class JsonFormatter(logging.Formatter):
             "message": record.getMessage().translate(_CONTROL_ESCAPES),
         }
         if record.exc_info:
-            payload["exc"] = self.formatException(record.exc_info)
+            payload["exc"] = self.formatException(record.exc_info).translate(_EXC_ESCAPES)
         return json.dumps(payload, default=str)
 
 

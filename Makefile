@@ -1,5 +1,5 @@
 # Task runner for the local dev loop. Run `make` or `make help` to list targets.
-.PHONY: help install lint fix typecheck test docs check all
+.PHONY: help install lint fix typecheck test test-integration docs check all
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
@@ -12,7 +12,7 @@ lint:  ## Lint without modifying: ruff, codespell, shellcheck, markdownlint
 	ruff format --check .
 	codespell
 	find . -name "*.sh" -not -path "*/.git/*" -not -path "*/node_modules/*" -not -path "*/vendor/*" -print0 | xargs -r -0 shellcheck
-	npx --yes markdownlint-cli2
+	npx --yes markdownlint-cli2@0.23.0
 
 fix:  ## Auto-format and apply ruff's safe fixes
 	ruff format .
@@ -21,8 +21,11 @@ fix:  ## Auto-format and apply ruff's safe fixes
 typecheck:  ## Static type check (pyright, strict)
 	pyright
 
-test:  ## Run the test suite
-	pytest
+test:  ## Run the unit suite (matches CI: excludes integration-marked tests)
+	pytest -m "not integration"
+
+test-integration:  ## Run only integration-marked tests
+	pytest -m integration
 
 docs:  ## Build the docs site, warnings-as-errors (needs the docs extra)
 	sphinx-build -W -b html docs docs/_build/html

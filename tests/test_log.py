@@ -3,8 +3,20 @@
 import json
 import logging
 import sys
+from collections.abc import Iterator
+
+import pytest
 
 from app.log import JsonFormatter, PlainFormatter, setup_logging
+
+
+@pytest.fixture(autouse=True)
+def _restore_root_logger() -> Iterator[None]:  # pyright: ignore[reportUnusedFunction]  # invoked by pytest
+    root = logging.getLogger()
+    level, handlers = root.level, root.handlers[:]
+    yield
+    root.setLevel(level)
+    root.handlers[:] = handlers
 
 
 def _record(msg: str, name: str = "app.test") -> logging.LogRecord:
@@ -56,3 +68,23 @@ def test_plain_formatter_escapes_exception_text() -> None:
     assert "\x1b" not in out  # ESC in the exception message is escaped
     assert "\\x1b" in out
     assert "\n" in out  # multi-line traceback stays readable
+
+
+def test_plain_formatter_escapes_stack_info() -> None:
+    record = _record("op")
+    record.stack_info = "Stack (most recent call last):\n  frame\x1b[2Jhidden"
+    out = PlainFormatter().format(record)
+    assert "\x1b" not in out  # ESC smuggled into stack info is escaped
+    assert "\\x1b" in out
+    assert "\n" in out  # stack newlines stay readable
+
+
+def test_json_formatter_escapes_exception_text() -> None:
+    try:
+        raise ValueError("boom\x1bevil")
+    except ValueError:
+        exc_info = sys.exc_info()
+    record = logging.LogRecord("app.test", logging.ERROR, __file__, 1, "op failed", None, exc_info)
+    payload = json.loads(JsonFormatter().format(record))
+    assert "\x1b" not in payload["exc"]  # decoded exc field is injection-safe
+    assert "\\x1b" in payload["exc"]

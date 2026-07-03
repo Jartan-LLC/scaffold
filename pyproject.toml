@@ -109,4 +109,4 @@ typeCheckingMode = "strict"
 [tool.codespell]
 # Skip generated/legal/vendored text. Add false positives via:
 #   ignore-words-list = "word1,word2"
-skip = "./.git,./.venv,./node_modules,./dist,./build,*.egg-info,*.lock,LICENSE*"
+skip = "./.git,./.venv,./node_modules,./dist,./build,./docs/_build,*.egg-info,*.lock,LICENSE*"

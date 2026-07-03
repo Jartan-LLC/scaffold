@@ -65,12 +65,13 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Update `.github/SECURITY.md` — set supported versions and response timeline
 - [ ] Update `.github/CODE_OF_CONDUCT.md` — set the enforcement contact (replace `[INSERT CONTACT METHOD]`)
 - [ ] Update `.github/ISSUE_TEMPLATE/config.yml` — replace `ORG/REPO` in contact link URLs with your GitHub org and repo name
+- [ ] Update `CHANGELOG.md` — replace `ORG/REPO` in the `[Unreleased]` link with your GitHub org and repo (otherwise the link 404s)
 - [ ] Update `.github/dependabot.yml` — remove ecosystems you don't use, add ones you need, adjust directories if not at root
 - [ ] Create the `dependency` label — `gh label create dependency --color 0366d6 --description "Dependency updates"` (required by dependabot config)
-- [ ] Rename the Python package — `pyproject.toml` `name` and the `src/app/` directory (`/onboard` does this). Not a Python project? Delete `pyproject.toml`, `src/`, `tests/`, and the Python jobs in `.github/workflows/ci.yml` instead.
+- [ ] Rename the Python package — set `pyproject.toml` `name` and rename the `src/app/` directory (`/onboard` does this). **Not a Python project?** Delete `pyproject.toml`, `src/`, `tests/`, `Makefile`, `.pre-commit-config.yaml`, `docs/`, and `.readthedocs.yaml.example`; in `.github/workflows/ci.yml` remove the `typecheck`/`test`/`build`/`audit`/`docs` jobs (and their `check.needs` + results entries), and delete the Python *steps* inside `lint` — keep its shellcheck and markdownlint steps, which aren't Python-specific.
 - [ ] Replace `tests/test_smoke.py` with real tests — it only exists so the `test` CI job is green out of the box
-- [ ] Review `.github/workflows/ci.yml` — the Python `lint`/`typecheck`/`test`/`build`/`docs` jobs are ACTIVE and pass against the shipped stubs. Delete jobs you don't need (and their entries in the `check` aggregator); uncomment the `node`/`docker`/`integration-tests` jobs if you use them, adding each to `check.needs` and the results array
-- [ ] Docs — set `project`/`author`/`project_copyright` in `docs/conf.py`; after renaming the package, uncomment the `automodule` block in `docs/reference.md` and point it at your modules (`/onboard` does this)
+- [ ] Review `.github/workflows/ci.yml` — the `lint`/`typecheck`/`test`/`build`/`audit`/`docs` jobs are ACTIVE and pass against the shipped stubs. Delete jobs you don't need (and their entries in the `check` aggregator). To enable extras, uncomment the `docker`/`integration-tests` jobs and add each to `check.needs` + the results array; the Node checks are commented *steps inside the `lint` job* (uncomment them there — no `check` change needed)
+- [ ] Docs — set `project`/`author`/`project_copyright` in `docs/conf.py`; update the `pip install app` line in `docs/getting-started.md` to the renamed package; after renaming the package, uncomment the `automodule` block in `docs/reference.md` and point it at your modules (`/onboard` does this)
 - [ ] Create a `LICENSE` file — rename one of the included templates (`LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`) to `LICENSE`, fill in `[year]` and `[fullname]`, delete the others
 - [ ] Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match your stack
 - [ ] Add secrets to your repo:
