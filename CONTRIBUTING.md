@@ -4,10 +4,11 @@
 
 ```bash
 pip install -e '.[dev]'
+pre-commit install  # optional: run the lint hooks on every commit
 ```
 
-Requires Python 3.12+. `make lint`/`make check` also shell out to Node (for
-markdownlint) — the devcontainer includes it; install Node if running outside it.
+Requires Python 3.12+. `make lint` runs the [pre-commit](https://pre-commit.com/)
+hooks; some need Docker (actionlint) and Node (markdownlint) — the devcontainer has both.
 
 ## Verify before opening a PR
 

@@ -2,7 +2,7 @@
 #   1. Rename this file to `.readthedocs.yaml`.
 #   2. Import the repo at https://readthedocs.org.
 # This is the versioned alternative to the single-version GitHub Pages deploy in
-# .github/workflows/pages.yml — pick one.
+# .github/workflows/pages.yml.example — pick one.
 version: 2
 
 build:

@@ -7,13 +7,8 @@ help:  ## Show available targets
 install:  ## Install the package with its dev extras
 	pip install -e '.[dev]'
 
-lint:  ## Lint without modifying: ruff, codespell, shellcheck, markdownlint
-	ruff check .
-	ruff format --check .
-	codespell
-	find . -name "*.sh" -not -path "*/.git/*" -not -path "*/node_modules/*" -not -path "*/vendor/*" -print0 | xargs -r -0 shellcheck
-	# Pinned here and (separately) as a SHA in ci.yml's action — bump both together.
-	npx --yes markdownlint-cli2@0.23.0
+lint:  ## Lint all files via pre-commit (ruff, codespell, shellcheck, markdownlint, actionlint, zizmor, hygiene)
+	pre-commit run --all-files
 
 fix:  ## Auto-format and apply ruff's safe fixes
 	ruff format .

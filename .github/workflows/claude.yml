@@ -36,8 +36,14 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
+          # Scope the token to what Claude needs (matches the App grants in README).
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
 
-      - name: Checkout repository
+      # Token is used by claude-code-action to push commits; no artifacts are
+      # uploaded, so persisting it is safe.
+      - name: Checkout repository # zizmor: ignore[artipacked]
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
