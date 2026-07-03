@@ -37,7 +37,7 @@
 
 ## Verify
 
-Run before declaring work done — these mirror `.github/workflows/ci.yml`:
+These mirror `.github/workflows/ci.yml` — run them before declaring work done:
 
 ```bash
 ruff check .           # lint
@@ -47,6 +47,6 @@ pyright                # type check
 pytest                 # tests
 ```
 
-Also `shellcheck` any changed `*.sh`. Packaging checks (`python -m build`, `twine check`)
-run in CI on `v*` tags. If this isn't a Python project, replace the commands above with
-your stack's lint/format/typecheck/test equivalents.
+Also `shellcheck` any changed `*.sh`; packaging (`python -m build`, `twine check`) runs in CI on `v*` tags.
+
+<!-- Not a Python project? Swap the commands above for your stack's lint/format/typecheck/test equivalents. -->
