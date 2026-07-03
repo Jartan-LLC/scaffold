@@ -34,10 +34,17 @@
 # Binary files
 *.png binary
 *.jpg binary
+*.jpeg binary
 *.gif binary
+*.webp binary
 *.ico binary
 *.woff binary
 *.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.zip binary
+*.gz binary
 
 # Lock files — treat as binary for cleaner diffs
 *-lock.json binary
