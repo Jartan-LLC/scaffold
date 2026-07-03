@@ -31,6 +31,7 @@ jobs:
       - run: pip install -e '.[dev]'
       - run: ruff check .
       - run: ruff format --check .
+      - run: codespell
 
       # Node/JS (secondary) — uncomment after adding package.json + committing a lockfile.
       # `prettier --check` is the generic part; drop `astro check` unless you use Astro.

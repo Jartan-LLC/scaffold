@@ -14,9 +14,10 @@ dependencies = []
 [project.optional-dependencies]
 # The exact toolchain CI runs. Delete this whole file if the project isn't Python.
 dev = [
-    "ruff",    # linter + formatter
-    "pytest",  # test runner
-    "pyright", # static type checker
+    "ruff",      # linter + formatter
+    "pytest",    # test runner
+    "pyright",   # static type checker
+    "codespell", # spell checker (code, comments, docs)
 ]
 
 # src-layout: package code lives under src/. Rename src/app/ to your package.
@@ -77,3 +78,8 @@ include = ["src", "tests"]
 pythonVersion = "3.12"
 # "standard" is pyright's default; bump to "strict" for the most thorough checks.
 typeCheckingMode = "standard"
+
+[tool.codespell]
+# Skip generated/legal/vendored text. Add false positives via:
+#   ignore-words-list = "word1,word2"
+skip = "./.git,./.venv,./node_modules,./dist,./build,*.egg-info,*.lock,LICENSE*"
