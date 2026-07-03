@@ -37,16 +37,13 @@
 
 ## Verify
 
-These mirror `.github/workflows/ci.yml` — run them before declaring work done:
+Run before declaring work done (mirrors `.github/workflows/ci.yml`):
 
 ```bash
-ruff check .           # lint
-ruff format --check .  # formatting
-codespell              # spelling
-pyright                # type check
-pytest                 # tests
+make check   # lint (ruff + codespell) + typecheck (pyright) + test (pytest)
 ```
 
+Individual targets: `make lint`, `make fix`, `make typecheck`, `make test` (`make help` lists them).
 Also `shellcheck` any changed `*.sh`; packaging (`python -m build`, `twine check`) runs in CI on `v*` tags.
 
-<!-- Not a Python project? Swap the commands above for your stack's lint/format/typecheck/test equivalents. -->
+<!-- Not a Python project? Point the Makefile targets at your stack's lint/format/typecheck/test equivalents. -->
