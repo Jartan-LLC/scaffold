@@ -88,7 +88,7 @@ If you prefer to set up manually instead of using `/onboard`:
 
 - [ ] Set up publishing — the release/publish workflows are opt-in: nothing runs until you push a `v*` tag.
   - **`release.yml`** — creates a GitHub Release with auto-generated notes on every `v*` tag. Language-agnostic; keep it even if you publish no package or image.
-  - **`publish-pypi.yml`** — a stub `pyproject.toml` is included (rename the package first). Create a `pypi` [Environment](https://docs.github.com/actions/deployment/targeting-different-environments) and configure [PyPI Trusted Publishing (OIDC)](https://docs.pypi.org/trusted-publishers/) for it — no token secret. Optionally uncomment the tag-vs-version check.
+  - **`publish-pypi.yml`** — a stub `pyproject.toml` is included (rename the package first). Create the `pypi` [Environment](https://docs.github.com/actions/deployment/targeting-different-environments) — `gh api -X PUT repos/{owner}/{repo}/environments/pypi` (this also clears the "environment `pypi` is not valid" warning the GitHub Actions VS Code extension shows until it exists) — then configure [PyPI Trusted Publishing (OIDC)](https://docs.pypi.org/trusted-publishers/) for it (no token secret). Optionally uncomment the tag-vs-version check.
   - **`publish-docker.yml`** — a stub `Dockerfile` is included (give it a real entrypoint). Publishes multi-arch images to `ghcr.io/OWNER/REPO` using the built-in `GITHUB_TOKEN` — no secret needed.
   - All trigger on `v*` tags. `publish-pypi.yml` still fails until you rename the package and configure PyPI Trusted Publishing; delete whichever publish workflow (and its stub) you don't need.
 - [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
