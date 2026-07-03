@@ -28,10 +28,12 @@ Open a PR from `template-update` so CI runs before the changes land.
 |------|----------|
 | `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite, Claude Code CLI, codebase-memory-mcp (structural code graph) |
 | `.claude/` | Claude Code plugins and configuration — dev workflow, code review, session memory, Python patterns, recursive development, token efficiency |
-| `.github/` | CI pipeline (active Python lint/typecheck/test/build + dependency audit; Node & Docker jobs commented), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, publish/release + OpenSSF Scorecard workflows, issue/PR + code-of-conduct + security templates |
+| `.github/` | CI pipeline (active Python lint/typecheck/test/build + dependency audit + docs build; Node & Docker jobs commented), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, publish/release + OpenSSF Scorecard workflows, issue/PR + code-of-conduct + security templates |
 | `pyproject.toml` | Python packaging + tool config (ruff, pytest, pyright, codespell) — minimal src-layout stub; rename or delete |
 | `src/app/`, `tests/` | Placeholder package (CLI entry point + logging setup, PEP 561 typed) + smoke/logging tests so CI is green on first fork |
-| `Makefile`, `.pre-commit-config.yaml` | Task runner (`make lint`/`test`/`check`) + local git hooks (ruff, codespell) |
+| `Makefile`, `.pre-commit-config.yaml` | Task runner (`make lint`/`test`/`check`/`docs`) + local git hooks (ruff, codespell) |
+| `docs/`, `.readthedocs.yaml.example` | Sphinx docs site (Markdown via MyST, API reference from docstrings); `make docs` builds it. Publish via `pages.yml` (GitHub Pages) or ReadTheDocs |
+| `AGENTS.md` | Symlink to `CLAUDE.md` so vendor-neutral agent tools (Cursor, Copilot, …) read the same rules |
 | `Dockerfile`, `.dockerignore` | Minimal Python image stub — pairs with `publish-docker.yml` |
 | `CHANGELOG.md`, `CONTRIBUTING.md` | Keep-a-Changelog skeleton and a Python contributor guide |
 | `.env.example`, `.prettierrc` | Env-var template and Prettier config (for JS/TS work) |
@@ -65,7 +67,8 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Create the `dependency` label — `gh label create dependency --color 0366d6 --description "Dependency updates"` (required by dependabot config)
 - [ ] Rename the Python package — `pyproject.toml` `name` and the `src/app/` directory (`/onboard` does this). Not a Python project? Delete `pyproject.toml`, `src/`, `tests/`, and the Python jobs in `.github/workflows/ci.yml` instead.
 - [ ] Replace `tests/test_smoke.py` with real tests — it only exists so the `test` CI job is green out of the box
-- [ ] Review `.github/workflows/ci.yml` — the Python `lint`/`typecheck`/`test`/`build` jobs are ACTIVE and pass against the shipped stubs. Delete jobs you don't need (and their entries in the `check` aggregator); uncomment the `node`/`docker`/`integration-tests` jobs if you use them, adding each to `check.needs` and the results array
+- [ ] Review `.github/workflows/ci.yml` — the Python `lint`/`typecheck`/`test`/`build`/`docs` jobs are ACTIVE and pass against the shipped stubs. Delete jobs you don't need (and their entries in the `check` aggregator); uncomment the `node`/`docker`/`integration-tests` jobs if you use them, adding each to `check.needs` and the results array
+- [ ] Docs — set `project`/`author`/`project_copyright` in `docs/conf.py`; after renaming the package, uncomment the `automodule` block in `docs/reference.md` and point it at your modules (`/onboard` does this)
 - [ ] Create a `LICENSE` file — rename one of the included templates (`LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`) to `LICENSE`, fill in `[year]` and `[fullname]`, delete the others
 - [ ] Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match your stack
 - [ ] Add secrets to your repo:
@@ -89,6 +92,7 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
 - [ ] Enable CodeQL default setup (Settings > Security > Code scanning)
 - [ ] OpenSSF Scorecard (`.github/workflows/scorecard.yml`) needs a **public** repo to publish its score/badge — delete the workflow if the repo is private
+- [ ] Publish docs (optional) — **GitHub Pages**: uncomment `.github/workflows/pages.yml` and set Settings > Pages > Source = "GitHub Actions" (single-version). **Versioned**: rename `.readthedocs.yaml.example` → `.readthedocs.yaml` and import the repo at readthedocs.org. Pick one; the docs *build* is already checked on every PR either way
 - [ ] Enable secret scanning with push protection (Settings > Security > Secret Protection)
 - [ ] Configure branch ruleset for `main` — require PR reviews, require CI to pass, block force pushes
 - [ ] Enable auto-merge (Settings > General > Allow auto-merge) — Dependabot minor/patch PRs auto-merge after CI passes
