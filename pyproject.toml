@@ -26,6 +26,14 @@ dev = [
     "codespell",  # spell checker (code, comments, docs)
     "pre-commit", # git hook runner (see .pre-commit-config.yaml)
 ]
+# Docs site toolchain (Sphinx + MyST + furo). Install with `pip install -e '.[docs]'`.
+# Pinned deliberately: chose Sphinx over MkDocs because the MkDocs ecosystem is
+# mid-transition (MkDocs 2.0 drops plugins); Sphinx is stable, but pin anyway.
+docs = [
+    "sphinx>=9,<10",     # site generator (reads google docstrings via napoleon)
+    "myst-parser>=5,<6", # author docs in Markdown, not reStructuredText
+    "furo>=2025.12",     # theme (CalVer — date floor, no semver major to cap)
+]
 
 # src-layout: package code lives under src/. Rename src/app/ to your package.
 [tool.setuptools.packages.find]

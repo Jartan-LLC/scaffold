@@ -43,7 +43,8 @@ Run before declaring work done (mirrors `.github/workflows/ci.yml`):
 make check   # lint (ruff + codespell) + typecheck (pyright) + test (pytest)
 ```
 
-Individual targets: `make lint`, `make fix`, `make typecheck`, `make test` (`make help` lists them).
-Also `shellcheck` any changed `*.sh`; packaging (`python -m build`, `twine check`) runs in CI on `v*` tags.
+Individual targets: `make lint`, `make fix`, `make typecheck`, `make test`, `make docs` (`make help` lists them).
+For doc changes run `make docs` (after `pip install -e '.[docs]'`). Also `shellcheck` any changed `*.sh`;
+packaging (`python -m build`, `twine check`) runs in CI on `v*` tags.
 
 <!-- Not a Python project? Point the Makefile targets at your stack's lint/format/typecheck/test equivalents. -->

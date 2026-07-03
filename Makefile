@@ -1,5 +1,5 @@
 # Task runner wrapping the Verify commands. Run `make` or `make help` for the list.
-.PHONY: help install lint fix typecheck test check all
+.PHONY: help install lint fix typecheck test docs check all
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
@@ -21,6 +21,9 @@ typecheck:  ## Static type check (pyright strict)
 
 test:  ## Run the test suite
 	pytest
+
+docs:  ## Build the docs site (strict); needs `pip install -e '.[docs]'`
+	sphinx-build -W -b html docs docs/_build/html
 
 check: lint typecheck test  ## Run every CI check locally
 
