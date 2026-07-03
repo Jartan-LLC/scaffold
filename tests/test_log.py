@@ -2,13 +2,30 @@
 
 import json
 import logging
+import os
 import sys
+import time
+from collections.abc import Iterator
 
 import pytest
 
 from app.log import JsonFormatter, PlainFormatter, setup_logging
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.fixture
+def _non_utc_tz() -> Iterator[None]:  # pyright: ignore[reportUnusedFunction]  # invoked by pytest
+    """Force a non-UTC local zone so the UTC-timestamp assertions actually bite."""
+    original = os.environ.get("TZ")
+    os.environ["TZ"] = "America/New_York"
+    time.tzset()
+    yield
+    if original is None:
+        os.environ.pop("TZ", None)
+    else:
+        os.environ["TZ"] = original
+    time.tzset()
 
 
 def _record(msg: str, name: str = "app.test") -> logging.LogRecord:
@@ -50,11 +67,12 @@ def test_json_formatter_escapes_message_newline() -> None:
     assert payload["message"] == "line1\\nline2"
 
 
+@pytest.mark.usefixtures("_non_utc_tz")
 def test_json_formatter_uses_utc_timestamps() -> None:
     record = _record("hi")
     record.created = 1609459200.0  # 2021-01-01T00:00:00Z
     payload = json.loads(JsonFormatter().format(record))
-    assert payload["timestamp"].startswith("2021-01-01T00:00:00")  # UTC regardless of host TZ
+    assert payload["timestamp"].startswith("2021-01-01T00:00:00")  # UTC, not host local time
 
 
 def test_setup_logging_plain_configures_root() -> None:
@@ -112,8 +130,9 @@ def test_json_formatter_emits_escaped_stack_info() -> None:
     assert "\\x1b" in payload["stack"]
 
 
+@pytest.mark.usefixtures("_non_utc_tz")
 def test_plain_formatter_uses_utc_timestamps() -> None:
     record = _record("hi")
     record.created = 1609459200.0  # 2021-01-01T00:00:00Z
     out = PlainFormatter().format(record)
-    assert out.startswith("2021-01-01 00:00:00")  # UTC regardless of host TZ
+    assert out.startswith("2021-01-01 00:00:00")  # UTC, not the host's local time

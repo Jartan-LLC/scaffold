@@ -12,7 +12,7 @@ RUN useradd --create-home --uid 1000 appuser
 
 # Install the package. Copy only what the build needs first, for layer caching.
 # src-layout: pyproject + src/ must both be present before `pip install .`.
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md LICENSE* ./
 COPY src/ ./src/
 RUN pip install --no-cache-dir .
 

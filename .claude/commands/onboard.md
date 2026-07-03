@@ -30,12 +30,12 @@ Work through every Required checklist item that can be automated. Also:
 
 - Replace the template README with a project README
 - License: rename the chosen `LICENSE.<type>` file to `LICENSE`, delete the others, and fill in `[year]` and `[fullname]`. Available: `LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`. If the user wants a different license or proprietary, delete all three and create the appropriate file.
-- Update `.devcontainer/devcontainer.json` — add/remove language features and extensions to match the chosen stack
+- Update `.devcontainer/devcontainer.json` — change the `desktop-lite` `password`, add/remove language features and extensions to match the chosen stack
 - Update `.devcontainer/post-create.sh` — add dependency installation for the chosen stack (e.g., `go mod download`, `cargo build`)
 - Update `.devcontainer/post-start.sh` — add commands that should run on each container start
 - Update `.gitignore` — add language-specific patterns for the chosen stack
 - Update `.editorconfig` — adjust formatting rules for the chosen language (e.g., tabs for Go)
-- If Python: rename the package stub — set `pyproject.toml` `name` + `description`, rename the `src/app/` directory to the import name (update `[tool.hatch.build.targets.wheel]` `packages` to match), and replace `tests/test_smoke.py` with a real test. If not Python: follow the README's **Not a Python project?** teardown (delete the Python artifacts, adapt `CONTRIBUTING.md`, trim the `ruff` pre-commit hook, prune the Python `ci.yml` jobs — the `lint` job stays)
+- If Python: rename the package stub — set `pyproject.toml` `name` + `description`, rename the `src/app/` directory to the import name (update `[tool.hatch.build.targets.wheel]` `packages` to match), fix the `prog=` and `python -m app` references in `src/app/__main__.py` (or replace that stub), and replace `tests/test_smoke.py` with a real test. If not Python: follow the README's **Not a Python project?** teardown (delete the Python artifacts, adapt `CONTRIBUTING.md`, trim the `ruff` pre-commit hook, prune the Python `ci.yml` jobs — the `lint` job stays)
 - The `Makefile` stays in every fork — it's the language-agnostic verify entry point. Point its `lint`/`typecheck`/`test`/`build` targets at the build/test/lint commands from the interview (keep `make check` as the aggregate gate); for a Python project the shipped targets already match, so only edit if the user's commands differ
 - Fill in `CHANGELOG.md` — replace `ORG/REPO` in the `[Unreleased]` link with the GitHub org/repo
 - Replace `ORG/REPO` in `.github/ISSUE_TEMPLATE/config.yml` contact links with the GitHub org/repo
