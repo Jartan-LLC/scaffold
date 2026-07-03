@@ -11,14 +11,10 @@ Requires Python 3.12+.
 ## Verify before opening a PR
 
 ```bash
-ruff check .
-ruff format --check .
-pyright
-pytest
+make check
 ```
 
-CI runs these same checks on every pull request (plus `shellcheck` and a
-`python -m build` / `twine check` packaging check). All must pass before merge.
+Runs the same checks CI does; all must pass before merge.
 
 ## Conventions
 

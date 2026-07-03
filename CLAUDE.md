@@ -41,14 +41,14 @@
 
 ## Verify
 
-Run before declaring work done (mirrors `.github/workflows/ci.yml`):
+Run `make check` before declaring work done — it runs every CI check (lint,
+typecheck, test, build, audit, docs):
 
 ```bash
-make check   # lint (ruff + codespell) + typecheck (pyright) + test (pytest)
+make check
 ```
 
-Individual targets: `make lint`, `make fix`, `make typecheck`, `make test`, `make docs` (`make help` lists them).
-For doc changes run `make docs` (after `pip install -e '.[docs]'`). Also `shellcheck` any changed `*.sh`;
-packaging (`python -m build`, `twine check`) runs in CI on `v*` tags.
+Individual targets (`make lint`, `make test`, `make docs`, …) speed up the inner
+loop; `make help` lists them.
 
 <!-- Not a Python project? Point the Makefile targets at your stack's lint/format/typecheck/test equivalents. -->
