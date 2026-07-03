@@ -9,20 +9,31 @@ version = "0.0.0"
 description = "Project scaffold — replace during onboarding."
 readme = "README.md"
 requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
 dependencies = []
 
 [project.optional-dependencies]
 # The exact toolchain CI runs. Delete this whole file if the project isn't Python.
 dev = [
-    "ruff",      # linter + formatter
-    "pytest",    # test runner
-    "pyright",   # static type checker
-    "codespell", # spell checker (code, comments, docs)
+    "ruff",       # linter + formatter
+    "pytest",     # test runner
+    "pyright",    # static type checker
+    "codespell",  # spell checker (code, comments, docs)
+    "pre-commit", # git hook runner (see .pre-commit-config.yaml)
 ]
 
 # src-layout: package code lives under src/. Rename src/app/ to your package.
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+# Ship the PEP 561 marker so installers/type-checkers see the package as typed.
+"*" = ["py.typed"]
 
 [tool.ruff]
 target-version = "py312"
@@ -73,7 +84,8 @@ convention = "google"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--strict-markers"
+addopts = "--strict-markers --strict-config"
+xfail_strict = true
 markers = [
     "unit: fast in-process test with no external services",
     "integration: needs the docker-compose stack (see the commented integration-tests job in ci.yml)",
