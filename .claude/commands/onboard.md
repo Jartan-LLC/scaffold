@@ -18,7 +18,7 @@ Read the post-fork checklist. This is the source of truth for what needs to chan
 
 ### 3. Interview
 
-Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), and any version corrections for training data. List the skills and agents that exist in `.claude/skills/` and `.claude/agents/` so the user can choose which to keep.
+Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, author/full name (for `LICENSE` + `docs/conf.py`), the Python package/import name if Python (for the `src/app` rename), the code-of-conduct enforcement contact, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), and any version corrections for training data. List the skills and agents that exist in `.claude/skills/` and `.claude/agents/` so the user can choose which to keep.
 
 ### 4. Confirm
 

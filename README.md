@@ -2,6 +2,8 @@
 
 Production-ready project scaffold with a containerized dev environment, GitHub automation, and Claude Code as a development workflow agent.
 
+**Python-first:** linting, typing, tests, packaging, Docker, and docs are wired up and active out of the box (Node/JS is a supported second). Using another stack? Everything Python is stubbed and clearly deletable — see the checklist below.
+
 ## Getting Started
 
 Run `/onboard` in Claude Code to set up this template for your project. It will interview you, configure all the files, and tell you which manual steps remain.
