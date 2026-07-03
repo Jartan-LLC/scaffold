@@ -1,9 +1,11 @@
-"""Placeholder test. Replace with real tests.
+"""Smoke test. Replace with real tests.
 
 Exists so `pytest` is green (exit 0, not exit 5 "no tests collected") on a fresh
-template, which keeps the CI `test` job passing out of the box.
+template, and proves the package imports and its CLI entry point runs.
 """
 
+from app.__main__ import main
 
-def test_placeholder() -> None:
-    assert True
+
+def test_cli_runs() -> None:
+    assert main([]) == 0
