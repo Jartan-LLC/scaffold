@@ -1,0 +1,40 @@
+# Git / CI / tooling
+.git
+.gitignore
+.gitattributes
+.editorconfig
+.github
+
+# Dev environment
+.devcontainer
+.claude
+.vscode
+.idea
+
+# Secrets / local env
+.env
+.env.*
+
+# Python caches / build artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+dist/
+build/
+*.egg-info/
+.venv/
+venv/
+
+# Node
+node_modules/
+.pnpm-store/
+
+# Tests — not needed in the runtime image
+tests/
+
+# Docs — keep README.md (pyproject `readme` points at it)
+*.md
+!README.md
