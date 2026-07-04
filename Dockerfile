@@ -4,6 +4,9 @@
 # containerized.
 FROM python:3.12-slim
 
+# Unbuffered stdout/stderr so logs aren't lost to block-buffering on a hard crash.
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
 # Create the non-root user up front so COPY can assign ownership directly —

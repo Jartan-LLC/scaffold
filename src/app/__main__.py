@@ -11,7 +11,7 @@ import logging
 import sys
 from collections.abc import Sequence
 
-from app.log import setup_logging
+from .log import setup_logging  # relative import: survives a package rename
 
 logger = logging.getLogger(__name__)
 
