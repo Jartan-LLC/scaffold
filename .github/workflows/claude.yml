@@ -70,7 +70,6 @@ jobs:
           plugins: |
             claudivis@grimoire
             gitwise@grimoire
-            memoria@grimoire
             praxis@grimoire
             pythonica@grimoire
             recursio@grimoire
