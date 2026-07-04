@@ -17,6 +17,8 @@ pytestmark = pytest.mark.unit
 @pytest.fixture
 def _non_utc_tz() -> Iterator[None]:  # pyright: ignore[reportUnusedFunction]  # invoked by pytest
     """Force a non-UTC local zone so the UTC-timestamp assertions actually bite."""
+    if not hasattr(time, "tzset"):  # tzset is Unix-only
+        pytest.skip("time.tzset() unavailable on this platform")
     original = os.environ.get("TZ")
     os.environ["TZ"] = "America/New_York"
     time.tzset()
@@ -59,6 +61,12 @@ def test_json_formatter_escapes_control_chars() -> None:
     payload = json.loads(JsonFormatter().format(_record("x\x1by")))
     assert "\x1b" not in payload["message"]
     assert "\\x1b" in payload["message"]
+
+
+def test_json_formatter_escapes_logger_name() -> None:
+    payload = json.loads(JsonFormatter().format(_record("hi", name="worker\x1bevil")))
+    assert "\x1b" not in payload["logger"]  # dynamic logger names can carry input
+    assert "\\x1b" in payload["logger"]
 
 
 def test_json_formatter_escapes_message_newline() -> None:

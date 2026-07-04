@@ -10,6 +10,7 @@
 - Run Verify commands before declaring work done
 - Update docs and skills alongside code changes
 - Write Google-style docstrings for public modules, classes, and functions (enforced by ruff `D`) and full type annotations (enforced by pyright `strict`)
+  <!-- Not a Python project? Swap this rule for your stack's docstring/typing conventions. -->
 - Write plans to `.claude/workspace/` in the project root for non-trivial changes
 
 ### Anti-patterns

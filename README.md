@@ -8,7 +8,7 @@ Production-ready project scaffold with a containerized dev environment, GitHub a
 
 Run `/onboard` in Claude Code to set up this template for your project. It will interview you, configure all the files, and tell you which manual steps remain.
 
-## Syncing template updates
+## Syncing Template Updates
 
 After you fork, you can still pull in later improvements to the template:
 
@@ -52,7 +52,7 @@ If you prefer to set up manually instead of using `/onboard`:
 ### Required
 
 - [ ] Update `CLAUDE.md` — replace placeholder comments:
-  - Project name and description (the `# Project Name` heading and the description line under it)
+  - Project name and description (the `# Project Name` heading and the `<!-- ONE LINE: … -->` comment under it)
   - Corrections with any version-specific overrides for your stack
 - [ ] Update `CLAUDE.md` Skills section — add project-specific skills/conventions as they emerge
 - [ ] Update `.devcontainer/devcontainer.json` — change the desktop-lite password, add/remove language features and extensions for your stack
@@ -67,10 +67,10 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Update `CHANGELOG.md` — replace `ORG/REPO` in the `[Unreleased]` link with your GitHub org and repo (otherwise the link 404s)
 - [ ] Update `.github/dependabot.yml` — remove ecosystems you don't use, add ones you need, adjust directories if not at root
 - [ ] Create the `dependency` label — `gh label create dependency --color 0366d6 --description "Dependency updates"` (required by dependabot config)
-- [ ] Rename the Python package — set `pyproject.toml` `name` + `description`, rename the `src/app/` directory, update `[tool.hatch.build.targets.wheel]` `packages` to match, and fix the `prog=`/`python -m app` references in `src/app/__main__.py` (`/onboard` does all this; skip the `packages` edit and `python -m build` fails). **Not a Python project?** Delete `pyproject.toml`, `src/`, `tests/`, the docs stack (`docs/`, `.readthedocs.yaml.example`, `.github/workflows/pages.yml.example`), `.github/workflows/publish-pypi.yml`, and — if not containerized — `Dockerfile`, `.dockerignore`, `.github/workflows/publish-docker.yml`; adapt `CONTRIBUTING.md` (rewrite the `pip install` setup and the "Requires Python 3.12+" line); trim the `ruff` hook from `.pre-commit-config.yaml` (keep the language-agnostic hooks — shellcheck, markdownlint, actionlint, zizmor, hygiene); repoint the `Makefile` targets at your stack's lint/format/typecheck/test/build commands so `make check` stays your one verify gate; in `.github/workflows/ci.yml` remove the `typecheck`/`test`/`build`/`audit`/`docs` jobs (and their `check.needs` + results entries) — the `lint` job just runs pre-commit and stays.
+- [ ] Rename the Python package — set `pyproject.toml` `name` + `description`, rename the `src/app/` directory, update `[tool.hatch.build.targets.wheel]` `packages` to match, and fix the `prog=`/`python -m app` references in `src/app/__main__.py` (`/onboard` does all this; skip the `packages` edit and `python -m build` fails). **Not a Python project?** Delete `pyproject.toml`, `src/`, `tests/`, the docs stack (`docs/`, `.readthedocs.yaml.example`, `.github/workflows/pages.yml.example`), `.github/workflows/publish-pypi.yml`, and — if not containerized — `Dockerfile`, `.dockerignore`, `.github/workflows/publish-docker.yml`; adapt `CONTRIBUTING.md` (rewrite the `pip install` setup and the "Requires Python 3.12+" line); trim the `ruff` hook from `.pre-commit-config.yaml` (keep the language-agnostic hooks — codespell, shellcheck, markdownlint, actionlint, zizmor, hygiene; move codespell's `[tool.codespell]` skip config to a `.codespellrc` before deleting `pyproject.toml`); repoint the `Makefile` targets at your stack's lint/format/typecheck/test/build commands so `make check` stays your one verify gate; in `.github/workflows/ci.yml` remove the `typecheck`/`test`/`build`/`audit`/`docs` jobs (and their `check.needs` + results entries) — the `lint` job just runs pre-commit and stays.
 - [ ] Replace `tests/test_smoke.py` with real tests — it only exists so the `test` CI job is green out of the box
 - [ ] Review `.github/workflows/ci.yml` — the `lint`/`typecheck`/`test`/`build`/`audit`/`docs` jobs are ACTIVE and pass against the shipped stubs. Delete jobs you don't need (and their entries in the `check` aggregator). To enable extras, uncomment the `docker`/`integration-tests` jobs and add each to `check.needs` + the results array; the Node checks are commented *steps inside the `lint` job* (uncomment them there — no `check` change needed)
-- [ ] Docs — set `project`/`author`/`project_copyright` in `docs/conf.py`; write the `docs/index.md` landing page (replace the `# Project Docs` title + `TODO(/onboard)`); update the `pip install app` line in `docs/getting-started.md` to the renamed package; after renaming the package, uncomment the `automodule` block in `docs/reference.md` and point it at your modules (`/onboard` does this)
+- [ ] Docs — set `project`/`author`/`project_copyright` in `docs/conf.py`; write the `docs/index.md` landing page (replace the `# Project Docs` title + `TODO(/onboard)`); update the `pip install app` line in `docs/getting-started.md` to the renamed package; after renaming the package, update the `automodule` module names in `docs/reference.md` (`/onboard` does this; the docs build fails if they're left stale)
 - [ ] Create a `LICENSE` file — rename one of the included templates (`LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`) to `LICENSE`, fill in `[year]` and `[fullname]`, delete the others
 - [ ] Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match your stack
 - [ ] Add secrets to your repo:

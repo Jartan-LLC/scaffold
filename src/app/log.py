@@ -101,9 +101,9 @@ class JsonFormatter(logging.Formatter):
     """One line of JSON per record, for log aggregators.
 
     ``json.dumps`` escapes control chars in the JSON it emits, but a consumer
-    that *decodes* a field (e.g. ``jq -r '.exc'`` to a terminal) undoes that —
-    so the message and the traceback are escaped here too, keeping decoded
-    values injection-safe.
+    that *decodes* a field (e.g. ``jq -r '.logger'`` to a terminal) undoes that —
+    so every string field (logger name included, since it can be built from
+    untrusted input) is escaped here too, keeping decoded values injection-safe.
     """
 
     def format(self, record: logging.LogRecord) -> str:
@@ -118,8 +118,8 @@ class JsonFormatter(logging.Formatter):
         """
         payload: dict[str, Any] = {
             "timestamp": datetime.fromtimestamp(record.created, tz=UTC).isoformat(),
-            "level": record.levelname,
-            "logger": record.name,
+            "level": record.levelname.translate(_CONTROL_ESCAPES),
+            "logger": record.name.translate(_CONTROL_ESCAPES),
             "message": record.getMessage().translate(_CONTROL_ESCAPES),
         }
         if record.exc_info:

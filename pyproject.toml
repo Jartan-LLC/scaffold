@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.30,<2"] # latest; >=1.22 is the PEP 639 license-files floor
 build-backend = "hatchling.build"
 
 [project]

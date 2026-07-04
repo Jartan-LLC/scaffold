@@ -1,10 +1,8 @@
 # API reference
 
-Generated from source docstrings.
-
-<!-- To enable autodoc, delete this line and the closing "-->" line, then update the
-module names to your renamed package. CI's strict docs build only exercises autodoc
-once this is uncommented.
+Generated from source docstrings. When you rename the package, update the module
+names below (`/onboard` does this) — otherwise the strict docs build fails on the
+missing import.
 
 ```{eval-rst}
 .. automodule:: app.log
@@ -17,5 +15,3 @@ once this is uncommented.
    :undoc-members:
    :show-inheritance:
 ```
-
--->
