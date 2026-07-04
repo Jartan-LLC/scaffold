@@ -27,9 +27,15 @@ Thumbs.db
 
 # Testing / Coverage
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+
+# Docs build output (Sphinx)
+docs/_build/
 
 # Docker
 data/

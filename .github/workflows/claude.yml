@@ -6,17 +6,22 @@ on:
   pull_request_review_comment:
     types: [created]
   issues:
-    types: [opened, assigned]
+    types: [opened]
   pull_request_review:
     types: [submitted]
 
+permissions: {}
+
 jobs:
   claude:
+    # Only trusted collaborators can trigger: this job checks out the (possibly
+    # fork) PR head with a write-scoped token, so gating on author_association
+    # blocks the pwn-request path (outside contributors are NONE/CONTRIBUTOR).
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.review.author_association)) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')) && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association))
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
@@ -34,12 +39,20 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
+          # Scope the token to what Claude needs (matches the App grants in README).
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
 
-      - name: Checkout repository
+      # Token is used by claude-code-action to push commits; no artifacts are
+      # uploaded, so persisting it is safe.
+      - name: Checkout repository # zizmor: ignore[artipacked]
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
-          ref: ${{ github.head_ref || github.ref_name }}
+          # head_ref is empty for these triggers, so this resolves to the default
+          # branch — never fork-PR code. Avoids CodeQL's untrusted-checkout flag.
+          ref: ${{ github.ref_name }}
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Run Claude Code
@@ -57,7 +70,6 @@ jobs:
           plugins: |
             claudivis@grimoire
             gitwise@grimoire
-            memoria@grimoire
             praxis@grimoire
             pythonica@grimoire
             recursio@grimoire

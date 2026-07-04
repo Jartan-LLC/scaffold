@@ -1,0 +1,121 @@
+[build-system]
+requires = ["hatchling>=1.30,<2"] # latest; >=1.22 is the PEP 639 license-files floor
+build-backend = "hatchling.build"
+
+[project]
+# TODO(/onboard): rename to your project's distribution name.
+name = "app"
+version = "0.0.0"
+description = "Project scaffold — replace during onboarding."
+readme = "README.md"
+requires-python = ">=3.12"
+license-files = ["LICENSE"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.optional-dependencies]
+# The exact toolchain CI runs. Delete this whole file if the project isn't Python.
+dev = [
+    "ruff",       # linter + formatter
+    "pytest",     # test runner
+    "pyright",    # static type checker
+    "codespell",  # spell checker (code, comments, docs)
+    "pre-commit", # git hook runner (see .pre-commit-config.yaml)
+]
+# Docs site toolchain (Sphinx + MyST + furo). Install with `pip install -e '.[docs]'`.
+# Pinned deliberately: chose Sphinx over MkDocs because the MkDocs ecosystem is
+# mid-transition (MkDocs 2.0 drops plugins); Sphinx is stable, but pin anyway.
+docs = [
+    "sphinx>=9,<10",     # site generator (reads google docstrings via napoleon)
+    "myst-parser>=5,<6", # author docs in Markdown, not reStructuredText
+    "furo>=2025.12",     # theme (CalVer — date floor, no semver major to cap)
+]
+
+# src-layout: the wheel contains src/app (rename src/app/ to your package).
+# Hatchling ships the package's non-.py files (the py.typed PEP 561 marker)
+# automatically.
+[tool.hatch.build.targets.wheel]
+packages = ["src/app"]
+
+# Keep the sdist to source + tests, so conftest.py and its fixtures ship
+# consistently — not dev tooling like .github/ or .devcontainer/.
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+# Comprehensive lint: bugs, security, perf, modernization, imports, naming.
+# `ruff format` owns formatting, so line length (E501) is left to it.
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort (import sorting)
+    "N",        # pep8-naming
+    "D",        # pydocstyle (docstring discipline; convention set below)
+    "UP",       # pyupgrade (modern syntax)
+    "B",        # flake8-bugbear (likely bugs)
+    "A",        # flake8-builtins (shadowing builtins)
+    "C4",       # flake8-comprehensions
+    "DTZ",      # flake8-datetimez (tz-aware datetimes)
+    "T20",      # flake8-print (no stray print)
+    "PT",       # flake8-pytest-style
+    "RET",      # flake8-return
+    "SIM",      # flake8-simplify
+    "TID",      # flake8-tidy-imports
+    "PTH",      # flake8-use-pathlib
+    "PERF",     # perflint
+    "FURB",     # refurb (more modernization)
+    "PIE",      # flake8-pie
+    "ARG",      # unused arguments
+    "LOG", "G", # logging correctness
+    "ASYNC",    # async gotchas
+    "S",        # flake8-bandit (security)
+    "PL",       # pylint (C/E/R/W)
+    "RUF",      # ruff-specific
+]
+ignore = [
+    "E501", # line length is enforced by the formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]                      # allow re-exports
+"tests/**" = ["S101", "ARG", "PLR2004", "D"]  # asserts, fixtures, magic values, docstrings
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Absolute imports only — keeps the package rename-agnostic to import style and
+# avoids modeling relative imports in the template.
+ban-relative-imports = "all"
+
+[tool.ruff.lint.pydocstyle]
+# Google-style docstrings; this also disables the D rules that conflict with the
+# formatter and the mutually-incompatible D203/D211 and D212/D213 pairs.
+convention = "google"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --strict-config"
+xfail_strict = true
+markers = [
+    "unit: fast in-process test with no external services",
+    "integration: needs the docker-compose stack (see the commented integration-tests job in ci.yml)",
+]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.12"
+# "strict" is the most thorough; drop to "standard" (pyright's default) if
+# untyped third-party deps get noisy.
+typeCheckingMode = "strict"
+
+[tool.codespell]
+# Skip generated/legal/vendored text. Add false positives via:
+#   ignore-words-list = "word1,word2"
+skip = "./.git,./.venv,./node_modules,./dist,./build,./docs/_build,*.egg-info,*.lock,LICENSE*"

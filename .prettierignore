@@ -1,0 +1,7 @@
+# Markdown is hand-authored here (README tables, checklists) — Prettier realigns
+# tables and reindents lists, which mangles them. Remove this line if you'd
+# rather Prettier own your Markdown too.
+*.md
+
+# Build output
+docs/_build/

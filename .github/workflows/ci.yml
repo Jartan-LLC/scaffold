@@ -3,6 +3,7 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -17,49 +18,188 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
-      - name: Shellcheck
-        run: find . -name "*.sh" -not -path "*/.git/*" -not -path "*/node_modules/*" -not -path "*/vendor/*" -print0 | xargs -r -0 shellcheck
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
 
-      # TODO: Add your lint/format commands
-      # Example (Python):
-      # - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      # All file linters live in .pre-commit-config.yaml (the single source, shared
+      # with `make lint`). Install only pre-commit — it manages its own hook envs, so
+      # no pyproject/dev-extras, which keeps this job language-agnostic.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: pre-commit-
+      - run: pip install pre-commit
+      - run: pre-commit run --all-files --show-diff-on-failure
+
+      # Node/JS (secondary) — uncomment after adding package.json + committing a lockfile.
+      # `prettier --check` is the generic part; drop `astro check` unless you use Astro.
+      # - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
       #   with:
-      #     python-version: "3.12"
-      # - run: pip install ruff && ruff check . && ruff format --check .
-      #
-      # Example (Node):
-      # - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-      # - run: npm ci && npm run lint
+      #     version: 10
+      # - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+      #   with:
+      #     node-version: "22"
+      #     cache: pnpm
+      #     cache-dependency-path: pnpm-lock.yaml
+      # - run: pnpm install --frozen-lockfile
+      # - run: pnpm exec prettier --check .
+
+  typecheck:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - run: pip install -e '.[dev]'
+      - run: pyright
 
   test:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    # Uncomment to skip tests when lint fails — saves CI time on expensive
-    # suites, at the cost of not seeing lint and test failures in one run.
-    # needs: lint
+    # Add `needs: lint` to skip tests when lint fails — saves runner time on slow
+    # suites, at the cost of not seeing lint and test failures in a single run.
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
-      # TODO: Add your test commands
-      # Example (Python):
-      # - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-      #   with:
-      #     python-version: "3.12"
-      # - run: pip install -e '.[dev]' && pytest
-      #
-      # Example (Node):
-      # - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-      # - run: npm ci && npm test
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - run: pip install -e '.[dev]'
+      - run: pytest -m "not integration"
+
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      # No pip cache: this job only installs build+twine (nothing from pyproject),
+      # and `python -m build` builds the project in its own isolated env.
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - run: pip install build twine
+      - run: python -m build
+      - run: python -m twine check dist/*
+
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      # Audit the full installed environment — package deps plus the dev/docs/build
+      # tools — mirroring `make check`, not just the (currently empty) declared deps.
+      - run: pip install -e '.[dev,docs]' build twine pip-audit
+      - name: Audit dependencies for known CVEs
+        run: pip-audit
+
+  docs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      # Install so the docs toolchain and the package's runtime deps are importable
+      # by autodoc (the stub's are all stdlib).
+      - run: pip install -e '.[docs]'
+      - run: sphinx-build -W -b html docs docs/_build/html
+
+  # Integration tests against a docker-compose stack, with coverage uploaded as an
+  # artifact. Uncomment once you add a docker-compose.test.yml (service `app`) and a
+  # Dockerfile test target, and add `pytest-cov` to the dev extras. Then add
+  # `integration-tests` to the `check` job's needs + results below.
+  # TODO(rename): `--cov=app` (and the `app` service/paths) track the package name.
+  # integration-tests:
+  #   runs-on: ubuntu-24.04
+  #   timeout-minutes: 20
+  #   steps:
+  #     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+  #       with:
+  #         persist-credentials: false
+  #     - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+  #     - name: Start stack
+  #       run: docker compose -f docker-compose.test.yml up -d --build --wait
+  #     - name: Integration tests + coverage
+  #       run: docker compose -f docker-compose.test.yml exec -T app python -m pytest -m integration --cov=app --cov-report=xml:/app/coverage.xml
+  #     - name: Extract coverage
+  #       if: always()
+  #       run: docker compose -f docker-compose.test.yml cp app:/app/coverage.xml ./coverage.xml
+  #     - name: Upload coverage
+  #       if: always()
+  #       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+  #       with:
+  #         name: coverage-report
+  #         path: coverage.xml
+  #         if-no-files-found: warn
+  #     - name: Tear down
+  #       if: always()
+  #       run: docker compose -f docker-compose.test.yml down -v
+
+  # Docker build + smoke test. The shipped Dockerfile builds as-is; give it a real
+  # entrypoint, then uncomment (pairs with publish-docker.yml). Swap `--help` for a
+  # /health curl if it's a server. Add `docker` to the `check` job below when enabling.
+  # docker:
+  #   runs-on: ubuntu-24.04
+  #   timeout-minutes: 10
+  #   steps:
+  #     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+  #       with:
+  #         persist-credentials: false
+  #     - run: docker build -t app:ci .
+  #     - run: docker run --rm app:ci --help
 
   check:
     if: always()
-    needs: [lint, test]
+    # When you uncomment integration-tests / docker above, add them to BOTH the
+    # needs list and the results array below.
+    needs: [lint, typecheck, test, build, audit, docs]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - run: |
-          results=("${{ needs.lint.result }}" "${{ needs.test.result }}")
+          results=("${{ needs.lint.result }}" "${{ needs.typecheck.result }}" "${{ needs.test.result }}" "${{ needs.build.result }}" "${{ needs.audit.result }}" "${{ needs.docs.result }}")
           for r in "${results[@]}"; do
             if [[ "$r" != "success" && "$r" != "skipped" ]]; then
               echo "Check failed: $r"
