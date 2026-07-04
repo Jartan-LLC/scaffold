@@ -91,6 +91,11 @@ ignore = [
 "__init__.py" = ["F401"]                      # allow re-exports
 "tests/**" = ["S101", "ARG", "PLR2004", "D"]  # asserts, fixtures, magic values, docstrings
 
+[tool.ruff.lint.flake8-tidy-imports]
+# Absolute imports only — keeps the package rename-agnostic to import style and
+# avoids modeling relative imports in the template.
+ban-relative-imports = "all"
+
 [tool.ruff.lint.pydocstyle]
 # Google-style docstrings; this also disables the D rules that conflict with the
 # formatter and the mutually-incompatible D203/D211 and D212/D213 pairs.
