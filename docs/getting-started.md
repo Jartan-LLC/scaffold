@@ -3,7 +3,7 @@
 ## Install
 
 ```bash
-pip install app  # replace with your renamed package name
+pip install app  # TODO(/onboard): replace with your renamed package name
 ```
 
 ## Usage
