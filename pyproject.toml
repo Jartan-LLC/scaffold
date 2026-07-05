@@ -32,7 +32,7 @@ dev = [
 # mid-transition (MkDocs 2.0 drops plugins); Sphinx is stable, but pin anyway.
 docs = [
     "sphinx>=9.1.0,<10",     # site generator (reads google docstrings via napoleon)
-    "myst-parser>=5,<6", # author docs in Markdown, not reStructuredText
+    "myst-parser>=5.1.0,<6", # author docs in Markdown, not reStructuredText
     "furo>=2025.12.19",     # theme (CalVer — date floor, no semver major to cap)
 ]
 
