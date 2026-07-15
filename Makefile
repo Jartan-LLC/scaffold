@@ -4,8 +4,9 @@
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
 
-install:  ## Install the package with its dev extras
+install:  ## Install the package with its dev extras and wire the pre-commit hook
 	pip install -e '.[dev]'
+	pre-commit install
 
 lint:  ## Lint all files via pre-commit (ruff, codespell, shellcheck, markdownlint, actionlint, zizmor, hygiene)
 	pre-commit run --all-files
