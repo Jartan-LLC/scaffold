@@ -28,7 +28,7 @@ repos:
     rev: 2bba271688c1abb1503097a064e6c3bc1d1b6a9b # frozen: lychee-v0.24.2
     hooks:
       # Offline: relative links only. External-link rot is non-deterministic, so it's
-      # caught by link-check.yml, not this blocking gate.
+      # caught by external-link-check.yml, not this blocking gate.
       - id: lychee-docker # docker: no Rust toolchain needed locally
         args: [--offline, --no-progress] # args replace the default, so restate --no-progress
         types: [markdown]
