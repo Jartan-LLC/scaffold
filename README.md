@@ -65,6 +65,7 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Update `.github/CODE_OF_CONDUCT.md` — set the enforcement contact (replace `[INSERT CONTACT METHOD]`)
 - [ ] Update `.github/ISSUE_TEMPLATE/config.yml` — replace `ORG/REPO` in contact link URLs with your GitHub org and repo name
 - [ ] Update `CHANGELOG.md` — replace `ORG/REPO` in the `[Unreleased]` link with your GitHub org and repo (otherwise the link 404s)
+- [ ] Tidy `.lycheeignore` — delete the `https://github.com/ORG/REPO` line once ORG/REPO is real (delete rather than replace, or the pattern would ignore your own repo's links)
 - [ ] Update `.github/dependabot.yml` — remove ecosystems you don't use, add ones you need, adjust directories if not at root
 - [ ] Create the `dependency` label — `gh label create dependency --color 0366d6 --description "Dependency updates"` (required by the dependabot and link-check configs)
 - [ ] Rename the Python package (`/onboard` does all this; skip the `packages` edit and `python -m build` fails) — set `pyproject.toml` `name` + `description`, rename the `src/app/` directory, update `[tool.hatch.build.targets.wheel]` `packages` to match, update the `app` imports in `src/app/__main__.py` and `tests/` (`from app.log import …` in `__main__.py`/`test_log.py`, `from app.__main__ import …` in `test_smoke.py`), and the `python -m app` references (`__main__.py` `prog=`, `Dockerfile` `CMD` hint).

@@ -6,7 +6,8 @@ help:  ## Show available targets
 
 install:  ## Install the package with its dev extras and wire the pre-commit hook
 	pip install -e '.[dev]'
-	pre-commit install
+	# Skip hook wiring outside a git checkout (e.g. an unpacked sdist); real failures still surface.
+	if git rev-parse --git-dir >/dev/null 2>&1; then pre-commit install; fi
 
 lint:  ## Lint all files via pre-commit (ruff, codespell, shellcheck, markdownlint, lychee, actionlint, zizmor, hygiene)
 	pre-commit run --all-files
