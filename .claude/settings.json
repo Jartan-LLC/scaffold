@@ -1,6 +1,5 @@
 {
   "enabledPlugins": {
-    "caveman@caveman": true,
     "claudivis@grimoire": true,
     "gitwise@grimoire": true,
     "praxis@grimoire": true,
@@ -8,12 +7,6 @@
     "recursio@grimoire": true
   },
   "extraKnownMarketplaces": {
-    "caveman": {
-      "source": {
-        "source": "github",
-        "repo": "JuliusBrussee/caveman"
-      }
-    },
     "grimoire": {
       "source": {
         "source": "github",

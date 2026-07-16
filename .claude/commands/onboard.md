@@ -39,9 +39,10 @@ Work through every Required checklist item that can be automated. Also:
 - The `Makefile` stays in every fork — it's the language-agnostic verify entry point. Point its `lint`/`typecheck`/`test`/`build` targets at the build/test/lint commands from the interview (keep `make check` as the aggregate gate); for a Python project the shipped targets already match, so only edit if the user's commands differ
 - Fill in `CHANGELOG.md` — replace `ORG/REPO` in the `[Unreleased]` link with the GitHub org/repo
 - Replace `ORG/REPO` in `.github/ISSUE_TEMPLATE/config.yml` contact links with the GitHub org/repo
+- Tidy `.lycheeignore` — delete the `https://github.com/ORG/REPO` line (a stale placeholder ignore once ORG/REPO is real; delete rather than replace, or you'd ignore your own repo's links)
 - Set the code-of-conduct enforcement contact in `.github/CODE_OF_CONDUCT.md` (replace `[INSERT CONTACT METHOD]`)
 - Docs: set `project`/`author`/`project_copyright` in `docs/conf.py`; write the `docs/index.md` landing page (replace `# Project Docs` + the `TODO(/onboard)` comment); update the `pip install app` line in `docs/getting-started.md` to the renamed package; after the package rename, update the `automodule` module names in `docs/reference.md` (replace `app.log`/`app.__main__` with the renamed package's modules — the docs build fails if left stale)
-- Create the `dependency` label used by dependabot: `gh label create dependency --color 0366d6 --description "Dependency updates" 2>/dev/null || true`
+- Create the `dependency` label used by dependabot and link-check: `gh label create dependency --color 0366d6 --description "Dependency updates" 2>/dev/null || true`
 - When removing skills, also update any agent files that reference them in their `skills:` frontmatter
 - Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match the chosen stack. If multiple plugins cover the same domain, keep the more specific one. Keep universal skills enabled. Set disabled skills to `"off"`. Example: `"skillOverrides": { "go-review": "off", "springboot-patterns": "off" }`
 

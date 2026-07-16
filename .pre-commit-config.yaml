@@ -24,6 +24,15 @@ repos:
     rev: 534166213006ec869b773b7ed8c6ebeaad1165d0 # frozen: v0.23.0
     hooks:
       - id: markdownlint-cli2
+  - repo: https://github.com/lycheeverse/lychee
+    rev: 2bba271688c1abb1503097a064e6c3bc1d1b6a9b # frozen: lychee-v0.24.2
+    hooks:
+      # Offline: relative links only. External-link rot is non-deterministic, so it's
+      # caught by external-link-check.yml, not this blocking gate.
+      - id: lychee-docker # docker: no Rust toolchain needed locally
+        args: [--offline, --no-progress] # args replace the default, so restate --no-progress
+        types: [markdown]
+        exclude: '^\.github/SECURITY\.md$' # ../../security/advisories/new: GitHub-web link, no local file
   - repo: https://github.com/rhysd/actionlint
     rev: 914e7df21a07ef503a81201c76d2b11c789d3fca # frozen: v1.7.12
     hooks:

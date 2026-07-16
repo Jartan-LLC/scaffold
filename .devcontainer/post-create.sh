@@ -28,6 +28,12 @@ while IFS= read -r -d '' pyproject_file; do
     pip install -e "${dir}[dev]" || echo "Warning: pip install failed for $dir" >&2
 done < <(find . -name "pyproject.toml" -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.tox/*" -type f -print0)
 
+# pre-commit binary comes from the .[dev] install above.
+if command -v pre-commit &>/dev/null && [ -f .pre-commit-config.yaml ]; then
+    echo "Wiring pre-commit git hook..."
+    pre-commit install || echo "Warning: pre-commit install failed" >&2
+fi
+
 # vscode-user-specific setup (volume mounts, ownership fixes)
 if [ "$(whoami)" = "vscode" ]; then
     if [ -d "$HOME/.claude" ]; then
