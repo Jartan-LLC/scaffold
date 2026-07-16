@@ -1,0 +1,5 @@
+# Link patterns lychee skips (regex). Read by the pre-commit hook and link-check.yml.
+
+# Template placeholder: github.com/ORG/REPO links (e.g. CHANGELOG's [Unreleased]) 404
+# until /onboard sets the real repo. Safe to delete this line once onboarded.
+https://github.com/ORG/REPO

@@ -1,0 +1,59 @@
+name: Link Check
+
+# Weekly check for dead external links in Markdown. Internal/relative links are gated
+# at commit time by the lychee pre-commit hook; external rot is non-deterministic, so a
+# failure opens (or updates) one tracking issue instead of blocking. Delete if unwanted.
+
+on:
+  schedule:
+    - cron: "30 6 * * 1" # weekly, Monday 06:30 UTC (offset from scorecard's 05:30)
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  link-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read # checkout
+      issues: write # find + open/update the tracking issue
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Check links
+        id: lychee
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          # Markdown only (#62); --exclude-path mirrors the hook's SECURITY.md exclude.
+          args: "--no-progress --cache --max-cache-age 1d --exclude-path .github/SECURITY.md './**/*.md'"
+          fail: false # the next step files an issue instead of going red
+          output: ./lychee/out.md # pin the report path the create-issue step reads
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # lifts GitHub's API rate limit
+
+      # Reuse one issue instead of filing a new one every week: find the open
+      # link-check issue (if any) so the next step updates it in place.
+      - name: Find the open link-check issue
+        id: existing
+        if: steps.lychee.outputs.exit_code != 0
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          number="$(gh issue list --repo "$REPO" --state open \
+            --search 'Broken links found by lychee in:title' \
+            --json number,title,state \
+            --jq 'map(select(.title == "Broken links found by lychee" and .state == "OPEN") | .number) | .[0] // ""')"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Open or update the link-check issue
+        if: steps.lychee.outputs.exit_code != 0
+        uses: peter-evans/create-issue-from-file@fca9117c27cdc29c6c4db3b86c48e4115a786710 # v6.0.0
+        with:
+          title: Broken links found by lychee
+          content-filepath: ./lychee/out.md
+          labels: dependency
+          issue-number: ${{ steps.existing.outputs.number }} # empty = new issue; set = update in place

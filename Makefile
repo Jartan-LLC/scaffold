@@ -8,7 +8,7 @@ install:  ## Install the package with its dev extras and wire the pre-commit hoo
 	pip install -e '.[dev]'
 	pre-commit install
 
-lint:  ## Lint all files via pre-commit (ruff, codespell, shellcheck, markdownlint, actionlint, zizmor, hygiene)
+lint:  ## Lint all files via pre-commit (ruff, codespell, shellcheck, markdownlint, lychee, actionlint, zizmor, hygiene)
 	pre-commit run --all-files
 
 fix:  ## Auto-format and apply ruff's safe fixes
