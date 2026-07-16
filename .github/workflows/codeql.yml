@@ -1,0 +1,76 @@
+name: CodeQL
+
+# CodeQL static analysis (SAST) — the source-scanning layer alongside zizmor
+# (workflows), scorecard (supply chain), and pip-audit (deps). Alerts land in the
+# Security tab. Runs on PUBLIC repos only — the visibility gate skips private forks
+# cleanly (drop it if you have GitHub Advanced Security). Multi-language: change the
+# matrix `language` for your stack; don't delete the workflow. Delete if unwanted.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "30 7 * * 1" # weekly, Monday 07:30 UTC (offset from scorecard 05:30 / link-check 06:30)
+
+permissions: {}
+
+jobs:
+  # Code-scanning upload needs a public repo (or GitHub Advanced Security). Resolve
+  # visibility via the API — `github.event.repository` is absent on schedule runs, but
+  # `$GITHUB_REPOSITORY` is always set — so analyze can skip cleanly on private forks.
+  visibility:
+    name: Check repo visibility
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read # gh reads repo metadata
+    outputs:
+      public: ${{ steps.check.outputs.public }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(gh api "repos/$GITHUB_REPOSITORY" --jq '.visibility')" = "public" ]; then
+            echo "public=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "public=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    needs: visibility
+    if: needs.visibility.outputs.public == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write # upload code-scanning alerts
+      actions: read # CodeQL reads workflow run metadata
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: python
+            build-mode: none # Python isn't compiled
+          # Node/TS? Uncomment (and enable the Node steps in ci.yml):
+          # - language: javascript-typescript
+          #   build-mode: none
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@411c4c9a36b3fca4d674f06b6396b2c6d23522c6 # v3.36.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          # queries: security-extended # deeper suite: more findings, more noise
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@411c4c9a36b3fca4d674f06b6396b2c6d23522c6 # v3.36.3
+        with:
+          category: "/language:${{ matrix.language }}"
