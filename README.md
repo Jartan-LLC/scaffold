@@ -95,7 +95,7 @@ If you prefer to set up manually instead of using `/onboard`:
   - All trigger on `v*` tags. `publish-pypi.yml` still fails until you rename the package and configure PyPI Trusted Publishing; delete whichever publish workflow (and its stub) you don't need.
 - [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
 - [ ] Enable CodeQL default setup (Settings > Security > Code scanning)
-- [ ] OpenSSF Scorecard (`.github/workflows/scorecard.yml`) needs a **public** repo to publish its score/badge — delete the workflow if the repo is private
+- [ ] OpenSSF Scorecard (`.github/workflows/scorecard.yml`) needs a **public** repo to publish its score/badge — on a private fork it skips automatically, so delete it only if you don't want it at all
 - [ ] Publish docs (optional) — **GitHub Pages**: set Settings > Pages > Source = "GitHub Actions", then rename `.github/workflows/pages.yml.example` → `pages.yml` (single-version). **Versioned**: rename `.readthedocs.yaml.example` → `.readthedocs.yaml` and import the repo at readthedocs.org. Pick one; the docs *build* is already checked on every PR either way
 - [ ] Enable secret scanning with push protection (Settings > Security > Secret Protection)
 - [ ] Configure branch ruleset for `main` — require PR reviews, require CI to pass, block force pushes
