@@ -16,13 +16,13 @@ permissions: {}
 jobs:
   # Publish + SARIF upload need a public repo. Resolve visibility via the API
   # (works on every trigger, unlike the schedule event payload) so a private fork
-  # skips cleanly. Private repo with GitHub Advanced Security? Drop the gate.
+  # skips cleanly. Private repo with GitHub Advanced Security? Drop the gate and
+  # set publish_results: false below (publishing is a public-only path).
   visibility:
     name: Check repo visibility
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    permissions:
-      contents: read # gh reads repo metadata
+    permissions: {} # gh needs only metadata:read, always granted to GITHUB_TOKEN
     outputs:
       public: ${{ steps.check.outputs.public }}
     steps:
@@ -30,11 +30,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "$(gh api "repos/$GITHUB_REPOSITORY" --jq '.visibility')" = "public" ]; then
-            echo "public=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "public=false" >> "$GITHUB_OUTPUT"
-          fi
+          visibility="$(gh api "repos/$GITHUB_REPOSITORY" --jq '.visibility')" || true
+          case "$visibility" in
+            public) echo "public=true" >> "$GITHUB_OUTPUT" ;;
+            private|internal) echo "public=false" >> "$GITHUB_OUTPUT" ;; # intended clean skip, silent
+            *)
+              echo "::warning::Could not resolve repo visibility (got '$visibility') — Scorecard skipped"
+              echo "public=false" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
 
   analysis:
     name: Scorecard analysis
@@ -55,7 +59,7 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          # Publishes results + badge to OpenSSF (public only; the visibility gate skips private forks).
+          # Publishes results + badge to OpenSSF.
           publish_results: true
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
