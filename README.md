@@ -28,7 +28,7 @@ Open a PR from `template-update` so CI runs before the changes land.
 
 | Area | Contents |
 |------|----------|
-| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite; plus Claude Code CLI and codebase-memory-mcp (structural code graph), both installed via `post-create.sh` |
+| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite; plus Claude Code CLI and codebase-memory-mcp (structural code graph, best-effort), both installed via `post-create.sh` |
 | `.claude/` | Claude Code configuration — enabled plugins (skills & agents from the grimoire marketplace) and the `/onboard` setup command |
 | `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + dependency audit + docs build; Node steps + Docker job commented), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, publish/release + OpenSSF Scorecard + weekly external-link-check workflows, issue/PR + code-of-conduct + security templates |
 | `pyproject.toml` | Python packaging + tool config (ruff, pytest, pyright, codespell) — minimal src-layout stub; rename or delete |
@@ -43,7 +43,7 @@ Open a PR from `template-update` so CI runs before the changes land.
 | `.gitattributes` | Syntax-aware diffs for 20+ languages, binary normalization for lock files |
 | `.gitignore` | Comprehensive patterns for Node, Python, Docker, IDEs, env files, build artifacts |
 | `CLAUDE.md` | Project rules, anti-patterns, verification commands, skill index |
-| `LICENSE.*` | Four license templates (MIT, Apache-2.0, AGPL-3.0, proprietary) — pick one during onboarding |
+| `LICENSE.*` | License templates (MIT, Apache-2.0, AGPL-3.0, proprietary) — pick one during onboarding |
 
 ## Post-Fork Checklist
 

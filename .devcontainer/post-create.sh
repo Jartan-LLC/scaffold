@@ -10,8 +10,7 @@ sudo corepack enable || echo "Warning: corepack enable failed; pnpm may not be a
 # codebase-memory-mcp, which registers its MCP server only if claude is present.
 echo "Installing Claude Code CLI..."
 claude_install_failed=0
-# Retried once: this moved off a cached image layer, so a registry blip now
-# costs a rebuild rather than being retried by the builder.
+# Retry once: a registry blip during create otherwise costs a rebuild.
 npm install -g @anthropic-ai/claude-code \
     || npm install -g @anthropic-ai/claude-code \
     || claude_install_failed=1
@@ -90,9 +89,10 @@ fi
 
 gh auth status 2>/dev/null || echo "Warning: gh not authenticated. Run 'gh auth login' to enable GitHub CLI." >&2
 
-# Loud, but not fatal: a non-zero postCreateCommand makes the spec skip
-# postStart and postAttach entirely, which would cost the Docker socket fix and
-# the Codespaces path override — worse than a missing CLI.
+# Reported here, at the end, so it survives the dependency-install output above
+# rather than scrolling away. Not fatal: a non-zero postCreateCommand makes the
+# spec skip postStart and postAttach, losing the Docker socket fix and the
+# Codespaces path override.
 if [ "$claude_install_failed" = 1 ]; then
     echo "ERROR: Claude Code CLI install failed. Run 'npm install -g @anthropic-ai/claude-code' to retry." >&2
 fi
