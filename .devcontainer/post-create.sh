@@ -5,6 +5,17 @@ echo "Setting up development environment..."
 # Enable pnpm via corepack (ships with Node.js)
 sudo corepack enable || echo "Warning: corepack enable failed; pnpm may not be available" >&2
 
+# Installed here, not via the devcontainer feature: the feature installs as root,
+# leaving @anthropic-ai unwritable so auto-update fails forever. Must precede
+# codebase-memory-mcp, which registers its MCP server only if claude is present.
+echo "Installing Claude Code CLI..."
+claude_install_failed=0
+# Retried once: this moved off a cached image layer, so a registry blip now
+# costs a rebuild rather than being retried by the builder.
+npm install -g @anthropic-ai/claude-code \
+    || npm install -g @anthropic-ai/claude-code \
+    || claude_install_failed=1
+
 # Install Node.js dependencies from all package.json files
 echo "Installing Node.js dependencies..."
 while IFS= read -r -d '' pkg_file; do
@@ -56,17 +67,6 @@ if [ "$(whoami)" = "vscode" ]; then
     else
         echo "Warning: $HOME/.claude not found; config will not persist across rebuilds" >&2
     fi
-
-    # Fix npm prefix ownership so Claude Code auto-update works
-    npm_prefix="$(npm prefix -g 2>/dev/null)"
-    if [ -z "$npm_prefix" ]; then
-        echo "Warning: could not determine npm global prefix" >&2
-    else
-        npm_owner="$(stat -c '%U' "$npm_prefix" 2>/dev/null)"
-        if [ -n "$npm_owner" ] && [ "$npm_owner" = "root" ]; then
-            sudo chown -R vscode:vscode "$npm_prefix" || echo "Warning: could not fix ownership on $npm_prefix" >&2
-        fi
-    fi
 fi
 
 # Optional: Headroom token compression proxy (https://github.com/chopratejas/headroom)
@@ -89,5 +89,12 @@ if command -v codebase-memory-mcp &>/dev/null; then
 fi
 
 gh auth status 2>/dev/null || echo "Warning: gh not authenticated. Run 'gh auth login' to enable GitHub CLI." >&2
+
+# Loud, but not fatal: a non-zero postCreateCommand makes the spec skip
+# postStart and postAttach entirely, which would cost the Docker socket fix and
+# the Codespaces path override — worse than a missing CLI.
+if [ "$claude_install_failed" = 1 ]; then
+    echo "ERROR: Claude Code CLI install failed. Run 'npm install -g @anthropic-ai/claude-code' to retry." >&2
+fi
 
 echo "Development environment setup complete!"

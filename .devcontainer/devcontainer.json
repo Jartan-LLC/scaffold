@@ -4,7 +4,8 @@
     "source=claude-data,target=/home/vscode/.claude,type=volume"
   ],
   "features": {
-    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {},
+    // Claude Code is not a feature here: the feature installs as root, which
+    // breaks auto-update. post-create.sh installs it as the container user.
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.12"
     },
@@ -33,6 +34,8 @@
   "customizations": {
     "vscode": {
       "extensions": [
+        // Contributed by the claude-code feature until it was dropped; see features above.
+        "anthropic.claude-code",
         "ms-python.python",
         "ms-python.vscode-pylance",
         "ms-python.debugpy",
