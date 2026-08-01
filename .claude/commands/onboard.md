@@ -29,7 +29,7 @@ Summarize what you understood and what changes you'll make. Wait for the user to
 Work through every Required checklist item that can be automated. Also:
 
 - Replace the template README with a project README
-- License: rename the chosen `LICENSE.<type>` file to `LICENSE`, delete the others, and fill in `[year]` and `[fullname]`. Available: `LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`. If the user wants a different license or proprietary, delete all three and create the appropriate file.
+- License: rename the chosen `LICENSE.<type>` file to `LICENSE`, delete the others, and fill in `[year]` and `[fullname]`. Available: `LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`, `LICENSE.proprietary` (all rights reserved, for private/closed-source work). If the user wants a different license, delete the others and create the appropriate file.
 - Update `.devcontainer/devcontainer.json` — change the `desktop-lite` `password`, add/remove language features and extensions to match the chosen stack
 - Update `.devcontainer/post-create.sh` — add dependency installation for the chosen stack (e.g., `go mod download`, `cargo build`)
 - Update `.devcontainer/post-start.sh` — add commands that should run on each container start

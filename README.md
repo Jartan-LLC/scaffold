@@ -28,7 +28,7 @@ Open a PR from `template-update` so CI runs before the changes land.
 
 | Area | Contents |
 |------|----------|
-| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite, Claude Code CLI; plus codebase-memory-mcp (structural code graph, best-effort install via `post-create.sh`) |
+| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite; plus Claude Code CLI and codebase-memory-mcp (structural code graph, best-effort), both installed via `post-create.sh` |
 | `.claude/` | Claude Code configuration — enabled plugins (skills & agents from the grimoire marketplace) and the `/onboard` setup command |
 | `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + dependency audit + docs build; Node steps + Docker job commented), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, publish/release + OpenSSF Scorecard + weekly external-link-check workflows, issue/PR + code-of-conduct + security templates |
 | `pyproject.toml` | Python packaging + tool config (ruff, pytest, pyright, codespell) — minimal src-layout stub; rename or delete |
@@ -43,7 +43,7 @@ Open a PR from `template-update` so CI runs before the changes land.
 | `.gitattributes` | Syntax-aware diffs for 20+ languages, binary normalization for lock files |
 | `.gitignore` | Comprehensive patterns for Node, Python, Docker, IDEs, env files, build artifacts |
 | `CLAUDE.md` | Project rules, anti-patterns, verification commands, skill index |
-| `LICENSE.*` | Three license templates (MIT, Apache-2.0, AGPL-3.0) — pick one during onboarding |
+| `LICENSE.*` | License templates (MIT, Apache-2.0, AGPL-3.0, proprietary) — pick one during onboarding |
 
 ## Post-Fork Checklist
 
@@ -73,7 +73,7 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Replace `tests/test_smoke.py` with real tests — it only exists so the `test` CI job is green out of the box
 - [ ] Review `.github/workflows/ci.yml` — the `lint`/`typecheck`/`test`/`build`/`audit`/`docs` jobs are ACTIVE and pass against the shipped stubs. Delete jobs you don't need (and their entries in the `check` aggregator). To enable extras, uncomment the `docker`/`integration-tests` jobs and add each to `check.needs` + the results array; the Node checks are commented *steps inside the `lint` job* (uncomment them there — no `check` change needed)
 - [ ] Docs — set `project`/`author`/`project_copyright` in `docs/conf.py`; write the `docs/index.md` landing page (replace the `# Project Docs` title + `TODO(/onboard)`); update the `pip install app` line in `docs/getting-started.md` to the renamed package; after renaming the package, update the `automodule` module names in `docs/reference.md` (`/onboard` does this; the docs build fails if they're left stale)
-- [ ] Create a `LICENSE` file — rename one of the included templates (`LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`) to `LICENSE`, fill in `[year]` and `[fullname]`, delete the others
+- [ ] Create a `LICENSE` file — rename one of the included templates (`LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`, `LICENSE.proprietary`) to `LICENSE`, fill in `[year]` and `[fullname]`, delete the others
 - [ ] Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match your stack
 - [ ] Add secrets to your repo:
   - `ANTHROPIC_API_KEY` — for the Claude Code workflow
