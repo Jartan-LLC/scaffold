@@ -8,7 +8,13 @@ Please report security issues privately using [GitHub's security advisory featur
 
 If that link does not open a form, private reporting is switched off for this repository. Write to the maintainers privately instead — TODO(/onboard): private security contact.
 
-If no contact is listed above, this project has not configured a private channel and cannot receive your report safely. Do not send the details to addresses found in this repository's commit history — in a fork those belong to the template's authors, not this project's maintainers, and GitHub `noreply` addresses accept no mail. Do not post the details in a public issue, discussion, or pull request. Contact the account or organisation that owns this repository and ask for a private channel before sending anything.
+<!-- BEGIN unconfigured-contact: /onboard deletes this block, markers included, once the contact above is set -->
+
+If no address was filled in above and the line still shows its `TODO` placeholder, this project has not configured a private channel and cannot receive your report safely. Contact the account or organization that owns this repository and ask for a private channel before sending anything.
+
+<!-- END unconfigured-contact -->
+
+Do not post the details in a public issue, discussion, or pull request, and do not send them to addresses found in this repository's commit history — in a fork those belong to the template's authors, not this project's maintainers, and GitHub `noreply` addresses accept no mail.
 
 Include:
 

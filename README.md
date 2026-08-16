@@ -61,8 +61,8 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Update `.gitignore` — add language-specific patterns for your stack
 - [ ] Update `.editorconfig` — adjust formatting rules for your language (e.g., tabs for Go)
 - [ ] Update `.github/CODEOWNERS` — uncomment and set owner usernames/teams
-- [ ] Update `.github/SECURITY.md` — set supported versions, response timeline, and the private security contact
-- [ ] Set the private security contact in `.github/SECURITY.md` — not optional. It is the only channel a reporter has if the advisory form is unavailable, and leaving it unset means a stranger holding a working exploit has nowhere private to send it. The address is published publicly in that file, so use one you are willing to publish
+- [ ] Update `.github/SECURITY.md` — set supported versions, response timeline, and the private security contact. The contact is not optional: it is the reporter's only channel when the advisory form is unavailable, and it is published publicly in that file, so use an address you are willing to publish
+- [ ] Enable private vulnerability reporting (Settings > Security > Private vulnerability reporting) — `.github/SECURITY.md` sends every reporter to the advisory form, and that form does not exist until this is on
 - [ ] Update `.github/CODE_OF_CONDUCT.md` — set the enforcement contact (replace `[INSERT CONTACT METHOD]`)
 - [ ] Update `.github/ISSUE_TEMPLATE/config.yml` — replace `ORG/REPO` in contact link URLs with your GitHub org and repo name
 - [ ] Update `CHANGELOG.md` — replace `ORG/REPO` in the `[Unreleased]` link with your GitHub org and repo (otherwise the link 404s)
@@ -99,7 +99,6 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] OpenSSF Scorecard (`.github/workflows/scorecard.yml`) needs a **public** repo to publish its score/badge — on a private fork it skips automatically, so delete it only if you don't want it at all
 - [ ] Publish docs (optional) — **GitHub Pages**: set Settings > Pages > Source = "GitHub Actions", then rename `.github/workflows/pages.yml.example` → `pages.yml` (single-version). **Versioned**: rename `.readthedocs.yaml.example` → `.readthedocs.yaml` and import the repo at readthedocs.org. Pick one; the docs *build* is already checked on every PR either way
 - [ ] Enable secret scanning with push protection (Settings > Security > Secret Protection)
-- [ ] Enable private vulnerability reporting (Settings > Security > Private vulnerability reporting) — `.github/SECURITY.md` sends reporters to the advisory form; until this is on, that form is unavailable to them
 - [ ] Configure branch ruleset for `main` — require PR reviews, require CI to pass, block force pushes
 - [ ] Enable auto-merge (Settings > General > Allow auto-merge) — Dependabot minor/patch PRs auto-merge after CI passes
 - [ ] Review `.github/workflows/claude.yml` — uses `--dangerously-skip-permissions` which grants Claude unrestricted tool access in CI
