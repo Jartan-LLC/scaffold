@@ -61,12 +61,12 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Update `.gitignore` — add language-specific patterns for your stack
 - [ ] Update `.editorconfig` — adjust formatting rules for your language (e.g., tabs for Go)
 - [ ] Update `.github/CODEOWNERS` — uncomment and set owner usernames/teams
-- [ ] Update `.github/SECURITY.md` — set supported versions, response timeline, and the private security contact. The contact is not optional: it is the reporter's only channel when the advisory form is unavailable, and it is published publicly in that file, so use an address you are willing to publish
-- [ ] Enable private vulnerability reporting (Settings > Security > Private vulnerability reporting) — `.github/SECURITY.md` sends every reporter to the advisory form, and that form does not exist until this is on
+- [ ] Update `.github/SECURITY.md` — set supported versions, response timeline, and the private security contact. That contact is the reporter's only channel if the advisory form is unavailable, and it is published publicly, so use an address you are willing to publish
+- [ ] Enable private vulnerability reporting (Settings > Security) — until it is on, the advisory form `.github/SECURITY.md` sends every reporter to does not exist
 - [ ] Update `.github/CODE_OF_CONDUCT.md` — set the enforcement contact (replace `[INSERT CONTACT METHOD]`)
 - [ ] Update `.github/ISSUE_TEMPLATE/config.yml` — replace `ORG/REPO` in contact link URLs with your GitHub org and repo name
 - [ ] Update `CHANGELOG.md` — replace `ORG/REPO` in the `[Unreleased]` link with your GitHub org and repo (otherwise the link 404s)
-- [ ] Tidy `.lycheeignore` — delete **only** the `https://github.com/ORG/REPO` line, once ORG/REPO is real (delete rather than replace, or the pattern would ignore your own repo's links). Leave every other line: the `file://` advisory-form pattern is permanent, and deleting it makes the link check fail on your security policy
+- [ ] Tidy `.lycheeignore` — delete **only** the `https://github.com/ORG/REPO` line, once ORG/REPO is real (delete rather than replace, or the pattern would ignore your own repo's links). Leave every other line; the file marks which are permanent
 - [ ] Update `.github/dependabot.yml` — remove ecosystems you don't use, add ones you need, adjust directories if not at root
 - [ ] Create the `dependency` label — `gh label create dependency --color 0366d6 --description "Dependency updates"` (required by the dependabot and link-check configs)
 - [ ] Rename the Python package (`/onboard` does all this; skip the `packages` edit and `python -m build` fails) — set `pyproject.toml` `name` + `description`, rename the `src/app/` directory, update `[tool.hatch.build.targets.wheel]` `packages` to match, update the `app` imports in `src/app/__main__.py` and `tests/` (`from app.log import …` in `__main__.py`/`test_log.py`, `from app.__main__ import …` in `test_smoke.py`), and the `python -m app` references (`__main__.py` `prog=`, `Dockerfile` `CMD` hint).
