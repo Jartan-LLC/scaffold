@@ -35,8 +35,9 @@ jobs:
         id: lychee
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
-          # Markdown only (#62); --exclude-path mirrors the hook's SECURITY.md exclude.
-          args: "--no-progress --exclude-path .github/SECURITY.md './**/*.md'"
+          # Markdown only (#62). No path exclusions: link-scoped exemptions live in
+          # .lycheeignore, which this action reads, so every .md file stays checked.
+          args: "--no-progress './**/*.md'"
           fail: false # the next step files an issue instead of going red
           failIfEmpty: false # a 0-link tree shouldn't red the run
           output: ./lychee/out.md # pin the report path the create-issue step reads

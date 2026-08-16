@@ -61,11 +61,12 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Update `.gitignore` — add language-specific patterns for your stack
 - [ ] Update `.editorconfig` — adjust formatting rules for your language (e.g., tabs for Go)
 - [ ] Update `.github/CODEOWNERS` — uncomment and set owner usernames/teams
-- [ ] Update `.github/SECURITY.md` — set supported versions and response timeline
+- [ ] Update `.github/SECURITY.md` — set supported versions, response timeline, and the private security contact
+- [ ] Set the private security contact in `.github/SECURITY.md` — not optional. It is the only channel a reporter has if the advisory form is unavailable, and leaving it unset means a stranger holding a working exploit has nowhere private to send it. The address is published publicly in that file, so use one you are willing to publish
 - [ ] Update `.github/CODE_OF_CONDUCT.md` — set the enforcement contact (replace `[INSERT CONTACT METHOD]`)
 - [ ] Update `.github/ISSUE_TEMPLATE/config.yml` — replace `ORG/REPO` in contact link URLs with your GitHub org and repo name
 - [ ] Update `CHANGELOG.md` — replace `ORG/REPO` in the `[Unreleased]` link with your GitHub org and repo (otherwise the link 404s)
-- [ ] Tidy `.lycheeignore` — delete the `https://github.com/ORG/REPO` line once ORG/REPO is real (delete rather than replace, or the pattern would ignore your own repo's links)
+- [ ] Tidy `.lycheeignore` — delete **only** the `https://github.com/ORG/REPO` line, once ORG/REPO is real (delete rather than replace, or the pattern would ignore your own repo's links). Leave every other line: the `file://` advisory-form pattern is permanent, and deleting it makes the link check fail on your security policy
 - [ ] Update `.github/dependabot.yml` — remove ecosystems you don't use, add ones you need, adjust directories if not at root
 - [ ] Create the `dependency` label — `gh label create dependency --color 0366d6 --description "Dependency updates"` (required by the dependabot and link-check configs)
 - [ ] Rename the Python package (`/onboard` does all this; skip the `packages` edit and `python -m build` fails) — set `pyproject.toml` `name` + `description`, rename the `src/app/` directory, update `[tool.hatch.build.targets.wheel]` `packages` to match, update the `app` imports in `src/app/__main__.py` and `tests/` (`from app.log import …` in `__main__.py`/`test_log.py`, `from app.__main__ import …` in `test_smoke.py`), and the `python -m app` references (`__main__.py` `prog=`, `Dockerfile` `CMD` hint).
@@ -98,6 +99,7 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] OpenSSF Scorecard (`.github/workflows/scorecard.yml`) needs a **public** repo to publish its score/badge — on a private fork it skips automatically, so delete it only if you don't want it at all
 - [ ] Publish docs (optional) — **GitHub Pages**: set Settings > Pages > Source = "GitHub Actions", then rename `.github/workflows/pages.yml.example` → `pages.yml` (single-version). **Versioned**: rename `.readthedocs.yaml.example` → `.readthedocs.yaml` and import the repo at readthedocs.org. Pick one; the docs *build* is already checked on every PR either way
 - [ ] Enable secret scanning with push protection (Settings > Security > Secret Protection)
+- [ ] Enable private vulnerability reporting (Settings > Security > Private vulnerability reporting) — `.github/SECURITY.md` sends reporters to the advisory form; until this is on, that form is unavailable to them
 - [ ] Configure branch ruleset for `main` — require PR reviews, require CI to pass, block force pushes
 - [ ] Enable auto-merge (Settings > General > Allow auto-merge) — Dependabot minor/patch PRs auto-merge after CI passes
 - [ ] Review `.github/workflows/claude.yml` — uses `--dangerously-skip-permissions` which grants Claude unrestricted tool access in CI

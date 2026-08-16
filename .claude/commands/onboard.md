@@ -18,7 +18,7 @@ Read the post-fork checklist. This is the source of truth for what needs to chan
 
 ### 3. Interview
 
-Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, author/full name (for `LICENSE` + `docs/conf.py`), the Python package/import name if Python (for the `src/app` rename), the code-of-conduct enforcement contact, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), and any version corrections for training data. List the installed plugin skills/agents (from `enabledPlugins` in `.claude/settings.json`) so the user can choose which to disable via `skillOverrides`.
+Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, author/full name (for `LICENSE` + `docs/conf.py`), the Python package/import name if Python (for the `src/app` rename), a contact for conduct reports and for security reports (one address, or two if they differ) — tell the user this address is published publicly, in `.github/SECURITY.md` and `.github/CODE_OF_CONDUCT.md`, so they should give one they are willing to publish, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), and any version corrections for training data. List the installed plugin skills/agents (from `enabledPlugins` in `.claude/settings.json`) so the user can choose which to disable via `skillOverrides`.
 
 ### 4. Confirm
 
@@ -39,8 +39,9 @@ Work through every Required checklist item that can be automated. Also:
 - The `Makefile` stays in every fork — it's the language-agnostic verify entry point. Point its `lint`/`typecheck`/`test`/`build` targets at the build/test/lint commands from the interview (keep `make check` as the aggregate gate); for a Python project the shipped targets already match, so only edit if the user's commands differ
 - Fill in `CHANGELOG.md` — replace `ORG/REPO` in the `[Unreleased]` link with the GitHub org/repo
 - Replace `ORG/REPO` in `.github/ISSUE_TEMPLATE/config.yml` contact links with the GitHub org/repo
-- Tidy `.lycheeignore` — delete the `https://github.com/ORG/REPO` line (a stale placeholder ignore once ORG/REPO is real; delete rather than replace, or you'd ignore your own repo's links)
+- Tidy `.lycheeignore` — delete **only** the `https://github.com/ORG/REPO` line (a stale placeholder ignore once ORG/REPO is real; delete rather than replace, or you'd ignore your own repo's links). Leave every other line untouched — the `file://` advisory-form pattern is permanent, not a placeholder
 - Set the code-of-conduct enforcement contact in `.github/CODE_OF_CONDUCT.md` (replace `[INSERT CONTACT METHOD]`)
+- Set the private security contact in `.github/SECURITY.md` from the interview answer — this one is set, not left as a placeholder; it is the reporter's only channel when the advisory form is unavailable. Also set, if the user gave them, the supported-version rows (replacing the commented table hint) and the first-reply/fix targets. Leave any other `TODO(/onboard)` the user had no answer for: an unset field with its stated safe default is correct, a timing commitment the user did not choose is not
 - Docs: set `project`/`author`/`project_copyright` in `docs/conf.py`; write the `docs/index.md` landing page (replace `# Project Docs` + the `TODO(/onboard)` comment); update the `pip install app` line in `docs/getting-started.md` to the renamed package; after the package rename, update the `automodule` module names in `docs/reference.md` (replace `app.log`/`app.__main__` with the renamed package's modules — the docs build fails if left stale)
 - Create the `dependency` label used by dependabot and link-check: `gh label create dependency --color 0366d6 --description "Dependency updates" 2>/dev/null || true`
 - When removing skills, also update any agent files that reference them in their `skills:` frontmatter
@@ -50,7 +51,7 @@ For questions the user didn't have answers to (e.g., version corrections, verify
 
 ### 6. Manual Steps
 
-Present both the Required items that need manual action (adding secrets) and the Recommended checklist items that require manual action in GitHub Settings.
+Present both the Required items that need manual action (adding secrets) and the Recommended checklist items that require manual action in GitHub Settings. Name **private vulnerability reporting** (Settings > Security) explicitly rather than folding it into the general list — `.github/SECURITY.md` routes every reporter to the advisory form, and that form does not exist until this is switched on.
 
 ### 7. Cleanup
 
