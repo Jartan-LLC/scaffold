@@ -1,4 +1,9 @@
-"""Shared pytest fixtures."""
+"""Fixtures shared by every collected test.
+
+At the repo root, not in `tests/`, because `--doctest-modules` collects docstring
+examples from `src/` and a `tests/conftest.py` would not reach them. A fixture
+only the `tests/` suite needs can still go in a `tests/conftest.py`.
+"""
 
 import logging
 from collections.abc import Iterator

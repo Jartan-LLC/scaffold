@@ -11,7 +11,8 @@
 - Update docs and skills alongside code changes
 - Run the `doc-reviewer` pass on any docs change before it reaches review (see Docs)
 - Write Google-style docstrings for public modules, classes, and functions (enforced by ruff `D`) and full type annotations (enforced by pyright `strict`)
-  <!-- Not a Python project? Swap this rule for your stack's docstring/typing conventions. -->
+- Keep `>>>` examples in those docstrings runnable — `make test` executes every one under `src/`, so a published example can't drift from its code
+  <!-- Not a Python project? Swap these two rules for your stack's docstring/typing conventions. -->
 - Write plans to `.claude/workspace/` in the project root for non-trivial changes
 
 ### Anti-patterns
