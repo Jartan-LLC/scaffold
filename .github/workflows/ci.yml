@@ -3,6 +3,13 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  # A build on `main` plus a weekly one. Dev extras and hook envs resolve at run
+  # time within their bounds, so `main` can go red with no commit touching it;
+  # without these, the next unrelated PR is what discovers the drift.
+  push:
+    branches: [main]
+  schedule:
+    - cron: "10 7 * * 1" # weekly, Monday 07:10 UTC (offset from scorecard/link-check)
   workflow_dispatch:
 
 permissions:
@@ -27,13 +34,14 @@ jobs:
 
       # All file linters live in .pre-commit-config.yaml (the single source, shared
       # with `make lint`). Install only pre-commit — it manages its own hook envs, so
-      # no pyproject/dev-extras, which keeps this job language-agnostic.
+      # no pyproject/dev-extras, which keeps this job language-agnostic. The runner
+      # is exact-pinned in ci/requirements.txt; the hook revs there are frozen SHAs.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
           restore-keys: pre-commit-
-      - run: pip install pre-commit
+      - run: pip install -r ci/requirements.txt
       - run: pre-commit run --all-files --show-diff-on-failure
 
       # Node/JS (secondary) — uncomment after adding package.json + committing a lockfile.
@@ -97,13 +105,13 @@ jobs:
         with:
           persist-credentials: false
 
-      # No pip cache: this job only installs build+twine (nothing from pyproject),
-      # and `python -m build` builds the project in its own isolated env.
+      # No pip cache: this job only installs the pinned CI tools (nothing from
+      # pyproject), and `python -m build` builds the project in its own isolated env.
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
-      - run: pip install build twine
+      - run: pip install -r ci/requirements.txt
       - run: python -m build
       - run: python -m twine check dist/*
 
@@ -123,7 +131,7 @@ jobs:
 
       # Audit the full installed environment — package deps plus the dev/docs/build
       # tools — mirroring `make check`, not just the (currently empty) declared deps.
-      - run: pip install -e '.[dev,docs]' build twine pip-audit
+      - run: pip install -e '.[dev,docs]' -r ci/requirements.txt
       - name: Audit dependencies for known CVEs
         run: pip-audit
 

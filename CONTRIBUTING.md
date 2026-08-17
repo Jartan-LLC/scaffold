@@ -3,7 +3,7 @@
 ## Setup
 
 ```bash
-pip install -e '.[dev]'
+pip install -e '.[dev]' -r ci/requirements.txt
 pre-commit install  # optional: run the lint hooks on every commit
 ```
 
