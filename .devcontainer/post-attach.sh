@@ -12,7 +12,6 @@ command -v node &>/dev/null || exit 0
 
 project_dir="$PWD"
 settings=".claude/settings.json"
-settings_local=".claude/settings.local.json"
 
 # `claude plugins` reformats settings.json and appends transitive dependencies
 # to enabledPlugins. That file is tracked and this hook is unattended, so
@@ -22,7 +21,9 @@ settings_existed=false
 snapshot=""
 if [ -f "$settings" ]; then
     settings_existed=true
-    snapshot="$(mktemp 2>/dev/null)" && cp "$settings" "$snapshot"
+    # No snapshot means no way to put the file back, so do nothing at all rather
+    # than reformat a tracked file with no way to undo it.
+    snapshot="$(mktemp 2>/dev/null)" && cp "$settings" "$snapshot" || exit 0
 fi
 
 restore_settings() {
@@ -37,21 +38,24 @@ restore_settings() {
 }
 trap restore_settings EXIT
 
-# Declared state, settings.local.json overriding settings.json as Claude Code
-# does. Mode "marketplaces" emits "<name>\t<add-argument>"; "plugins" emits ids.
+# Declared state, from the tracked settings.json alone. settings.local.json is
+# the install *record* this hook writes, not a policy source: merging it back in
+# would let the first attach's record outlive the declaration, so removing a
+# plugin from the tracked file could never take it away again.
+# Mode "marketplaces" emits "<name>\t<add-argument>"; "plugins" emits ids.
 read_declared() {
     node -e '
 const fs = require("fs");
-const [main, local, mode] = process.argv.slice(1);
+const [main, mode] = process.argv.slice(1);
 const load = (p) => {
   try {
     const v = JSON.parse(fs.readFileSync(p, "utf8"));
     return v && typeof v === "object" ? v : {};
   } catch (e) { return {}; }
 };
-const merged = (key) => Object.assign({}, load(main)[key], load(local)[key]);
+const declared = (key) => Object.assign({}, load(main)[key]);
 if (mode === "marketplaces") {
-  for (const [name, entry] of Object.entries(merged("extraKnownMarketplaces"))) {
+  for (const [name, entry] of Object.entries(declared("extraKnownMarketplaces"))) {
     const s = entry && entry.source;
     if (!s || typeof s !== "object") continue;
     // No --ref flag exists, but "add" parses a ref off the source and records
@@ -63,11 +67,11 @@ if (mode === "marketplaces") {
     if (arg && !/\s/.test(name) && !/\s/.test(arg)) console.log(name + "\t" + arg);
   }
 } else {
-  for (const [id, enabled] of Object.entries(merged("enabledPlugins"))) {
+  for (const [id, enabled] of Object.entries(declared("enabledPlugins"))) {
     if (enabled && !/\s/.test(id)) console.log(id);
   }
 }
-' "$settings" "$settings_local" "$1"
+' "$settings" "$1"
 }
 
 # "<id>\t<scope>" for the install records that apply here. Records in the shared
@@ -111,7 +115,10 @@ process.stdin.on("end", () => {
 read_declared marketplaces | while IFS=$'\t' read -r name source; do
     [ -n "$name" ] && [ -n "$source" ] || continue
     printf '%s\n' "$known_marketplaces" | grep -qxF "$name" && continue
-    claude plugins marketplace add "$source" 2>/dev/null || true
+    # local, not the CLI's default of user: a user-scoped registration lands in
+    # the shared volume, making one project's marketplace a resolvable plugin
+    # source for every other project in the container.
+    claude plugins marketplace add "$source" --scope local 2>/dev/null || true
 done
 
 # 2. Refresh metadata so the passes below resolve to the newest version the

@@ -15,7 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   got no plugins and had to be fixed by hand on every clone. Declared
   marketplaces are registered at their declared ref, missing plugins are
   installed at `local` scope, and the update pass no longer touches other
-  projects' records.
+  projects' records. Marketplace registration is scoped to `local` too, so one
+  project's declaration is not written into the shared volume's settings, and
+  declarations are read from the tracked `settings.json` alone — the gitignored
+  `settings.local.json` is the install record, not a policy source, so removing
+  a plugin upstream is not overridden by a container's own history.
 
 <!-- Add ### Added / ### Changed / ### Fixed sections here as you make changes. -->
 <!-- Update ORG/REPO (or let /onboard do it). -->
