@@ -11,6 +11,7 @@ globs:
   - "**/*.md"
 ignores:
   - "node_modules"
+  - ".venv" # `make install` puts the project venv here; its packages ship .md files
   - "docs/_build"
   - ".claude/workspace"
   - "AGENTS.md" # symlink to CLAUDE.md — lint the target, not the alias

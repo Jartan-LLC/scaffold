@@ -6,9 +6,15 @@
 # These are the tools kept out of the dev extras: they are not part of the
 # project's own toolchain, they only run the gate. The project's toolchain
 # (ruff, pytest, pyright, codespell) lives in pyproject.toml with a version
-# bound, and CI installs it with `pip install -e '.[dev]'`.
+# bound, and CI installs it with `uv pip install -e '.[dev]'`.
+#
+# uv is the installer everywhere -- CI, the devcontainer, the Dockerfile and
+# `make` -- and the build frontend (`uv build`, which replaced `python -m
+# build`). Its pin lives on the line below and nowhere else: ci.yml's setup-uv
+# step reads it via `version-file: ci/requirements.txt`, and post-create.sh
+# greps it, so one Dependabot PR moves every environment at once.
 
+uv==0.12.5         # installer, resolver, venv manager and build frontend
 pre-commit==4.6.2  # git hook runner; manages its own hook envs
-build==1.5.0       # PEP 517 frontend for `python -m build`
 twine==7.0.0       # sdist/wheel metadata check before publish
 pip-audit==2.10.1  # CVE audit of the installed environment

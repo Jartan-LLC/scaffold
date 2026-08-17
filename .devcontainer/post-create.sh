@@ -23,11 +23,25 @@ while IFS= read -r -d '' pkg_file; do
     (cd "$dir" && CI=true pnpm install) || echo "Warning: pnpm install failed in $dir" >&2
 done < <(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.pnpm-store/*" -type f -print0)
 
-# Install Python dependencies from all requirements.txt files
+# uv installs every Python dependency below, in place of pip. Its version comes
+# from ci/requirements.txt — the one line CI's setup-uv reads too — so the
+# container, the local gate and the runner never drift apart, and Dependabot's
+# "/ci" entry moves all three at once. Bootstrapped with pip because pip is what
+# the python devcontainer feature ships; nothing else here uses it.
+echo "Installing uv..."
+uv_pin=$(sed -n 's/^\(uv==[^[:space:]]*\).*/\1/p' ci/requirements.txt 2>/dev/null | head -1)
+if [ -n "$uv_pin" ]; then
+    pip install "$uv_pin" || echo "Warning: uv install failed ($uv_pin)" >&2
+else
+    echo "Warning: no pinned uv in ci/requirements.txt; Python installs below will fail" >&2
+fi
+
+# --system: the container is the isolation, so packages go to its interpreter
+# rather than a venv. uv refuses a non-venv target without this.
 echo "Installing Python dependencies..."
 while IFS= read -r -d '' req_file; do
     echo "  Installing from $req_file..."
-    pip install -r "$req_file" || echo "Warning: pip install failed for $req_file" >&2
+    uv pip install --system -r "$req_file" || echo "Warning: uv pip install failed for $req_file" >&2
 done < <(find . -name "requirements.txt" -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.tox/*" -type f -print0)
 
 # Install Python dependencies from all pyproject.toml files (editable installs)
@@ -35,7 +49,7 @@ echo "Installing Python editable packages..."
 while IFS= read -r -d '' pyproject_file; do
     dir=$(dirname "$pyproject_file")
     echo "  Installing from $dir..."
-    pip install -e "${dir}[dev]" || echo "Warning: pip install failed for $dir" >&2
+    uv pip install --system -e "${dir}[dev]" || echo "Warning: uv pip install failed for $dir" >&2
 done < <(find . -name "pyproject.toml" -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.tox/*" -type f -print0)
 
 # pre-commit binary comes from the .[dev] install above.
@@ -71,7 +85,7 @@ fi
 # Optional: Headroom token compression proxy (https://github.com/chopratejas/headroom)
 # Reduces token usage 60-95% by compressing context sent to the LLM.
 # Uncomment to enable:
-# pip install "headroom-ai[proxy]"
+# uv pip install --system "headroom-ai[proxy]"
 # headroom init claude
 
 # Install codebase-memory-mcp (structural code graph for Claude Code)
