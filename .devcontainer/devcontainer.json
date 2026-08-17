@@ -1,5 +1,11 @@
 {
-  "image": "mcr.microsoft.com/devcontainers/base:debian-12",
+  // Pinned by digest, the same discipline devcontainer-lock.json applies to the
+  // features below. The tag stays in the string so a reader can see which base
+  // this is; the digest is what Docker resolves. Nothing refreshes this
+  // automatically — Dependabot's docker ecosystem does not read devcontainer.json
+  // — so it rots until someone moves it. Re-resolve with:
+  //   docker buildx imagetools inspect mcr.microsoft.com/devcontainers/base:debian-12
+  "image": "mcr.microsoft.com/devcontainers/base:debian-12@sha256:23fa69fed758b7927c60061317d73baf7d66b9fca5c344e80bce3a940b229af0",
   "mounts": [
     "source=claude-data,target=/home/vscode/.claude,type=volume"
   ],

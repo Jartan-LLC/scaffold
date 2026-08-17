@@ -8,6 +8,11 @@ sudo corepack enable || echo "Warning: corepack enable failed; pnpm may not be a
 # Installed here, not via the devcontainer feature: the feature installs as root,
 # leaving @anthropic-ai unwritable so auto-update fails forever. Must precede
 # codebase-memory-mcp, which registers its MCP server only if claude is present.
+#
+# Deliberately unpinned, and the one exception to the pinning rule this file
+# otherwise follows: Claude Code is kept free to auto-update because its
+# freshness is what makes it useful (Jonathan, JAR-220). Pinning it here would
+# also fight the non-root install above, which exists to let it self-update.
 echo "Installing Claude Code CLI..."
 claude_install_failed=0
 # Retry once: a registry blip during create otherwise costs a rebuild.
@@ -88,10 +93,37 @@ fi
 # uv pip install --system "headroom-ai[proxy]"
 # headroom init claude
 
-# Install codebase-memory-mcp (structural code graph for Claude Code)
+# Install codebase-memory-mcp (structural code graph for Claude Code).
+#
+# A pipe-to-shell trusts two separate things, so both are pinned:
+#   1. the installer script — fetched at a commit rather than a branch, and its
+#      bytes checked against CBM_INSTALLER_SHA256 before bash ever sees them;
+#   2. the release the installer downloads — CBM_DOWNLOAD_URL replaces the
+#      installer's own /releases/latest/download default. The installer then
+#      verifies the archive against that release's checksums.txt itself.
+#
+# To move to a newer release: set CBM_RELEASE, read install.sh's commit at that
+# tag, and recompute the digest with
+#   curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/<commit>/install.sh | sha256sum
+CBM_RELEASE="v0.10.5"
+CBM_INSTALLER_COMMIT="77195634e13fd3bcd0d24543de5f876b4679f1cf"  # frozen: v0.10.5
+CBM_INSTALLER_SHA256="2fdd4d6563fc8e540bb32e233c5fdef22ecf05d7ebd5a80657cd4fec953b3475"
+
+# The old invocation passed `--ui`. Upstream removed that flag in v0.10.0 when
+# the UI became part of the single archive, and the installer's arg loop has no
+# default case, so it has been silently ignored ever since. Dropped, not moved.
 if ! command -v codebase-memory-mcp &>/dev/null; then
-    echo "Installing codebase-memory-mcp..."
-    (set -o pipefail; curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash -s -- --ui) || echo "Warning: codebase-memory-mcp install failed" >&2
+    echo "Installing codebase-memory-mcp ${CBM_RELEASE}..."
+    cbm_installer=$(mktemp)
+    if curl -fsSL "https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/${CBM_INSTALLER_COMMIT}/install.sh" -o "$cbm_installer" \
+        && echo "${CBM_INSTALLER_SHA256}  ${cbm_installer}" | sha256sum --check --status; then
+        CBM_DOWNLOAD_URL="https://github.com/DeusData/codebase-memory-mcp/releases/download/${CBM_RELEASE}" \
+            bash "$cbm_installer" \
+            || echo "Warning: codebase-memory-mcp install failed" >&2
+    else
+        echo "Warning: codebase-memory-mcp installer did not match its pinned digest; install skipped" >&2
+    fi
+    rm -f "$cbm_installer"
 fi
 
 # Enable codebase-memory-mcp auto-indexing (indexes each project on first MCP
