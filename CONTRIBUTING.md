@@ -3,12 +3,18 @@
 ## Setup
 
 ```bash
-pip install -e '.[dev]' -r ci/requirements.txt
-pre-commit install  # optional: run the lint hooks on every commit
+make install
 ```
 
-Requires Python 3.12+. `make lint` runs the [pre-commit](https://pre-commit.com/)
-hooks; some need Docker (actionlint, lychee) and Node (markdownlint) — the devcontainer has both.
+That creates `./.venv`, installs the package with its dev extras, and wires the
+pre-commit hook. Every other `make` target runs out of that venv, so you never
+need to activate it — activate anyway (`source .venv/bin/activate`) if you want
+`pytest` and `ruff` directly on your shell's PATH.
+
+Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/getting-started/installation/),
+which is this project's installer, resolver and build frontend in place of pip.
+`make lint` runs the [pre-commit](https://pre-commit.com/) hooks; some need
+Docker (actionlint, lychee) and Node (markdownlint) — the devcontainer has both.
 
 ## Verify before opening a PR
 

@@ -1,6 +1,6 @@
 # The single source of truth for file-level linting — run by `make lint` and CI
 # (`pre-commit run --all-files`) as well as on commit (after `pre-commit install`).
-# Env operations (pyright, build, twine, pip-audit, sphinx) live in the Makefile.
+# Env operations (pyright, uv build, twine, pip-audit, sphinx) live in the Makefile.
 #
 # Revs are pinned to commit SHAs (# frozen: vX.Y.Z). Bump all with:
 #   pre-commit autoupdate --freeze

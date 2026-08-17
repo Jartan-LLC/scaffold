@@ -11,6 +11,10 @@ concurrency:
 
 permissions: {}
 
+# uv installs and builds here too — see ci.yml for why this is set once.
+env:
+  UV_SYSTEM_PYTHON: 1
+
 jobs:
   publish:
     runs-on: ubuntu-24.04
@@ -28,6 +32,16 @@ jobs:
         with:
           python-version: "3.12"
 
+      # Caching off, stated rather than left to the action's "auto" default:
+      # this job publishes, so nothing a cache another workflow wrote should be
+      # able to reach the artifact it uploads. zizmor's cache-poisoning audit
+      # reads the explicit `false` and not the default, so this is also what
+      # keeps the lint gate green.
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version-file: ci/requirements.txt
+          enable-cache: false
+
       # TODO: Fail the release if the git tag doesn't match your package version.
       # The shipped pyproject.toml keeps `version` static; uncomment to enforce it
       # matches the tag. Repoint `ver=` if you declare the version elsewhere.
@@ -43,9 +57,9 @@ jobs:
       # Publishes on any v* tag with no CI `needs:` gate — a broken tagged commit
       # can ship. The `pypi` environment's deployment-protection approval is the
       # release gate; add required reviewers to it.
-      - run: pip install -r ci/requirements.txt
+      - run: uv pip install -r ci/requirements.txt
 
-      - run: python -m build
+      - run: uv build
 
       - run: python -m twine check dist/*
 

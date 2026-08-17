@@ -5,3 +5,6 @@
 
 # Build output
 docs/_build/
+
+# Project venv (`make install`) — third-party package files, not ours to format.
+.venv/
