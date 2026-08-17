@@ -1,19 +1,13 @@
 # Task runner for the local dev loop. Run `make` or `make help` to list targets.
 .PHONY: help install lint fix typecheck test test-integration docs check all
 
-# uv replaces pip as this project's installer, resolver, venv manager and build
-# frontend. Install it once — https://docs.astral.sh/uv/getting-started/installation/
-# — and every target below runs out of ./.venv without a shell activation,
-# because the venv's bin directory goes on PATH for this whole file. That also
-# makes pyright pick the venv's interpreter, which it otherwise would not.
-# A missing .venv just falls through to the ambient interpreter, so `make lint`
-# still works in a container that installed the toolchain system-wide.
+# Every target runs out of ./.venv without a shell activation, and pyright
+# resolves the venv's interpreter rather than the ambient one.
 export PATH := $(CURDIR)/.venv/bin:$(PATH)
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
 
-# Order-only prerequisite below: created when absent, never rebuilt when stale.
 .venv:
 	@command -v uv >/dev/null || { echo "uv not found — install it: https://docs.astral.sh/uv/getting-started/installation/"; exit 1; }
 	uv venv

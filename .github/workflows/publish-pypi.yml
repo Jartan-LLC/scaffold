@@ -11,7 +11,6 @@ concurrency:
 
 permissions: {}
 
-# uv installs and builds here too — see ci.yml for why this is set once.
 env:
   UV_SYSTEM_PYTHON: 1
 
@@ -32,11 +31,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      # Caching off, stated rather than left to the action's "auto" default:
-      # this job publishes, so nothing a cache another workflow wrote should be
-      # able to reach the artifact it uploads. zizmor's cache-poisoning audit
-      # reads the explicit `false` and not the default, so this is also what
-      # keeps the lint gate green.
+      # `enable-cache: false` stated, not left to the action's default: zizmor's
+      # cache-poisoning audit reads the literal value on a publish path.
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version-file: ci/requirements.txt
