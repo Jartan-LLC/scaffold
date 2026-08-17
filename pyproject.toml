@@ -47,10 +47,10 @@ docs = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/app"]
 
-# Keep the sdist to source + tests, so conftest.py and its fixtures ship
-# consistently — not dev tooling like .github/ or .devcontainer/.
+# Keep the sdist to source + tests + the root conftest.py, so the suite and its
+# fixtures ship consistently — not dev tooling like .github/ or .devcontainer/.
 [tool.hatch.build.targets.sdist]
-include = ["src", "tests"]
+include = ["src", "tests", "conftest.py"]
 
 [tool.ruff]
 target-version = "py312"
@@ -105,8 +105,11 @@ ban-relative-imports = "all"
 convention = "google"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "--strict-markers --strict-config"
+# `src` is a testpath so `--doctest-modules` reaches the docstring examples the
+# docs publish: an example that stops matching its code fails the suite. It also
+# imports every module under `src` on every run — the cost of the gate.
+testpaths = ["tests", "src"]
+addopts = "--strict-markers --strict-config --doctest-modules"
 xfail_strict = true
 markers = [
     "unit: fast in-process test with no external services",
@@ -114,7 +117,7 @@ markers = [
 ]
 
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "tests", "conftest.py"]
 pythonVersion = "3.12"
 # "strict" is the most thorough; drop to "standard" (pyright's default) if
 # untyped third-party deps get noisy.

@@ -30,4 +30,6 @@ Runs the same checks CI does (on your active interpreter — CI also sweeps the
 - Commits follow [Conventional Commits](https://www.conventionalcommits.org/)
   (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`).
 - User-facing changes go in `CHANGELOG.md` under `## [Unreleased]`.
+- `>>>` examples in docstrings run as tests, so keep them executable and their
+  expected output exact — the suite fails when one drifts from the code.
 - Report security issues privately via [SECURITY.md](.github/SECURITY.md), not a public issue.
