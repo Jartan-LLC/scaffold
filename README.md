@@ -10,19 +10,32 @@ Run `/onboard` in Claude Code to set up this template for your project. It will 
 
 ## Syncing Template Updates
 
-After you fork, you can still pull in later improvements to the template:
+You can still pull in later improvements to the template. How depends on how your repository started.
 
 ```bash
-# One-time: add the template as an 'upstream' remote
+# One-time, either way: add the template as an 'upstream' remote
 git remote add upstream https://github.com/Jartan-LLC/scaffold.git  # this template's repo
-
-# Each time you want updates
 git fetch upstream
+```
+
+**If you used *Use this template*** — the button on this repository — GitHub started your history
+fresh, so there is nothing to merge: `git merge upstream/main` stops at `fatal: refusing to merge
+unrelated histories`. Port the change instead, and name the upstream commit in your PR body so it
+stays possible to ask which repositories took it:
+
+```bash
+git log --oneline main..upstream/main   # what the template has that you do not
+git show <sha>                          # the change to port; apply the equivalent by hand
+```
+
+**If you forked this repository**, the history is shared and the merge works:
+
+```bash
 git checkout -b template-update
 git merge upstream/main   # resolve conflicts, keeping your customizations
 ```
 
-Open a PR from `template-update` so CI runs before the changes land.
+Open a PR either way, so CI runs before the changes land.
 
 ## What's Included
 
