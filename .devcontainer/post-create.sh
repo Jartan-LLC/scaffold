@@ -95,35 +95,70 @@ fi
 
 # Install codebase-memory-mcp (structural code graph for Claude Code).
 #
-# A pipe-to-shell trusts two separate things, so both are pinned:
-#   1. the installer script — fetched at a commit rather than a branch, and its
-#      bytes checked against CBM_INSTALLER_SHA256 before bash ever sees them;
-#   2. the release the installer downloads — CBM_DOWNLOAD_URL replaces the
-#      installer's own /releases/latest/download default. The installer then
-#      verifies the archive against that release's checksums.txt itself.
+# This is the one place in the template that runs third-party code fetched at
+# create time, and the container it runs in bind-mounts the host Docker socket
+# (docker-outside-of-docker, below) — so nothing here is best-effort about
+# provenance. Registered as SEC-2026-0054, High. Three things get pinned:
+#
+#   1. the installer script — fetched at a commit rather than a branch, so the
+#      URL is an immutable content address, and its bytes are checked against
+#      CBM_INSTALLER_SHA256 before bash ever sees them;
+#   2. checksums.txt — pinned here rather than trusted from the release. The
+#      installer verifies each archive against this file but fetches it from the
+#      same location as the archive, so on its own that check is circular:
+#      whoever can replace a release asset can replace the checksum file beside
+#      it. One digest covers every architecture, because every archive is
+#      verified through this file;
+#   3. the release the installer downloads — CBM_DOWNLOAD_URL replaces the
+#      installer's own /releases/latest/download default. A tag names a mutable
+#      location, so this bounds *which* release, not *which bytes*; item 2 is
+#      what makes the bytes fixed.
+#
+# Residual, accepted by Security at Low: the installer refetches checksums.txt
+# itself, so a swap landing between our check and its fetch is not caught. The
+# attacker still has to replace a published release asset rather than push to a
+# default branch. Closing it fully means serving the assets from loopback
+# (install.sh accepts an http://127.0.0.1 CBM_DOWNLOAD_URL) — not taken, because
+# that path is documented upstream as being for testing, and a template every
+# fork inherits should not depend on someone else's test seam. The durable fix
+# is sigstore verification of the release bundles, which also removes the manual
+# digest bump below; tracked as JAR-326.
 #
 # To move to a newer release: set CBM_RELEASE, read install.sh's commit at that
-# tag, and recompute the digest with
+# tag, and recompute both digests with
 #   curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/<commit>/install.sh | sha256sum
+#   curl -fsSL https://github.com/DeusData/codebase-memory-mcp/releases/download/<tag>/checksums.txt | sha256sum
 CBM_RELEASE="v0.10.5"
 CBM_INSTALLER_COMMIT="77195634e13fd3bcd0d24543de5f876b4679f1cf"  # frozen: v0.10.5
 CBM_INSTALLER_SHA256="2fdd4d6563fc8e540bb32e233c5fdef22ecf05d7ebd5a80657cd4fec953b3475"
+CBM_CHECKSUMS_SHA256="6fbd04babc7815b5f2dc4b3330ff9a8f1728a1375aecd94ff13534fe2e02e764"
+CBM_BASE_URL="https://github.com/DeusData/codebase-memory-mcp/releases/download/${CBM_RELEASE}"
+
+# Fetch into a destination only if the bytes match the expected digest.
+cbm_fetch_verified() {  # url  expected-sha256  destination
+    curl -fsSL "$1" -o "$3" && echo "$2  $3" | sha256sum --check --status
+}
 
 # The old invocation passed `--ui`. Upstream removed that flag in v0.10.0 when
 # the UI became part of the single archive, and the installer's arg loop has no
-# default case, so it has been silently ignored ever since. Dropped, not moved.
+# default case, so it has been silently ignored ever since. Nothing is lost by
+# dropping it: checksums.txt gives the `-ui-` and plain archives identical
+# digests, so they are the same bytes under two names.
 if ! command -v codebase-memory-mcp &>/dev/null; then
     echo "Installing codebase-memory-mcp ${CBM_RELEASE}..."
-    cbm_installer=$(mktemp)
-    if curl -fsSL "https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/${CBM_INSTALLER_COMMIT}/install.sh" -o "$cbm_installer" \
-        && echo "${CBM_INSTALLER_SHA256}  ${cbm_installer}" | sha256sum --check --status; then
-        CBM_DOWNLOAD_URL="https://github.com/DeusData/codebase-memory-mcp/releases/download/${CBM_RELEASE}" \
-            bash "$cbm_installer" \
+    cbm_tmp=$(mktemp -d)
+    if cbm_fetch_verified \
+            "https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/${CBM_INSTALLER_COMMIT}/install.sh" \
+            "$CBM_INSTALLER_SHA256" "$cbm_tmp/install.sh" \
+        && cbm_fetch_verified \
+            "${CBM_BASE_URL}/checksums.txt" \
+            "$CBM_CHECKSUMS_SHA256" "$cbm_tmp/checksums.txt"; then
+        CBM_DOWNLOAD_URL="$CBM_BASE_URL" bash "$cbm_tmp/install.sh" \
             || echo "Warning: codebase-memory-mcp install failed" >&2
     else
-        echo "Warning: codebase-memory-mcp installer did not match its pinned digest; install skipped" >&2
+        echo "Warning: codebase-memory-mcp installer or checksums.txt did not match its pinned digest; install skipped" >&2
     fi
-    rm -f "$cbm_installer"
+    rm -rf "$cbm_tmp"
 fi
 
 # Enable codebase-memory-mcp auto-indexing (indexes each project on first MCP
