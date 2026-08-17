@@ -18,6 +18,7 @@
 - Don't wrap things the underlying library already expresses clearly
 - Don't speculate about fixes — investigate first, then propose
 - Don't hardcode derived counts in comments — they drift silently
+- Don't put paragraph-length inline comments in CI/config files
 
 ### Ask first
 

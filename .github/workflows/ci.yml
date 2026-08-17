@@ -15,9 +15,6 @@ on:
 permissions:
   contents: read
 
-# uv installs everything here, in place of pip. `--system` on every call would
-# say the same thing 8 times, so it is set once: uv targets the interpreter
-# actions/setup-python put on PATH rather than demanding a virtualenv.
 env:
   UV_SYSTEM_PYTHON: 1
 
@@ -38,11 +35,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      # uv's own version is read from ci/requirements.txt, the file that already
-      # pins every other tool the gate installs — so Dependabot's "/ci" entry
-      # bumps uv too, and the runner, devcontainer and `make check` never drift
-      # apart. Without `version-file` this action installs uv `latest`, which is
-      # the unpinned-tool failure this repo exists to have closed.
+      # `version-file` is required: without it this action installs uv `latest`,
+      # not the ci/requirements.txt pin.
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version-file: ci/requirements.txt
@@ -85,9 +79,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      # setup-uv's cache replaces setup-python's `cache: pip`: it keys off
-      # pyproject.toml and ci/requirements.txt by default, and it caches uv's
-      # own wheel store, which is what the install actually reads.
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version-file: ci/requirements.txt
@@ -142,10 +133,6 @@ jobs:
         with:
           version-file: ci/requirements.txt
 
-      # `uv build` replaces `python -m build` and does the same thing — resolve
-      # the declared build backend into an isolated env, build the sdist, then
-      # build the wheel from it — so `build` left ci/requirements.txt. twine
-      # stays: uv has no equivalent metadata check.
       - run: uv pip install -r ci/requirements.txt
       - run: uv build
       - run: python -m twine check dist/*
@@ -169,8 +156,6 @@ jobs:
 
       # Audit the full installed environment — package deps plus the dev/docs/CI
       # tools — mirroring `make check`, not just the (currently empty) declared deps.
-      # pip-audit reads the environment, not a lockfile, so uv installing it
-      # changes nothing here.
       - run: uv pip install -e '.[dev,docs]' -r ci/requirements.txt
       - name: Audit dependencies for known CVEs
         run: pip-audit

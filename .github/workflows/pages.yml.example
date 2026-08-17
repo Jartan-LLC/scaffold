@@ -12,7 +12,6 @@ on:
 
 permissions: {}
 
-# uv installs here too — see ci.yml for why this is set once.
 env:
   UV_SYSTEM_PYTHON: 1
 
