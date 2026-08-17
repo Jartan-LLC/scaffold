@@ -9,6 +9,7 @@
 - Read README.md and relevant docs before modifying unfamiliar code
 - Run Verify commands before declaring work done
 - Update docs and skills alongside code changes
+- Run the `doc-reviewer` pass on any docs change before it reaches review (see Docs)
 - Write Google-style docstrings for public modules, classes, and functions (enforced by ruff `D`) and full type annotations (enforced by pyright `strict`)
   <!-- Not a Python project? Swap this rule for your stack's docstring/typing conventions. -->
 - Write plans to `.claude/workspace/` in the project root for non-trivial changes
@@ -40,6 +41,23 @@
 ## Skills
 
 <!-- Add project-specific skills and conventions here as they develop. -->
+
+## Docs
+
+The prose bar is `praxis:docs-patterns`; the review pass is praxis's `doc-reviewer`
+agent. Both ship in the `grimoire` marketplace `.claude/settings.json` declares.
+CI gates structure and links — nothing gates whether a doc earns its length.
+
+Plugins resolve from the session's project root, so an agent rooted above this
+directory loads no plugins and reads the two files from a checkout instead, at the
+ref `.claude/settings.json` pins:
+
+```bash
+git clone --depth 1 --branch <ref> https://github.com/Jartan-LLC/grimoire.git \
+  .claude/workspace/grimoire
+# plugins/praxis/skills/docs-patterns/SKILL.md — the bar
+# plugins/praxis/agents/doc-reviewer.md — the pass
+```
 
 ## Verify
 
