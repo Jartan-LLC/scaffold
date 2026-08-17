@@ -55,6 +55,18 @@ jobs:
           ref: ${{ github.ref_name }}
           token: ${{ steps.app-token.outputs.token }}
 
+      # A bare URL in plugin_marketplaces resolves to grimoire's default branch
+      # at job time, and its plugins run node on SessionStart/PreToolUse without
+      # a prompt. The input takes no ref, so pin via a local path instead.
+      # Bump in step with .claude/settings.json.
+      - name: Fetch the grimoire marketplace at a pinned tag
+        env:
+          GRIMOIRE_REF: marketplace-v1.0.0
+        run: |
+          git clone --depth 1 --branch "$GRIMOIRE_REF" \
+            https://github.com/Jartan-LLC/grimoire.git "$RUNNER_TEMP/grimoire"
+          git -C "$RUNNER_TEMP/grimoire" rev-parse HEAD
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@d5726de019ec4498aa667642bc3a80fca83aa102 # v1.0.148
@@ -62,9 +74,10 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ steps.app-token.outputs.token }}
 
+          # The pinned clone from the step above. claude-plugins-official is
+          # dropped: nothing below installs from it.
           plugin_marketplaces: |
-            https://github.com/anthropics/claude-plugins-official.git
-            https://github.com/Jartan-LLC/grimoire.git
+            ${{ runner.temp }}/grimoire
 
           plugins: |
             claudivis@grimoire
