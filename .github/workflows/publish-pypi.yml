@@ -43,7 +43,7 @@ jobs:
       # Publishes on any v* tag with no CI `needs:` gate — a broken tagged commit
       # can ship. The `pypi` environment's deployment-protection approval is the
       # release gate; add required reviewers to it.
-      - run: pip install build twine
+      - run: pip install -r ci/requirements.txt
 
       - run: python -m build
 

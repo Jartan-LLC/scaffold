@@ -5,7 +5,7 @@ help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
 
 install:  ## Install the package with its dev extras and wire the pre-commit hook
-	pip install -e '.[dev]'
+	pip install -e '.[dev]' -r ci/requirements.txt
 	# Skip hook wiring outside a git checkout (e.g. an unpacked sdist); real failures still surface.
 	if git rev-parse --git-dir >/dev/null 2>&1; then pre-commit install; fi
 
@@ -30,9 +30,11 @@ docs:  ## Build the docs site, warnings-as-errors (needs the docs extra)
 
 # The one gate: reproduces every CI check locally on the active interpreter
 # (CI additionally sweeps the 3.12/3.13 matrix — see ci.yml). Self-installs the
-# CI-only tools (build, twine, pip-audit) that are kept out of the dev extras.
+# CI-only tools (pre-commit, build, twine, pip-audit) that are kept out of the
+# dev extras — they are exact-pinned in ci/requirements.txt, the same file CI
+# installs from, so this gate and that one run identical tools.
 check:  ## Run every CI check (lint, typecheck, test, build, audit, docs)
-	pip install -q -e '.[dev,docs]' build twine pip-audit
+	pip install -q -e '.[dev,docs]' -r ci/requirements.txt
 	$(MAKE) lint typecheck test
 	python -m build
 	python -m twine check dist/*
