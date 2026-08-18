@@ -27,6 +27,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0 # the `latest` decision below compares against every tag
 
       - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
 
@@ -45,14 +46,32 @@ jobs:
       - name: Compute lowercase image name
         run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
+      # metadata-action's default `latest=auto` tags every non-prerelease build
+      # `latest`, without checking it is the highest version released. A patch cut
+      # on a maintained line after a higher minor shipped would move `latest`
+      # backwards and silently downgrade whoever pulls it. Decide it here instead.
+      - name: Decide whether this tag takes `latest`
+        id: latest
+        run: |
+          version="${GITHUB_REF#refs/tags/v}"
+          # sort -V orders 1.0.0 before 1.0.0-rc1, so drop pre-releases first.
+          highest="$(git tag -l 'v*' | sed 's/^v//' | grep -v -- '-' | sort -V | tail -1)"
+          if [ "$version" = "$highest" ]; then
+            echo "take=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "take=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::v$version is not the highest release (v$highest); leaving :latest alone"
+          fi
+
       - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         id: meta
         with:
           images: ${{ env.IMAGE_NAME }}
+          flavor: latest=false
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ steps.latest.outputs.take }}
 
       - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         id: build
