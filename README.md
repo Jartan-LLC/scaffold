@@ -42,7 +42,7 @@ Open a PR either way, so CI runs before the changes land.
 | Area | Contents |
 |------|----------|
 | `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite; plus Claude Code CLI and codebase-memory-mcp (structural code graph, best-effort), both installed via `post-create.sh` |
-| `.claude/` | Claude Code configuration — enabled plugins (skills & agents from the grimoire marketplace) and the `/onboard` setup command |
+| `.claude/` | Claude Code configuration — enabled plugins (skills & agents from the grimoire marketplace) and the `/onboard` setup command. `post-attach.sh` installs whatever `enabledPlugins` declares, so a fresh clone needs no manual plugin step. Reconciliation is **additive only**: removing a plugin from `enabledPlugins` stops it being installed on new machines, but a container that already installed it keeps it *and keeps updating it* on every attach — so revoking a plugin also means `claude plugins uninstall <id> --scope local` on each container that has it |
 | `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + dependency audit + docs build; Node steps + Docker job commented), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, publish/release + OpenSSF Scorecard + weekly external-link-check workflows, issue/PR + code-of-conduct + security templates |
 | `pyproject.toml`, `ci/requirements.txt` | Python packaging + tool config (ruff, pytest, pyright, codespell) — minimal src-layout stub; rename or delete. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use |
 | `src/app/`, `tests/` | Placeholder package (CLI entry point + logging setup, PEP 561 typed) + smoke/logging tests so CI is green on first fork |
@@ -71,6 +71,7 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Update `.devcontainer/devcontainer.json` — change the desktop-lite password, add/remove language features and extensions for your stack
 - [ ] Update `.devcontainer/post-create.sh` — add dependency installation for your stack
 - [ ] Update `.devcontainer/post-start.sh` — add commands that should run on each container start (Docker socket fix and Codespaces env overrides are included)
+- [ ] Update `.devcontainer/post-attach.sh` — add commands that should run on each attach (Claude Code plugin reconciliation is included)
 - [ ] Update `.gitignore` — add language-specific patterns for your stack
 - [ ] Update `.editorconfig` — adjust formatting rules for your language (e.g., tabs for Go)
 - [ ] Update `.github/CODEOWNERS` — uncomment and set owner usernames/teams
