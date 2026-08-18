@@ -14,9 +14,9 @@ permissions: {}
 
 jobs:
   claude:
-    # Only trusted collaborators can trigger: this job checks out the (possibly
-    # fork) PR head with a write-scoped token, so gating on author_association
-    # blocks the pwn-request path (outside contributors are NONE/CONTRIBUTOR).
+    # author_association narrows who can trigger, but does not discriminate a
+    # human org member from a machine account in the same org — the token
+    # below carries no write scope regardless of who passes this gate.
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)) ||
@@ -24,10 +24,14 @@ jobs:
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')) && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association))
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    # JAR-687: author_association cannot tell a human org member from a
+    # machine account in the same org — every agent workforce account is
+    # MEMBER (JAR-681) — so this run must not hold write capability regardless
+    # of who or what passes the gate above.
     permissions:
-      contents: write
-      pull-requests: write
-      issues: write
+      contents: read
+      pull-requests: read
+      issues: read
       id-token: write
       actions: read
     steps:
@@ -39,10 +43,11 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
-          # Scope the token to what Claude needs (matches the App grants in README).
-          permission-contents: write
-          permission-issues: write
-          permission-pull-requests: write
+          # Read-only: this run is triggered by content any GitHub account or
+          # machine principal can author — JAR-687.
+          permission-contents: read
+          permission-issues: read
+          permission-pull-requests: read
 
       # Token is used by claude-code-action to push commits; no artifacts are
       # uploaded, so persisting it is safe.
@@ -88,4 +93,3 @@ jobs:
 
           claude_args: |
             --model claude-opus-4-6
-            --dangerously-skip-permissions
