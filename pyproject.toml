@@ -27,7 +27,7 @@ dependencies = []
 # The gate's own tools (uv, pre-commit, twine, pip-audit) are not part of
 # this toolchain -- they live exact-pinned in ci/requirements.txt.
 dev = [
-    "ruff>=0.16.3,<1",     # linter + formatter
+    "ruff>=0.16.4,<1",     # linter + formatter
     "pytest>=9.1,<10",     # test runner
     "pyright>=1.1,<2",     # static type checker
     "codespell>=2.4,<3",   # spell checker (code, comments, docs)
