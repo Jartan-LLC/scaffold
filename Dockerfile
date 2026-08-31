@@ -4,7 +4,7 @@
 # containerized.
 
 # Build stage, not an inline COPY --from: Dependabot only parses FROM lines.
-FROM ghcr.io/astral-sh/uv:0.12.5 AS uv-bin
+FROM ghcr.io/astral-sh/uv:0.12.7 AS uv-bin
 
 FROM python:3.12-slim
 COPY --from=uv-bin /uv /uvx /bin/
