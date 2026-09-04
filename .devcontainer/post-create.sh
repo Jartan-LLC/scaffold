@@ -2,8 +2,14 @@
 
 echo "Setting up development environment..."
 
-# Enable pnpm via corepack (ships with Node.js)
-sudo corepack enable || echo "Warning: corepack enable failed; pnpm may not be available" >&2
+# Enable pnpm via corepack (ships with Node.js). Node 26 removed corepack, so
+# fall back to a direct npm install when corepack is absent or broken.
+if command -v corepack &>/dev/null; then
+    sudo corepack enable || echo "Warning: corepack enable failed; pnpm may not be available" >&2
+else
+    echo "Warning: corepack not found (Node 26+?); installing pnpm via npm" >&2
+    npm install -g pnpm || echo "Warning: pnpm install via npm failed" >&2
+fi
 
 # Installed here, not via the devcontainer feature: the feature installs as root,
 # leaving @anthropic-ai unwritable so auto-update fails forever. Must precede
