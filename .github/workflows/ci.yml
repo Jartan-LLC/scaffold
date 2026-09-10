@@ -56,14 +56,17 @@ jobs:
 
       # Node/JS (secondary) — uncomment after adding package.json + committing a lockfile.
       # `prettier --check` is the generic part; drop `astro check` unless you use Astro.
-      # - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      # pnpm/action-setup is legacy for pnpm <11; pnpm/setup downloads a self-contained
+      # binary — no Node.js or npm involved — so the npm audit stall cannot happen.
+      # - uses: pnpm/setup@45916a3e576510a7d98f60cf27f5a8f7a282e77d # v2.1.0
       #   with:
-      #     version: 10
+      #     version: 11
       # - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
       #   with:
-      #     node-version: "22"
+      #     node-version: "24"
       #     cache: pnpm
       #     cache-dependency-path: pnpm-lock.yaml
+      #     cache-hit-by-pnpm-version: true
       # - run: pnpm install --frozen-lockfile
       # - run: pnpm exec prettier --check .
 
