@@ -10,5 +10,6 @@ source docstrings.
 :maxdepth: 2
 
 getting-started
+giggles
 reference
 ```

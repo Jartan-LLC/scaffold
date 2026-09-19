@@ -14,4 +14,33 @@ missing import.
    :members:
    :undoc-members:
    :show-inheritance:
+.. automodule:: giggles
+   :members:
+
+.. automodule:: giggles.config
+   :members:
+
+.. automodule:: giggles.auth
+   :members:
+
+.. automodule:: giggles.client
+   :members:
+
+.. automodule:: giggles.store
+   :members:
+
+.. automodule:: giggles.collector
+   :members:
+
+.. automodule:: giggles.analysis
+   :members:
+
+.. automodule:: giggles.strategy
+   :members:
+
+.. automodule:: giggles.faucets
+   :members:
+
+.. automodule:: giggles.__main__
+   :members:
 ```

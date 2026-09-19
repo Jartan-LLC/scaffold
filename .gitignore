@@ -50,3 +50,6 @@ logs/
 
 # Claude local settings (user-specific)
 .claude/settings.local.*
+
+# Giggles bot: recorded traffic, SQLite snapshots, and the saved session
+giggles-data/

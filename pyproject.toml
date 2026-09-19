@@ -16,7 +16,12 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+    "httpx>=0.28,<1", # HTTP client: timeouts by default, mock transport for tests, one API for sync and async
+]
+
+[project.scripts]
+giggles = "giggles.__main__:main"
 
 [project.optional-dependencies]
 # The toolchain CI runs. Delete this whole file if the project isn't Python.
@@ -45,7 +50,7 @@ docs = [
 # Hatchling ships the package's non-.py files (the py.typed PEP 561 marker)
 # automatically.
 [tool.hatch.build.targets.wheel]
-packages = ["src/app"]
+packages = ["src/app", "src/giggles"]
 
 # Keep the sdist to source + tests + the root conftest.py, so the suite and its
 # fixtures ship consistently — not dev tooling like .github/ or .devcontainer/.
@@ -92,7 +97,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]                      # allow re-exports
-"tests/**" = ["S101", "ARG", "PLR2004", "D"]  # asserts, fixtures, magic values, docstrings
+"tests/**" = ["S101", "ARG", "PLR2004", "D", "S105", "S106", "PLR0911"]  # asserts, fixtures, magic values, docstrings, fake tokens, fake backends
 
 [tool.ruff.lint.flake8-tidy-imports]
 # Absolute imports only — keeps the package rename-agnostic to import style and
