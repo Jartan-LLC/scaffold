@@ -16,7 +16,7 @@ pinned, and keeps activation local to your clone.
 
 | Variable | Default | When `true` |
 |---|---|---|
-| `ACTIVATE_LIZA` | `false` | container create runs `liza init --claude --yes` |
+| `ACTIVATE_LIZA` | `false` | container create runs [`activate.sh`](activate.sh) |
 | `INSTALL_LIZA_TOOLS` | `false` | installs the toolchain below instead of codebase-memory-mcp |
 
 The committed default lives in `devcontainer.json` (`containerEnv`), as
@@ -36,15 +36,17 @@ except `init`, which it keeps local:
 | skills | links in `.claude/skills/` |
 | hook scripts, `.claudeignore` and other new files | excluded in `.git/info/exclude` |
 
-To activate a clone by hand, without the switch:
+To activate a clone by hand, without the switch (prefix `INSTALL_LIZA_TOOLS=true` to
+install the toolchain first):
 
 ```bash
-liza init --claude
+bash .devcontainer/liza/activate.sh
 ```
 
-The shim covers any `liza init`, including the multi-agent one below. `~/.liza/libexec/liza
-init` bypasses it and writes to the committed `.claude/settings.json` and to
-`~/.claude/CLAUDE.md`.
+The shim covers any `liza init`, including the multi-agent one below, and loads the
+toolchain's `LIZA_ENABLE_*` gates for it when `INSTALL_LIZA_TOOLS` is on.
+`~/.liza/libexec/liza init` bypasses it and writes to the committed
+`.claude/settings.json` and to `~/.claude/CLAUDE.md`.
 
 ## Modes
 
@@ -83,7 +85,7 @@ the rest of the run: checkpoints, the operator session, logs.
 
 With `INSTALL_LIZA_TOOLS=true`, [`tools.sh`](tools.sh) installs these into
 `~/.liza/bin`, every one pinned, and writes the `LIZA_ENABLE_*` switches Liza reads to
-`~/.liza/toolchain/env.sh`, which `.bashrc` sources.
+`~/.liza/toolchain/env.sh`, which `.bashrc` and `.profile` source.
 
 | Tool | Installed from | Notes |
 |---|---|---|
@@ -109,21 +111,31 @@ With `INSTALL_LIZA_TOOLS=true`, [`tools.sh`](tools.sh) installs these into
 | Pin | Where | Then |
 |---|---|---|
 | Liza release | `LIZA_RELEASE` in [`install.sh`](install.sh) | the recipe in its header |
-| ripgrep, release binaries, Go commits, semble model | [`install.sh`](install.sh), [`tools.sh`](tools.sh) | recompute the sha256 of the new asset |
+| ripgrep, release binaries, semble model | [`install.sh`](install.sh), [`tools.sh`](tools.sh) | recompute the sha256 of the new asset |
+| source-built tools | `GO_TOOLS` in [`tools.sh`](tools.sh) | set the new commit SHA |
 | npm tools | [`npm/package.json`](npm/package.json) | `npm install --package-lock-only` in `npm/` |
 | semble | [`semble-requirements.txt`](semble-requirements.txt) | the command in its header |
+| `AGENT_TOOLS*.md` | both variants here | diff upstream `contracts/AGENT_TOOLS.md` between the old and new Liza tags; carry the changes into both |
 
 Then run [`smoke-test.sh`](smoke-test.sh), which activates a throwaway clone and checks
-activation stays local and idempotent.
+activation stays local and idempotent; CI runs it on every change to this directory.
 
 ## Removing Liza
 
-1. Delete this directory.
+1. Delete this directory and `.github/workflows/liza-smoke.yml`.
 2. In `devcontainer.json`, drop the `liza-${devcontainerId}` mount, the two switches and
    the Go feature (its entry in `devcontainer-lock.json` too).
 3. In `post-create.sh`, drop the Liza block, the "Liza is installed but not active" note,
    and the `INSTALL_LIZA_TOOLS` condition on codebase-memory-mcp.
-4. Delete `GUARDRAILS.md` and the Liza section of `.gitignore`.
+4. Delete the Liza section of `.gitignore`; drop the Liza mention and checklist item from
+   `README.md` and the Liza parts of `.claude/commands/onboard.md`. Keep `GUARDRAILS.md`:
+   it holds the project rules.
+5. In each clone that was activated: delete `CLAUDE.local.md`, the Liza entries in
+   `.claude/settings.local.json`, the `.claude/skills/` links into `~/.liza` and Liza's
+   `.claude/hooks/` scripts, and the Liza lines in `.git/info/exclude`. If the toolchain was
+   on, run `claude mcp remove --scope local context7` and re-enable codebase-memory-mcp with
+   `/mcp`.
+6. Remove the volume from the host: `docker volume rm liza-<devcontainerId>`.
 
 ## See also
 

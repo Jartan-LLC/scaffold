@@ -33,8 +33,10 @@ case "$(uname -m)" in
     *) echo "Warning: Liza: unsupported architecture $(uname -m); skipped" >&2; exit 1 ;;
 esac
 
+mkdir -p "$liza_home" 2>/dev/null
 # Fresh named volumes are root-owned.
-sudo chown "$(id -u):$(id -g)" "$liza_home" || echo "Warning: could not fix ownership on $liza_home" >&2
+[ -O "$liza_home" ] || sudo chown "$(id -u):$(id -g)" "$liza_home" \
+    || echo "Warning: could not fix ownership on $liza_home" >&2
 mkdir -p "$liza_home/libexec" "$liza_home/bin" "$path_dir"
 
 install_liza() {

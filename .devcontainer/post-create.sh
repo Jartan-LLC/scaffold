@@ -165,20 +165,18 @@ fi
 
 # Liza always installs; INSTALL_LIZA_TOOLS and ACTIVATE_LIZA (containerEnv) opt the
 # project in further. See .devcontainer/liza/README.md.
+liza_installed=false
 if bash .devcontainer/liza/install.sh; then
-    if [ "${INSTALL_LIZA_TOOLS:-false}" = true ]; then
-        bash .devcontainer/liza/tools.sh
-        # liza init reads the tool gates from the environment.
-        # shellcheck source=/dev/null
-        [ -f "$HOME/.liza/toolchain/env.sh" ] && source "$HOME/.liza/toolchain/env.sh"
-    fi
+    liza_installed=true
     if [ "${ACTIVATE_LIZA:-false}" = true ]; then
-        "$HOME/.local/bin/liza" init --claude --yes </dev/null >/dev/null || echo "Warning: Liza activation failed" >&2
+        bash .devcontainer/liza/activate.sh </dev/null >/dev/null || echo "Warning: Liza activation failed" >&2
+    elif [ "${INSTALL_LIZA_TOOLS:-false}" = true ]; then
+        bash .devcontainer/liza/tools.sh
     fi
 fi
 
 gh auth status 2>/dev/null || echo "Warning: gh not authenticated. Run 'gh auth login' to enable GitHub CLI." >&2
-[ -L CLAUDE.local.md ] || echo "Note: Liza is installed but not active here. Run 'liza init --claude' to activate it for this clone, or see .devcontainer/liza/README.md." >&2
+$liza_installed && [ ! -L CLAUDE.local.md ] && echo "Note: Liza is installed but not active here. Run 'bash .devcontainer/liza/activate.sh' to activate it for this clone, or see .devcontainer/liza/README.md." >&2
 
 # Reported here, at the end, so it survives the dependency-install output above
 # rather than scrolling away. Not fatal: a non-zero postCreateCommand makes the

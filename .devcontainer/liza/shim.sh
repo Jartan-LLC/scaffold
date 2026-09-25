@@ -30,7 +30,15 @@ held_settings="$claude_dir/settings.json.liza-shim-held"
 global_contract="$HOME/.claude/CLAUDE.md"
 core_contract="$HOME/.liza/CORE.md"
 
+mkdir -p "$claude_dir"
+# mkdir is atomic: a second concurrent init would otherwise swap the already-swapped files.
+lock="$claude_dir/.liza-shim.lock"
+if ! mkdir "$lock" 2>/dev/null; then
+    echo "liza shim: another init holds $lock; remove it if none is running." >&2
+    exit 1
+fi
 if [ -e "$held_settings" ]; then
+    rmdir "$lock"
     echo "liza shim: $held_settings exists from an interrupted init; move it back to settings.json first." >&2
     exit 1
 fi
@@ -45,17 +53,28 @@ restore_settings() {
     [ -f "$shared_settings" ] && mv -f "$shared_settings" "$local_settings"
     [ -f "$held_settings" ] && mv -f "$held_settings" "$shared_settings"
 }
-mkdir -p "$claude_dir"
+release() {
+    restore_settings
+    rmdir "$lock"
+}
 [ -f "$shared_settings" ] && mv "$shared_settings" "$held_settings"
 [ -f "$local_settings" ] && mv "$local_settings" "$shared_settings"
-trap restore_settings EXIT
+trap release EXIT
 trap 'exit 130' INT TERM
+
+# Liza reads the toolchain's LIZA_ENABLE_* gates at init time, and the shell running init
+# (a script, /onboard, Liza's operator agent) may not have loaded them.
+if [ "${INSTALL_LIZA_TOOLS:-false}" = true ] && [ -f "$HOME/.liza/toolchain/env.sh" ]; then
+    # shellcheck source=/dev/null
+    source "$HOME/.liza/toolchain/env.sh"
+fi
 
 "$real_liza" "$@"
 rc=$?
 
-restore_settings
+release
 trap - EXIT
+[ "$rc" -eq 0 ] || exit "$rc"
 
 # rtk's own `rtk init -g` writes this hook to ~/.claude/settings.json, rewriting commands
 # in every project; here it applies to activated clones only.
@@ -83,6 +102,7 @@ else
 fi
 
 for skill_md in "$HOME"/.liza/skills/*/SKILL.md; do
+    [ -e "$skill_md" ] || continue
     skill_dir=${skill_md%/SKILL.md}
     link="$claude_dir/skills/${skill_dir##*/}"
     if [ -L "$link" ] || [ ! -e "$link" ]; then

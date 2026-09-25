@@ -56,8 +56,8 @@ declare -A SEMBLE_MODEL_SHA256=(
 )
 
 case "$(uname -m)" in
-    x86_64 | amd64) arch=x86_64 ;;
-    aarch64 | arm64) arch=aarch64 ;;
+    x86_64 | amd64) arch=x86_64 goarch=amd64 ;;
+    aarch64 | arm64) arch=aarch64 goarch=arm64 ;;
     *) echo "Warning: Liza tools: unsupported architecture $(uname -m); skipped" >&2; exit 1 ;;
 esac
 
@@ -130,7 +130,7 @@ install_pinned ast-grep "$AST_GREP_VERSION" release_binary ast-grep \
     "https://github.com/ast-grep/ast-grep/releases/download/$AST_GREP_VERSION/app-$arch-unknown-linux-gnu.zip" \
     "${AST_GREP_SHA256[$arch]}" ast-grep
 install_pinned yq "$YQ_VERSION" release_binary yq \
-    "https://github.com/mikefarah/yq/releases/download/$YQ_VERSION/yq_linux_$([ "$arch" = x86_64 ] && echo amd64 || echo arm64)" \
+    "https://github.com/mikefarah/yq/releases/download/$YQ_VERSION/yq_linux_$goarch" \
     "${YQ_SHA256[$arch]}" ""
 if [ "$arch" = x86_64 ]; then
     install_pinned rtk "$RTK_VERSION" release_binary rtk \
@@ -163,10 +163,11 @@ if command -v claude >/dev/null; then
         || failed+=("context7 MCP registration")
     # The toolchain replaces codebase-memory-mcp, whose registration is user-scope in the
     # shared ~/.claude volume: switch it off for this project only, as /mcp would.
+    # ~/.claude.json is a symlink into the claude-data volume: edit its target, atomically.
+    claude_json=$(readlink -f "$HOME/.claude.json")
     jq --arg p "$PWD" '.projects[$p].disabledMcpServers |= ((. // []) + ["codebase-memory-mcp"] | unique)' \
-        "$HOME/.claude.json" >"$HOME/.claude.json.tmp" \
-        && cat "$HOME/.claude.json.tmp" >"$HOME/.claude.json" \
-        && rm "$HOME/.claude.json.tmp" \
+        "$claude_json" >"$claude_json.tmp" \
+        && mv "$claude_json.tmp" "$claude_json" \
         || failed+=("codebase-memory-mcp disable")
 fi
 

@@ -43,20 +43,20 @@ Open a PR either way, so CI runs before the changes land.
 |------|----------|
 | `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Go, Docker, GitHub CLI, desktop-lite; plus Claude Code CLI and codebase-memory-mcp (structural code graph, best-effort), both installed via `post-create.sh`, and [Liza](.devcontainer/liza/README.md) (pinned; activation and its agent toolchain are opt-in switches) |
 | `.claude/` | Claude Code configuration — enabled plugins (skills & agents from the grimoire marketplace) and the `/onboard` setup command |
-| `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + dependency audit + docs build; Node steps + Docker job commented), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, publish/release + OpenSSF Scorecard + weekly external-link-check workflows, issue/PR + code-of-conduct + security templates |
+| `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + dependency audit + docs build; Node steps + Docker job commented), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, publish/release + OpenSSF Scorecard + weekly external-link-check + Liza smoke-test workflows, issue/PR + code-of-conduct + security templates |
 | `pyproject.toml`, `ci/requirements.txt` | Python packaging + tool config (ruff, pytest, pyright, codespell) — minimal src-layout stub; rename or delete. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use |
 | `src/app/`, `tests/` | Placeholder package (CLI entry point + logging setup, PEP 561 typed) + smoke/logging tests so CI is green on first fork |
 | `Makefile`, `.pre-commit-config.yaml` | Task runner (`make install`/`lint`/`test`/`check`/`docs`, backed by [uv](https://docs.astral.sh/uv/) and a project-local `.venv`) + the single lint source (ruff, codespell, shellcheck, markdownlint, lychee, actionlint, zizmor, hygiene) that `make lint` and CI both run |
 | `docs/`, `.readthedocs.yaml.example` | Sphinx docs site (Markdown via MyST, API reference from docstrings); `make docs` builds it. Publish via `pages.yml.example` (GitHub Pages) or ReadTheDocs |
-| `AGENTS.md` | Symlink to `CLAUDE.md` so vendor-neutral agent tools (Cursor, Copilot, …) read the same rules |
+| `AGENTS.md` | Symlink to `CLAUDE.md` for vendor-neutral agent tools (Cursor, Copilot, …); tools that don't follow `@` imports won't load `GUARDRAILS.md` |
 | `Dockerfile`, `.dockerignore` | Minimal Python image stub — pairs with `publish-docker.yml` |
 | `CHANGELOG.md`, `CONTRIBUTING.md` | Keep-a-Changelog skeleton and a Python contributor guide |
 | `.env.example`, `.prettierrc` | Env-var template and Prettier config (for JS/TS work) |
 | `.editorconfig` | Language-aware formatting — 4-space Python, 2-space JS/TS, tabs for Makefiles |
 | `.gitattributes` | Syntax-aware diffs for 20+ languages, binary normalization for lock files |
 | `.gitignore` | Comprehensive patterns for Node, Python, Docker, IDEs, env files, build artifacts |
-| `CLAUDE.md` | Project rules, anti-patterns, verification commands, skill index |
-| `GUARDRAILS.md` | The project rules Liza agents must never trade away, ranked by Liza's tiers |
+| `CLAUDE.md` | Imports the project rules; corrections, verification commands, skill index |
+| `GUARDRAILS.md` | Project rules ranked by how firmly each holds (never / ask first / default / preference) — the tiers Liza agents enforce |
 | `LICENSE.*` | License templates (MIT, Apache-2.0, AGPL-3.0, proprietary) — pick one during onboarding |
 
 ## Post-Fork Checklist
@@ -69,10 +69,11 @@ If you prefer to set up manually instead of using `/onboard`:
   - Project name and description (the `# Project Name` heading and the `<!-- ONE LINE: … -->` comment under it)
   - Corrections with any version-specific overrides for your stack
 - [ ] Update `CLAUDE.md` Skills section — add project-specific skills/conventions as they emerge
+- [ ] Update `GUARDRAILS.md` — add project rules as they emerge, at the tier each must hold
 - [ ] Update `.devcontainer/devcontainer.json` — change the desktop-lite password, add/remove language features and extensions for your stack
 - [ ] Update `.devcontainer/post-create.sh` — add dependency installation for your stack
 - [ ] Update `.devcontainer/post-start.sh` — add commands that should run on each container start (Docker socket fix and Codespaces env overrides are included)
-- [ ] Decide on Liza — set the `ACTIVATE_LIZA` and `INSTALL_LIZA_TOOLS` defaults in `.devcontainer/devcontainer.json` and add project rules to `GUARDRAILS.md`, or remove it ([Removing Liza](.devcontainer/liza/README.md#removing-liza))
+- [ ] Decide on Liza — set the `ACTIVATE_LIZA` and `INSTALL_LIZA_TOOLS` defaults in `.devcontainer/devcontainer.json`, or remove it ([Removing Liza](.devcontainer/liza/README.md#removing-liza))
 - [ ] Update `.gitignore` — add language-specific patterns for your stack
 - [ ] Update `.editorconfig` — adjust formatting rules for your language (e.g., tabs for Go)
 - [ ] Update `.github/CODEOWNERS` — uncomment and set owner usernames/teams
