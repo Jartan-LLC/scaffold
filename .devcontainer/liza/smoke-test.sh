@@ -22,7 +22,12 @@ check() {  # description  command...
     if "${@:2}" >/dev/null 2>&1 </dev/null; then echo "ok    $1"; else echo "FAIL  $1"; failures=$((failures + 1)); fi
 }
 
-# Failure paths first, on the untouched clone.
+# Failure paths first, on the untouched clone, with personal local settings to protect.
+# Snapshots live under .git/ so they never show in the git status checks.
+personal_copy="$clone/.git/personal-settings.local.json"
+echo '{"permissions":{"allow":["Bash(echo:*)"]}}' >.claude/settings.local.json
+cp .claude/settings.local.json "$personal_copy"
+
 touch .claude/settings.json.liza-shim-held
 liza init --claude --yes </dev/null >/dev/null 2>&1
 held_rc=$?
@@ -30,18 +35,24 @@ rm .claude/settings.json.liza-shim-held
 check "init refuses while a held settings file exists" test "$held_rc" -ne 0
 check "committed settings.json untouched after the refusal" git diff --quiet -- .claude/settings.json
 
-mkdir -p "$stub_home/.liza/libexec" "$stub_home/.claude"
-printf '#!/bin/sh\nexit 1\n' >"$stub_home/.liza/libexec/liza"
-chmod +x "$stub_home/.liza/libexec/liza"
-HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>&1
-stub_rc=$?
-check "init passes on a failing liza's exit status" test "$stub_rc" -ne 0
-check "committed settings.json untouched after the failure" git diff --quiet -- .claude/settings.json
-check "no contract linked after the failure" test ! -e CLAUDE.local.md -a ! -L CLAUDE.local.md
-check "git status clean after the failure" test -z "$(git status --porcelain)"
+stub="$stub_home/.liza/libexec/liza"
+mkdir -p "$(dirname "$stub")" "$stub_home/.claude"
+for scenario in "fails:exit 1" \
+    "truncates the settings:printf '{\"hooks\":' >.claude/settings.json" \
+    "skips the merge:true"; do
+    name=${scenario%%:*}
+    printf '#!/bin/sh\n%s\n' "${scenario#*:}" >"$stub"
+    chmod +x "$stub"
+    HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>&1
+    stub_rc=$?
+    check "init exits non-zero when liza $name" test "$stub_rc" -ne 0
+    check "local settings intact when liza $name" cmp -s .claude/settings.local.json "$personal_copy"
+    check "committed settings.json untouched when liza $name" git diff --quiet -- .claude/settings.json
+    check "no contract linked when liza $name" test ! -e CLAUDE.local.md -a ! -L CLAUDE.local.md
+done
+check "git status clean after the failures" test -z "$(git status --porcelain)"
 
 global_before=$(ls -la "$HOME/.claude/CLAUDE.md" 2>&1)
-# Kept under .git/ so the snapshot never shows in the git status checks.
 first_local="$clone/.git/first-settings.local.json"
 
 check "first activation succeeds" liza init --claude --yes

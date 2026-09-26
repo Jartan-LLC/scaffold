@@ -132,7 +132,6 @@ CBM_INSTALLER_SHA256="2fdd4d6563fc8e540bb32e233c5fdef22ecf05d7ebd5a80657cd4fec95
 CBM_CHECKSUMS_SHA256="6fbd04babc7815b5f2dc4b3330ff9a8f1728a1375aecd94ff13534fe2e02e764"
 CBM_BASE_URL="https://github.com/DeusData/codebase-memory-mcp/releases/download/${CBM_RELEASE}"
 
-
 # The old invocation passed `--ui`. Upstream removed that flag in v0.10.0 when
 # the UI became part of the single archive, and the installer's arg loop has no
 # default case, so it has been silently ignored ever since. Nothing is lost by
@@ -184,6 +183,9 @@ $liza_installed && [ ! -L CLAUDE.local.md ] && echo "Note: Liza is installed but
 # Codespaces path override.
 if [ "$claude_install_failed" = 1 ]; then
     echo "ERROR: Claude Code CLI install failed. Run 'npm install -g @anthropic-ai/claude-code' to retry." >&2
+fi
+if $liza_installed && [ ! -x "$HOME/.liza/bin/rg" ]; then
+    echo "ERROR: ripgrep install failed; Liza's agents search with rg. Run 'bash .devcontainer/liza/install.sh' to retry." >&2
 fi
 
 echo "Development environment setup complete!"

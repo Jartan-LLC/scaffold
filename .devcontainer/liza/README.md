@@ -110,7 +110,7 @@ With `INSTALL_LIZA_TOOLS=true`, [`tools.sh`](tools.sh) installs these into
 
 | Pin | Where | Then |
 |---|---|---|
-| Liza release | `LIZA_RELEASE` in [`install.sh`](install.sh) | the recipe in its header |
+| Liza release | `LIZA_RELEASE` in [`install.sh`](install.sh) | the recipe in its header; check `liza --help`'s global flags that take a value against the `case` in [`shim.sh`](shim.sh) |
 | ripgrep, release binaries, semble model | [`install.sh`](install.sh), [`tools.sh`](tools.sh) | recompute the sha256 of the new asset |
 | source-built tools | `GO_TOOLS` in [`tools.sh`](tools.sh) | set the new commit SHA |
 | npm tools | [`npm/package.json`](npm/package.json) | `npm install --package-lock-only` in `npm/` |

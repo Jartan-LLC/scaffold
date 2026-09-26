@@ -27,6 +27,7 @@ claude_dir="$top/.claude"
 shared_settings="$claude_dir/settings.json"
 local_settings="$claude_dir/settings.local.json"
 held_settings="$claude_dir/settings.json.liza-shim-held"
+backup_settings="$claude_dir/settings.local.json.liza-shim-backup"
 global_contract="$HOME/.claude/CLAUDE.md"
 core_contract="$HOME/.liza/CORE.md"
 
@@ -39,7 +40,8 @@ if ! mkdir "$lock" 2>/dev/null; then
 fi
 if [ -e "$held_settings" ]; then
     rmdir "$lock"
-    echo "liza shim: $held_settings exists from an interrupted init; move it back to settings.json first." >&2
+    echo "liza shim: $held_settings exists from an interrupted init; move it back to settings.json" \
+        "(and any settings.local.json.liza-shim-backup back to settings.local.json) first." >&2
     exit 1
 fi
 
@@ -53,10 +55,24 @@ restore_settings() {
     [ -f "$shared_settings" ] && mv -f "$shared_settings" "$local_settings"
     [ -f "$held_settings" ] && mv -f "$held_settings" "$shared_settings"
 }
+# Liza writes settings non-atomically and only warns when the merge fails, so the result
+# is kept only if it parses and carries Liza's hooks; otherwise the backup, the one copy
+# of the untracked local settings, goes back.
+init_ok=true
 release() {
     restore_settings
+    if ! jq -e '.hooks.SessionStart' "$local_settings" >/dev/null 2>&1; then
+        init_ok=false
+        if [ -f "$backup_settings" ]; then
+            mv -f "$backup_settings" "$local_settings"
+        else
+            rm -f "$local_settings"
+        fi
+    fi
+    rm -f "$backup_settings"
     rmdir "$lock"
 }
+[ -f "$local_settings" ] && cp -p "$local_settings" "$backup_settings"
 [ -f "$shared_settings" ] && mv "$shared_settings" "$held_settings"
 [ -f "$local_settings" ] && mv "$local_settings" "$shared_settings"
 trap release EXIT
@@ -75,6 +91,10 @@ rc=$?
 release
 trap - EXIT
 [ "$rc" -eq 0 ] || exit "$rc"
+if ! $init_ok; then
+    echo "liza shim: init left no valid Liza hooks in settings.local.json; restored it and linked nothing." >&2
+    exit 1
+fi
 
 # rtk's own `rtk init -g` writes this hook to ~/.claude/settings.json, rewriting commands
 # in every project; here it applies to activated clones only.

@@ -51,7 +51,8 @@ logs/
 # Claude local settings (user-specific)
 .claude/settings.local.*
 
-# Liza runtime state, local contract link, and generated indexes (.devcontainer/liza/README.md)
+# Liza: runtime state, the local contract link, provider key files, and the indexes its
+# git hooks regenerate after each commit
 .liza/
 .worktrees/
 .adversarial/
