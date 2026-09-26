@@ -50,3 +50,15 @@ logs/
 
 # Claude local settings (user-specific)
 .claude/settings.local.*
+
+# Liza: runtime state, the local contract link, provider key files, and the indexes its
+# git hooks regenerate after each commit
+.liza/
+.worktrees/
+.adversarial/
+CLAUDE.local.md
+stacklit.json
+/*.scip
+functional-clusters.json
+claude.env
+pi.env

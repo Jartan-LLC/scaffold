@@ -7,7 +7,9 @@
   //   docker buildx imagetools inspect mcr.microsoft.com/devcontainers/base:debian-12
   "image": "mcr.microsoft.com/devcontainers/base:debian-12@sha256:23fa69fed758b7927c60061317d73baf7d66b9fca5c344e80bce3a940b229af0",
   "mounts": [
-    "source=claude-data,target=/home/vscode/.claude,type=volume"
+    "source=claude-data,target=/home/vscode/.claude,type=volume",
+    // Per project, unlike claude-data: each fork pins its own Liza version and tools.
+    "source=liza-${devcontainerId},target=/home/vscode/.liza,type=volume"
   ],
   "features": {
     // Claude Code is not a feature here: the feature installs as root, which
@@ -17,6 +19,10 @@
     },
     "ghcr.io/devcontainers/features/node:1": {
       "version": "lts"
+    },
+    // Builds the Liza tools that ship only as source (.devcontainer/liza/tools.sh).
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.27.1"
     },
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "moby": false
@@ -29,7 +35,11 @@
   },
   "containerEnv": {
     "HOST_PROJECT_PATH": "${localWorkspaceFolder}",
-    "CONTAINER_WORKSPACE_FOLDER": "${containerWorkspaceFolder}"
+    "CONTAINER_WORKSPACE_FOLDER": "${containerWorkspaceFolder}",
+    // The committed default is the project's choice; the same-named variable on your
+    // host overrides it for you. See .devcontainer/liza/README.md.
+    "ACTIVATE_LIZA": "${localEnv:ACTIVATE_LIZA:false}",
+    "INSTALL_LIZA_TOOLS": "${localEnv:INSTALL_LIZA_TOOLS:false}"
   },
   "forwardPorts": [6080],
   "portsAttributes": {

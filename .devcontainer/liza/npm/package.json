@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "description": "Liza toolchain npm tools, installed by .devcontainer/liza/tools.sh via npm ci.",
+  "dependencies": {
+    "@sourcegraph/scip-python": "0.6.6",
+    "@sourcegraph/scip-typescript": "0.4.0",
+    "@upstash/context7-mcp": "4.1.1"
+  }
+}
