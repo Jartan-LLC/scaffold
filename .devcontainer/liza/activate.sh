@@ -2,6 +2,8 @@
 # Activates Liza for this clone. With INSTALL_LIZA_TOOLS=true it installs the toolchain
 # first, which `liza init` must find in place. Extra arguments go to `liza init`.
 
+set -uo pipefail
+
 here=$(cd "$(dirname "$0")" && pwd)
 
 if [ "${INSTALL_LIZA_TOOLS:-false}" = true ]; then

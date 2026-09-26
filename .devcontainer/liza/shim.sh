@@ -46,7 +46,7 @@ if [ -e "$held_settings" ]; then
 fi
 
 had_global_contract=false
-[ -e "$global_contract" ] || [ -L "$global_contract" ] && had_global_contract=true
+if [ -e "$global_contract" ] || [ -L "$global_contract" ]; then had_global_contract=true; fi
 untracked_before=$(git -C "$top" ls-files --others --exclude-standard)
 
 # Liza always merges into .claude/settings.json. Putting the local file in its place for
@@ -61,7 +61,7 @@ restore_settings() {
 init_ok=true
 release() {
     restore_settings
-    if ! jq -e '.hooks.SessionStart' "$local_settings" >/dev/null 2>&1; then
+    if ! jq -e '.hooks.SessionStart | length > 0' "$local_settings" >/dev/null 2>&1; then
         init_ok=false
         if [ -f "$backup_settings" ]; then
             mv -f "$backup_settings" "$local_settings"
@@ -100,11 +100,14 @@ fi
 # in every project; here it applies to activated clones only.
 rtk="$HOME/.liza/bin/rtk"
 if [ -x "$rtk" ] && [ -f "$local_settings" ]; then
-    jq --arg cmd "$rtk hook claude" '
+    if ! { jq --arg cmd "$rtk hook claude" '
         .hooks.PreToolUse //= []
         | if any(.hooks.PreToolUse[].hooks[]?; .command == $cmd) then .
           else .hooks.PreToolUse += [{matcher: "Bash", hooks: [{type: "command", command: $cmd}]}] end
-    ' "$local_settings" >"$local_settings.tmp" && mv "$local_settings.tmp" "$local_settings"
+    ' "$local_settings" >"$local_settings.tmp" && mv "$local_settings.tmp" "$local_settings"; }; then
+        rm -f "$local_settings.tmp"
+        echo "liza shim: could not add rtk's hook to $local_settings" >&2
+    fi
 fi
 
 # `--claude` points ~/.claude/CLAUDE.md at the contract when that path is free, which

@@ -39,6 +39,7 @@ stub="$stub_home/.liza/libexec/liza"
 mkdir -p "$(dirname "$stub")" "$stub_home/.claude"
 for scenario in "fails:exit 1" \
     "truncates the settings:printf '{\"hooks\":' >.claude/settings.json" \
+    "empties the hooks:echo '{\"hooks\":{\"SessionStart\":[]}}' >.claude/settings.json" \
     "skips the merge:true"; do
     name=${scenario%%:*}
     printf '#!/bin/sh\n%s\n' "${scenario#*:}" >"$stub"
@@ -65,5 +66,20 @@ check "global CLAUDE.md unchanged" test "$(ls -la "$HOME/.claude/CLAUDE.md" 2>&1
 check "second activation succeeds" liza init --claude --yes
 check "second activation is a no-op" test "$(jq -S . .claude/settings.local.json)" = "$(jq -S . "$first_local")"
 check "git status still clean" test -z "$(git status --porcelain)"
+
+# rtk's hook lands in an activated clone once, and not again on re-activation. The stubs
+# stand in for liza (a no-op init keeps the real hooks above) and for rtk.
+printf '#!/bin/sh\n' >"$stub"
+mkdir -p "$stub_home/.liza/bin"
+printf '#!/bin/sh\n' >"$stub_home/.liza/bin/rtk"
+chmod +x "$stub_home/.liza/bin/rtk"
+rtk_hooks() {
+    jq --arg c "$stub_home/.liza/bin/rtk hook claude" \
+        '[.hooks.PreToolUse[]?.hooks[]? | select(.command == $c)] | length' .claude/settings.local.json
+}
+for run in first second; do
+    HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>&1
+    check "one rtk hook after the $run stubbed activation" test "$(rtk_hooks)" = 1
+done
 
 exit $((failures > 0))
