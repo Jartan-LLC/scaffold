@@ -150,8 +150,10 @@ install_pinned npm-tools "$(sha256sum <"$here/npm/package-lock.json")" npm_tools
 install_pinned semble "$(sha256sum <"$here/semble-requirements.txt") $SEMBLE_MODEL_REVISION" semble_tool
 
 # Writes ~/.liza/toolchain/env.sh (PATH plus the LIZA_ENABLE_* gates Liza reads) and
-# sources it from the shell profiles. scip-go is excluded: it needs a Go project.
-"$liza_home/libexec/liza" toolchain configure --profile full --exclude scip-go \
+# sources it from the shell profiles. configure picks those profiles from $SHELL, which
+# is not the user's shell during container create. scip-go is excluded: it needs a Go project.
+SHELL=$(getent passwd "$(id -un)" | cut -d: -f7) \
+    "$liza_home/libexec/liza" toolchain configure --profile full --exclude scip-go \
     --install-dir "$bin" --agent-tools skip --write-shell-profile </dev/null >/dev/null \
     || failed+=("toolchain configure")
 echo "export SEMBLE_MODEL_NAME='$lib/semble-model'" >>"$liza_home/toolchain/env.sh"

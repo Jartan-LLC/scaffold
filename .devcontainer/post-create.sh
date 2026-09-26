@@ -29,7 +29,7 @@ while IFS= read -r -d '' pkg_file; do
     dir=$(dirname "$pkg_file")
     echo "  Installing from $dir..."
     (cd "$dir" && CI=true pnpm install) || echo "Warning: pnpm install failed in $dir" >&2
-done < <(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.pnpm-store/*" -not -path "./.devcontainer/*" -type f -print0)
+done < <(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.pnpm-store/*" -not -path "*/.venv/*" -not -path "./.devcontainer/*" -type f -print0)
 
 # Pinned from ci/requirements.txt so the container matches CI, and bootstrapped
 # with pip because that is what the python devcontainer feature ships.
