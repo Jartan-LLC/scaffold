@@ -50,3 +50,14 @@ logs/
 
 # Claude local settings (user-specific)
 .claude/settings.local.*
+
+# Liza runtime state, local contract link, and generated indexes (.devcontainer/liza/README.md)
+.liza/
+.worktrees/
+.adversarial/
+CLAUDE.local.md
+stacklit.json
+/*.scip
+functional-clusters.json
+claude.env
+pi.env

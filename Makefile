@@ -1,5 +1,5 @@
 # Task runner for the local dev loop. Run `make` or `make help` to list targets.
-.PHONY: help install lint fix typecheck test test-integration docs check all
+.PHONY: help deps install lint fix typecheck test test-integration docs check all
 
 # Every target runs out of ./.venv without a shell activation, and pyright
 # resolves the venv's interpreter rather than the ambient one.
@@ -12,8 +12,10 @@ help:  ## Show available targets
 	@command -v uv >/dev/null || { echo "uv not found — install it: https://docs.astral.sh/uv/getting-started/installation/"; exit 1; }
 	uv venv
 
-install: | .venv  ## Create .venv, install the package + dev extras, wire the pre-commit hook
+deps: | .venv  ## Create .venv and install the package + dev extras
 	uv pip install -e '.[dev]' -r ci/requirements.txt
+
+install: deps  ## Install deps, then wire the pre-commit hook
 	# Skip hook wiring outside a git checkout (e.g. an unpacked sdist); real failures still surface.
 	if git rev-parse --git-dir >/dev/null 2>&1; then pre-commit install; fi
 

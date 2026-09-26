@@ -2,6 +2,8 @@
 
 echo "Setting up development environment..."
 
+source .devcontainer/fetch-verified.sh
+
 # Enable pnpm via corepack (ships with Node.js)
 sudo corepack enable || echo "Warning: corepack enable failed; pnpm may not be available" >&2
 
@@ -20,13 +22,14 @@ npm install -g @anthropic-ai/claude-code \
     || npm install -g @anthropic-ai/claude-code \
     || claude_install_failed=1
 
-# Install Node.js dependencies from all package.json files
+# Install Node.js dependencies from all package.json files. .devcontainer/ is skipped:
+# Liza's npm tools there are installed by liza/tools.sh, only when enabled.
 echo "Installing Node.js dependencies..."
 while IFS= read -r -d '' pkg_file; do
     dir=$(dirname "$pkg_file")
     echo "  Installing from $dir..."
     (cd "$dir" && CI=true pnpm install) || echo "Warning: pnpm install failed in $dir" >&2
-done < <(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.pnpm-store/*" -type f -print0)
+done < <(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.pnpm-store/*" -not -path "*/.venv/*" -not -path "./.devcontainer/*" -type f -print0)
 
 # Pinned from ci/requirements.txt so the container matches CI, and bootstrapped
 # with pip because that is what the python devcontainer feature ships.
@@ -129,23 +132,20 @@ CBM_INSTALLER_SHA256="2fdd4d6563fc8e540bb32e233c5fdef22ecf05d7ebd5a80657cd4fec95
 CBM_CHECKSUMS_SHA256="6fbd04babc7815b5f2dc4b3330ff9a8f1728a1375aecd94ff13534fe2e02e764"
 CBM_BASE_URL="https://github.com/DeusData/codebase-memory-mcp/releases/download/${CBM_RELEASE}"
 
-# Fetch into a destination only if the bytes match the expected digest.
-cbm_fetch_verified() {  # url  expected-sha256  destination
-    curl -fsSL "$1" -o "$3" && echo "$2  $3" | sha256sum --check --status
-}
 
 # The old invocation passed `--ui`. Upstream removed that flag in v0.10.0 when
 # the UI became part of the single archive, and the installer's arg loop has no
 # default case, so it has been silently ignored ever since. Nothing is lost by
 # dropping it: checksums.txt gives the `-ui-` and plain archives identical
 # digests, so they are the same bytes under two names.
-if ! command -v codebase-memory-mcp &>/dev/null; then
+# Skipped when INSTALL_LIZA_TOOLS is on: Liza's toolchain replaces it (liza/tools.sh).
+if [ "${INSTALL_LIZA_TOOLS:-false}" != true ] && ! command -v codebase-memory-mcp &>/dev/null; then
     echo "Installing codebase-memory-mcp ${CBM_RELEASE}..."
     cbm_tmp=$(mktemp -d)
-    if cbm_fetch_verified \
+    if fetch_verified \
             "https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/${CBM_INSTALLER_COMMIT}/install.sh" \
             "$CBM_INSTALLER_SHA256" "$cbm_tmp/install.sh" \
-        && cbm_fetch_verified \
+        && fetch_verified \
             "${CBM_BASE_URL}/checksums.txt" \
             "$CBM_CHECKSUMS_SHA256" "$cbm_tmp/checksums.txt"; then
         CBM_DOWNLOAD_URL="$CBM_BASE_URL" bash "$cbm_tmp/install.sh" \
@@ -163,7 +163,20 @@ if command -v codebase-memory-mcp &>/dev/null; then
     codebase-memory-mcp config set auto_index true || echo "Warning: could not enable codebase-memory-mcp auto_index" >&2
 fi
 
+# Liza always installs; INSTALL_LIZA_TOOLS and ACTIVATE_LIZA (containerEnv) opt the
+# project in further. See .devcontainer/liza/README.md.
+liza_installed=false
+if bash .devcontainer/liza/install.sh; then
+    liza_installed=true
+    if [ "${ACTIVATE_LIZA:-false}" = true ]; then
+        bash .devcontainer/liza/activate.sh </dev/null >/dev/null || echo "Warning: Liza activation failed" >&2
+    elif [ "${INSTALL_LIZA_TOOLS:-false}" = true ]; then
+        bash .devcontainer/liza/tools.sh
+    fi
+fi
+
 gh auth status 2>/dev/null || echo "Warning: gh not authenticated. Run 'gh auth login' to enable GitHub CLI." >&2
+$liza_installed && [ ! -L CLAUDE.local.md ] && echo "Note: Liza is installed but not active here. Run 'bash .devcontainer/liza/activate.sh' to activate it for this clone, or see .devcontainer/liza/README.md." >&2
 
 # Reported here, at the end, so it survives the dependency-install output above
 # rather than scrolling away. Not fatal: a non-zero postCreateCommand makes the
