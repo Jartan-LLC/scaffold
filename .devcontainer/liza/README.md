@@ -54,7 +54,9 @@ bash .devcontainer/liza/deactivate.sh --tools
 
 Activation records what it added in `.git/liza/activation.json`, and deactivation removes
 exactly that. A settings value you've changed since is left as you set it; a created file
-you've edited since is kept, and named. A file of yours that init overwrote or removed is
+you've edited since is kept, and named. Files Liza's tools generate later (the bash-policy
+log and candidates, `stacklit-insights.json`) are removed, edits included, unless you had
+them before activating. A file of yours that init overwrote or removed is
 restored, or saved beside it as `<name>.pre-liza` and named, when you've edited Liza's
 version since or the record couldn't be written. A failed run keeps everything and a
 rerun finishes it. An entry identical to one Liza added is indistinguishable from it and

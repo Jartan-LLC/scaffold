@@ -187,6 +187,11 @@ check "activation over a corrupt record warns" grep -q "could not record" "$clon
 check "deactivate over a corrupt record succeeds" bash "$liza_dir/deactivate.sh"
 check "and unlinks the contract" test ! -L CLAUDE.local.md
 check "activation succeeds after a corrupt-record deactivate" liza init --claude --yes
+# The same with the record gone and the contract still linked.
+rm -f "$(git rev-parse --git-path liza)/activation.json"
+check "deactivate with no record succeeds" bash "$liza_dir/deactivate.sh"
+check "and unlinks the contract" test ! -L CLAUDE.local.md
+check "activation succeeds after a no-record deactivate" liza init --claude --yes
 
 # rtk's hook lands in an activated clone once, and not again on re-activation. The stubs
 # stand in for liza (a no-op init keeps the real hooks above) and for rtk.
@@ -233,6 +238,7 @@ stub_liza <<'EOF'
 rm -f .claude/hooks/removed.sh .claude/links/linked.sh
 echo liza >.claude/links/linked.sh
 echo liza >.claude/links/created.sh
+ln -s "/liza target" .claude/links/created-link.sh
 settings "$hook"
 EOF
 stub_init "$gone_clone" 2>/dev/null
@@ -260,6 +266,7 @@ check "the rerun takes no restored file for an edit" \
 check "the rerun removes the created file and its exclude line" \
     bash -c "test ! -e '$gone_clone/.claude/links/created.sh' \
         && ! grep -qx /.claude/links/created.sh '$gone_clone/.git/info/exclude'"
+check "and a created symlink whose target has a space" test ! -L "$gone_clone/.claude/links/created-link.sh"
 check "deactivate restores a user file init removed" \
     test "$(cat "$gone_clone/.claude/hooks/removed.sh")" = "user file"
 check "deactivate restores a user symlink init replaced" \
@@ -321,8 +328,24 @@ check "deactivate saves an unrecorded original beside its file" \
     test "$(cat "$orphan_clone/.claude/keep/f.sh.pre-liza" 2>/dev/null)" = "user file"
 check "and names it" grep -q -F -- "f.sh.pre-liza" "$stub_home/orphan-deactivate.err"
 
+# Files under Liza's own exclude lines: one its tools generate goes, edited or not; one the
+# user had before activation stays.
+generated_clone=$(stub_clone generated-clone)
+echo "user file" >"$generated_clone/insights.json"
+stub_liza <<'EOF'
+printf 'insights.json\ngenerated.log\n' >>.git/info/exclude
+settings "$hook"
+EOF
+stub_init "$generated_clone" 2>/dev/null
+echo "# edited" >>"$generated_clone/insights.json"
+echo liza >"$generated_clone/generated.log"
+check "deactivate over generated files succeeds" stub_deactivate "$generated_clone"
+check "and removes a generated file" test ! -e "$generated_clone/generated.log"
+check "and keeps one the user had before activation, with its edit" grep -qx "# edited" "$generated_clone/insights.json"
+
 # --tools undoes the toolchain's changes, and only with --tools. A stub claude logs its
-# calls; a stub ~/.claude.json holds the codebase-memory-mcp switch-off.
+# calls; a stub ~/.claude.json holds the local context7 registration and the
+# codebase-memory-mcp switch-off.
 tools_home="$stub_home/tools"
 mkdir -p "$tools_home/bin"
 cat >"$tools_home/bin/claude" <<EOF
@@ -330,7 +353,8 @@ cat >"$tools_home/bin/claude" <<EOF
 echo "\$*" >>"$tools_home/claude-calls"
 EOF
 chmod +x "$tools_home/bin/claude"
-jq -n --arg p "$clone" '{projects: {($p): {disabledMcpServers: ["other", "codebase-memory-mcp"]}}}' \
+jq -n --arg p "$clone" \
+    '{projects: {($p): {mcpServers: {context7: {}}, disabledMcpServers: ["other", "codebase-memory-mcp"]}}}' \
     >"$tools_home/.claude.json"
 cp .claude/settings.local.json "$clone/.git/before-tools.json"
 HOME="$tools_home" PATH="$tools_home/bin:$PATH" bash "$liza_dir/deactivate.sh" --tools
@@ -339,6 +363,9 @@ check "--tools re-enables codebase-memory-mcp" \
     test "$(jq -c --arg p "$clone" '.projects[$p].disabledMcpServers' "$tools_home/.claude.json")" = '["other"]'
 check "--tools leaves the settings alone" cmp -s .claude/settings.local.json "$clone/.git/before-tools.json"
 rm -f "$tools_home/claude-calls"
+jq -n '{mcpServers: {context7: {}}}' >"$tools_home/.claude.json"
+HOME="$tools_home" PATH="$tools_home/bin:$PATH" bash "$liza_dir/deactivate.sh" --tools
+check "--tools leaves a user-scope context7 alone" test ! -e "$tools_home/claude-calls"
 
 mkdir .claude/.liza-shim.lock
 bash "$liza_dir/deactivate.sh" 2>/dev/null

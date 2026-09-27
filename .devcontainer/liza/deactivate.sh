@@ -33,24 +33,26 @@ remove_created() {
 # --- --tools: undo the toolchain's changes to Claude Code, and nothing else ---
 if [ "${1:-}" = --tools ]; then
     command -v claude >/dev/null || finish
-    if claude mcp get context7 >/dev/null 2>&1; then
-        claude mcp remove --scope local context7 >/dev/null || failed+=("context7 removal")
-    fi
     # Keyed like tools.sh, by the directory post-create runs in. ~/.claude.json is a
     # symlink into the claude-data volume: edit its target, atomically.
     claude_json=$(readlink -f "$HOME/.claude.json")
+    # tools.sh registers context7 at local scope only; one at another scope is the user's.
+    if jq -e --arg p "$top" '.projects[$p].mcpServers.context7' "$claude_json" >/dev/null 2>&1; then
+        claude mcp remove --scope local context7 >/dev/null || failed+=("context7 removal")
+    fi
     if jq -e --arg p "$top" '.projects[$p].disabledMcpServers // [] | index("codebase-memory-mcp")' \
         "$claude_json" >/dev/null 2>&1; then
-        jq --arg p "$top" '.projects[$p].disabledMcpServers -= ["codebase-memory-mcp"]' \
-            "$claude_json" >"$claude_json.tmp" \
-            && mv "$claude_json.tmp" "$claude_json" \
-            || failed+=("codebase-memory-mcp re-enable")
+        if ! { jq --arg p "$top" '.projects[$p].disabledMcpServers -= ["codebase-memory-mcp"]' \
+            "$claude_json" >"$claude_json.tmp" && mv "$claude_json.tmp" "$claude_json"; }; then
+            rm -f "$claude_json.tmp"
+            failed+=("codebase-memory-mcp re-enable")
+        fi
     fi
     finish
 fi
 
 # --- Undo activation, from its record ---
-settings=.claude/settings.local.json
+local_settings=.claude/settings.local.json
 core_contract="$HOME/.liza/CORE.md"
 record_dir=$(git_path "$top" liza)
 record="$record_dir/activation.json"
@@ -73,12 +75,15 @@ accounted=()   # originals the record lists
 if ! jq -e . "$record" >/dev/null 2>&1; then
     # No readable record: only the contract link and any saved originals can be undone.
     echo "deactivate: no readable activation record, so Liza's settings entries and files" \
-        "were left; check $settings and $exclude_file." >&2
+        "were left; check $local_settings and $exclude_file." >&2
 else
     # Liza's settings entries go; entries the user added or changed since stay.
-    if [ -f "$settings" ]; then
-        jq -L "$here" --slurpfile rec "$record" 'include "activation-record"; revert($rec[0].settings)' \
-            "$settings" >"$settings.tmp" && mv "$settings.tmp" "$settings" || failed+=("settings revert")
+    if [ -f "$local_settings" ]; then
+        if ! { jq -L "$here" --slurpfile rec "$record" 'include "activation-record"; revert($rec[0].settings)' \
+            "$local_settings" >"$local_settings.tmp" && mv "$local_settings.tmp" "$local_settings"; }; then
+            rm -f "$local_settings.tmp"
+            failed+=("settings revert")
+        fi
     fi
     # A user file init overwrote or removed gets its original back, unless Liza's version
     # was edited since; then the original goes beside it.
@@ -94,8 +99,7 @@ else
         # differing paths) match.
         [ -n "$now" ] && [ "${now#"$path" }" = "${restored#"$original" }" ] && continue
         if [ "${now:-"$path absent"}" = "$entry" ]; then
-            rm -f -- "$path"
-            cp -P -p "$original" "$path" || failed+=("restoring $path")
+            put_copy "$original" "$path" || failed+=("restoring $path")
         else
             if cp -P -p "$original" "$path.pre-liza"; then
                 kept+=("$path (original in $path.pre-liza)")
@@ -112,12 +116,15 @@ else
         [ -n "$now" ] || continue
         if [ "$now" = "$entry" ]; then remove_created "$path"; else kept+=("$path"); fi
     done
-    # Liza's own exclude lines name files its tools generate after activation.
+    # Liza's own exclude lines name files its tools generate after activation, which go,
+    # edits included; one that existed before activation stays.
     mapfile -t drop_lines < <(jq -r '.exclude_lines[]' "$record")
+    mapfile -t preexisting < <(jq -r '(.preexisting // [])[]' "$record")
     for line in "${drop_lines[@]}"; do
         [[ "$line" == *[*?[]* ]] && continue
         path="$top/${line#/}"
         printf '%s\n' "${recorded[@]}" | grep -q -F -- "$path " && continue
+        printf '%s\n' "${preexisting[@]}" | grep -q -x -F -- "$path" && continue
         [ -f "$path" ] && remove_created "$path"
     done
 fi
@@ -139,8 +146,8 @@ fi
 
 # --- Clean up: what is left for the user, the contract link, emptied settings and dirs ---
 [ ${#kept[@]} -eq 0 ] || echo "deactivate: left these for you to check: ${kept[*]}" >&2
-if [ -f "$settings" ] && [ "$(jq -c . "$settings" 2>/dev/null)" = "{}" ]; then
-    rm -f "$settings"
+if [ -f "$local_settings" ] && [ "$(jq -c . "$local_settings" 2>/dev/null)" = "{}" ]; then
+    rm -f "$local_settings"
 fi
 [ "$(readlink CLAUDE.local.md)" = "$core_contract" ] && remove_created CLAUDE.local.md
 rmdir .claude/hooks .claude/skills 2>/dev/null

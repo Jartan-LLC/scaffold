@@ -39,8 +39,10 @@ if ! mkdir "$lock" 2>/dev/null; then
     echo "liza shim: another init holds $lock; remove it if none is running." >&2
     exit 1
 fi
+# Held until the record is written, so a deactivate or another init can't interleave.
+trap 'rmdir "$lock"' EXIT
+trap 'exit 130' INT TERM
 if [ -e "$held_settings" ]; then
-    rmdir "$lock"
     echo "liza shim: $held_settings exists from an interrupted init; move it back to settings.json" \
         "(and any settings.local.json.liza-shim-backup back to settings.local.json) first." >&2
     exit 1
@@ -95,7 +97,6 @@ for path in "${candidates[@]}"; do
     # Without this copy, init could destroy the file for good: stop before it runs.
     if ! { mkdir -p "$(dirname "$originals/${path#"$top"/}")" && cp -P -p "$path" "$originals/${path#"$top"/}"; }; then
         prune_originals
-        rmdir "$lock"
         echo "liza shim: could not back up $path before init; nothing was changed." >&2
         exit 1
     fi
@@ -117,8 +118,7 @@ restore_candidates() {
             fi
             replaced=true
         fi
-        rm -f -- "$path"
-        cp -P -p "$originals/$rel" "$path" && continue
+        put_copy "$originals/$rel" "$path" && continue
         kept+=("$path")
         echo "liza shim: could not restore $path after the failed init; its original is in $originals." >&2
     done
@@ -148,13 +148,11 @@ release() {
         fi
     fi
     rm -f "$backup_settings"
-    rmdir "$lock"
 }
 [ -f "$local_settings" ] && cp -p "$local_settings" "$backup_settings"
 [ -f "$shared_settings" ] && mv "$shared_settings" "$held_settings"
 [ -f "$local_settings" ] && mv "$local_settings" "$shared_settings"
-trap 'release; restore_candidates' EXIT
-trap 'exit 130' INT TERM
+trap 'release; restore_candidates; rmdir "$lock"' EXIT
 
 # --- Run Liza's init ---
 # Liza reads the toolchain's LIZA_ENABLE_* gates at init time, and the shell running init
@@ -168,7 +166,7 @@ fi
 rc=$?
 
 release
-trap - EXIT
+trap 'rmdir "$lock"' EXIT
 if [ "$rc" -ne 0 ]; then
     restore_candidates
     exit "$rc"
@@ -238,20 +236,28 @@ for path in "${!fp_before[@]}"; do
 done
 prune_originals "${keep[@]}"
 
+# Liza's own exclude lines cover files its tools generate, which deactivate.sh removes;
+# one that existed before init is the user's, and is left.
+exclude_added=$(comm -13 <(sort -u <<<"$exclude_before") <(sort -u "$exclude_file"))
+preexisting=()
+while IFS= read -r line; do
+    [ -n "$line" ] && [ -n "${fp_before["$top/${line#/}"]+set}" ] && preexisting+=("$top/${line#/}")
+done <<<"$exclude_added"
+
 # Each fingerprint list is "<path> <fingerprint>" lines, taken before and after init:
 # files already recorded (a later init may rewrite them), new worktree files, and the git
 # dir's hooks and liza* files. activation-record.jq folds them into the record.
 mkdir -p "$record_dir"
-[ -f "$record" ] || echo '{"settings": [], "files": [], "overwritten": [], "exclude_lines": []}' >"$record"
+[ -f "$record" ] || echo '{"settings": [], "files": [], "overwritten": [], "exclude_lines": [], "preexisting": []}' >"$record"
 if ! { jq -L "$here" --slurpfile pre <(printf '%s' "$pre_settings") --slurpfile post "$local_settings" \
         --arg created "$(fingerprint "${created[@]}")" \
         --arg recorded_before "$recorded_before" --arg recorded_after "$(fingerprint "${recorded_files[@]}")" \
         --arg git_before "$git_before" --arg git_after "$(fingerprint "$git_dir"/liza* "$hooks_dir"/*)" \
         --arg overwritten "$(printf '%s\n' "${overwritten[@]}")" \
-        --arg exclude_added "$(comm -13 <(sort -u <<<"$exclude_before") <(sort -u "$exclude_file"))" '
+        --arg exclude_added "$exclude_added" --arg preexisting "$(printf '%s\n' "${preexisting[@]}")" '
         include "activation-record";
         record_activation($pre[0]; $post[0]; $created; $recorded_before; $recorded_after;
-                          $git_before; $git_after; $overwritten; $exclude_added)
+                          $git_before; $git_after; $overwritten; $exclude_added; $preexisting)
     ' "$record" >"$record.tmp" && mv "$record.tmp" "$record"; }; then
     rm -f "$record.tmp"
     echo "liza shim: could not record this activation; deactivate.sh will only partly undo it." \

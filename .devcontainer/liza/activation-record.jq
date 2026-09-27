@@ -1,5 +1,5 @@
 # The activation record (.git/liza/activation.json) that shim.sh writes and deactivate.sh
-# undoes: {settings, files, overwritten, exclude_lines}.
+# undoes: {settings, files, overwritten, exclude_lines, preexisting}.
 #
 # settings holds the changes activation made to settings.local.json, each one of:
 #   {op: "add-elem", path, value}    an array element activation added
@@ -9,7 +9,8 @@
 # files holds {path, fp} for each file activation created, fp from activation-lib.sh's
 # fingerprint, so a file edited since can be kept. overwritten holds the same for each
 # user file init overwrote, whose original shim.sh keeps under .git/liza/originals/.
-# exclude_lines are the lines activation added to .git/info/exclude.
+# exclude_lines are the lines activation added to .git/info/exclude; preexisting holds
+# the files that existed before activation at paths those lines cover.
 
 def _changes($pre; $post; $path):
   if ($post | type) == "object" and ($pre == null or ($pre | type) == "object") then
@@ -61,9 +62,10 @@ def _listed($list): . as $e | any($list[]; .path == $e.path);
 # output: the worktree files init created, the files already recorded before and after
 # init (one this init rewrote takes its new fingerprint), and the git dir's hooks and
 # liza* files before and after, and the user files init overwrote (a later rewrite of
-# one updates its fingerprint). $exclude_added is the lines added to the exclude file.
+# one updates its fingerprint). $exclude_added is the lines added to the exclude file, and
+# $preexisting the paths they cover that existed before init.
 def record_activation($pre; $post; $created; $recorded_before; $recorded_after;
-                      $git_before; $git_after; $overwritten; $exclude_added):
+                      $git_before; $git_after; $overwritten; $exclude_added; $preexisting):
   ($recorded_before | _entries) as $rb
   | ($git_before | _entries) as $gb
   | ($overwritten | _entries) as $ow
@@ -73,4 +75,5 @@ def record_activation($pre; $post; $created; $recorded_before; $recorded_after;
   | .settings = merge_changes(.settings; changes($pre; $post))
   | .files = ([.files[] | select(_listed($rewritten) | not)] + $rewritten + ($created | _entries)
       + [$git_after | _entries | .[] | select(_listed($gb) | not)] | unique_by(.path))
-  | .exclude_lines = (.exclude_lines + ($exclude_added | split("\n") | map(select(. != ""))) | unique);
+  | .exclude_lines = (.exclude_lines + ($exclude_added | split("\n") | map(select(. != ""))) | unique)
+  | .preexisting = ((.preexisting // []) + ($preexisting | split("\n") | map(select(. != ""))) | unique);
