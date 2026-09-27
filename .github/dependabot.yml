@@ -98,8 +98,8 @@ updates:
     cooldown:
       default-days: 7
 
-  # Its own entry, so a devcontainer base-image bump (held for manual review) never
-  # shares a pull request with the root Dockerfile's updates.
+  # Its own entry, so a devcontainer base-image bump that breaks the container build never
+  # holds up the root Dockerfile's updates.
   - package-ecosystem: "docker"
     directory: "/.devcontainer"
     schedule:
