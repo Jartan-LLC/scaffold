@@ -91,9 +91,10 @@ fi
 # container can reach the host Docker socket, so the fetch is pinned three ways:
 # install.sh by commit and digest, checksums.txt by digest (the installer checks
 # every archive against it), and the release via CBM_DOWNLOAD_URL.
-# Known gap: install.sh refetches checksums.txt after our check.
-# To bump: set CBM_RELEASE and CBM_INSTALLER_COMMIT to the new tag, then
-# recompute both digests with `curl -fsSL <url> | sha256sum`.
+# Known gap: install.sh refetches checksums.txt after our check; verifying the
+# release's sigstore bundles would close it and retire the manual digest bump.
+# To bump: set CBM_RELEASE to the new tag and CBM_INSTALLER_COMMIT to that tag's
+# commit, then recompute both digests with `curl -fsSL <url> | sha256sum`.
 CBM_RELEASE="v0.10.5"
 CBM_INSTALLER_COMMIT="77195634e13fd3bcd0d24543de5f876b4679f1cf"  # frozen: v0.10.5
 CBM_INSTALLER_SHA256="2fdd4d6563fc8e540bb32e233c5fdef22ecf05d7ebd5a80657cd4fec953b3475"
@@ -127,13 +128,16 @@ fi
 
 # Liza always installs; ACTIVATE_LIZA and INSTALL_LIZA_TOOLS (containerEnv, on by
 # default) activate it and add its toolchain. See .devcontainer/liza/README.md.
-liza_installed=false
+liza_installed=false liza_tools_failed=false liza_activation_failed=false
 if bash .devcontainer/liza/install.sh; then
     liza_installed=true
+    # Run here so a failure is recorded; activate.sh's own tools.sh run then skips
+    # every tool whose pin already matches.
+    if [ "${INSTALL_LIZA_TOOLS:-false}" = true ]; then
+        bash .devcontainer/liza/tools.sh || liza_tools_failed=true
+    fi
     if [ "${ACTIVATE_LIZA:-false}" = true ]; then
-        bash .devcontainer/liza/activate.sh </dev/null >/dev/null || echo "Warning: Liza activation failed" >&2
-    elif [ "${INSTALL_LIZA_TOOLS:-false}" = true ]; then
-        bash .devcontainer/liza/tools.sh
+        bash .devcontainer/liza/activate.sh </dev/null >/dev/null || liza_activation_failed=true
     fi
 fi
 
@@ -149,6 +153,12 @@ if [ "$claude_install_failed" = 1 ]; then
 fi
 if $liza_installed && [ ! -x "$HOME/.liza/bin/rg" ]; then
     echo "ERROR: ripgrep install failed; Liza's agents search with rg. Run 'bash .devcontainer/liza/install.sh' to retry." >&2
+fi
+if $liza_tools_failed; then
+    echo "ERROR: Liza toolchain install failed (see the warning above). Run 'bash .devcontainer/liza/tools.sh' to retry." >&2
+fi
+if $liza_activation_failed; then
+    echo "ERROR: Liza activation failed. Run 'bash .devcontainer/liza/activate.sh' to retry." >&2
 fi
 
 echo "Development environment setup complete!"
