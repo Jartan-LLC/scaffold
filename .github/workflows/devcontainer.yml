@@ -2,8 +2,7 @@ name: Devcontainer
 
 # Proves changes under .devcontainer/ by running them: the Liza shim's activation and
 # deactivation in a throwaway clone (smoke), and the real container built and created,
-# post-create included, for each combination of the Liza switches (e2e). The weekly run catches
-# breakage from what post-create installs unpinned, such as Claude Code.
+# post-create included, for each combination of the Liza switches (e2e).
 on:
   pull_request:
     branches: [main]
@@ -15,8 +14,6 @@ on:
     paths:
       - ".devcontainer/**"
       - ".github/workflows/devcontainer.yml"
-  schedule:
-    - cron: "40 7 * * 1" # weekly, Monday 07:40 UTC (offset from ci/scorecard/link-check)
   workflow_dispatch:
 
 permissions:
@@ -28,6 +25,7 @@ concurrency:
 
 jobs:
   smoke:
+    name: Liza smoke test
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -39,6 +37,7 @@ jobs:
       - run: bash .devcontainer/liza/smoke-test.sh
 
   e2e:
+    name: Dev container (Liza ${{ matrix.activate && 'on' || 'off' }}, tools ${{ matrix.tools && 'on' || 'off' }})
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
