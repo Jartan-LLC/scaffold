@@ -46,10 +46,8 @@ jobs:
       - name: Compute lowercase image name
         run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
-      # metadata-action's default `latest=auto` tags every non-prerelease build
-      # `latest`, without checking it is the highest version released. A patch cut
-      # on a maintained line after a higher minor shipped would move `latest`
-      # backwards and silently downgrade whoever pulls it. Decide it here instead.
+      # Not metadata-action's `latest=auto`: it tags every non-prerelease build, so a
+      # patch on an older release line would move `latest` backwards.
       - name: Decide whether this tag takes `latest`
         id: latest
         run: |

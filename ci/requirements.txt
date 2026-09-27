@@ -1,12 +1,5 @@
-# Third-party tools that CI and `make` install by name, pinned to an exact
-# version so a run's result depends on this commit and not on what PyPI served
-# that morning. Dependabot watches this file (the "/ci" pip entry in
-# .github/dependabot.yml), so an upgrade arrives as a PR someone reads.
-#
-# These are the tools kept out of the dev extras: they are not part of the
-# project's own toolchain, they only run the gate. The project's toolchain
-# (ruff, pytest, pyright, codespell) lives in pyproject.toml with a version
-# bound, and CI installs it with `uv pip install -e '.[dev]'`.
+# Tools that run the gate but aren't the project's own toolchain (that's the dev
+# extra in pyproject.toml). Exact-pinned; Dependabot's "/ci" entry bumps them.
 
 uv==0.12.13         # installer, resolver, venv manager and build frontend
 pre-commit==4.6.2  # git hook runner; manages its own hook envs
