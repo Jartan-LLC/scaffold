@@ -8,6 +8,8 @@ pinned, and keeps activation local to your clone.
 
 - Every container gets the `liza` binary (pinned release, checksum-verified), a real
   `rg`, and Liza's global files in `~/.liza`, a volume kept per project across rebuilds.
+  Unlike the `claude-data` volume (`~/.claude`), which every project shares, this lets
+  each fork pin its own Liza version and tools.
 - Two switches, both on by default, decide the rest: activating Liza for the clone, and
   installing its agent toolchain.
 - Activation writes only local files, so collaborators and CI are unaffected.
