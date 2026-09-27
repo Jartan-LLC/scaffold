@@ -20,16 +20,12 @@ dependencies = []
 
 [project.optional-dependencies]
 # The toolchain CI runs. Delete this whole file if the project isn't Python.
-# Every entry carries an upper bound: CI installs these fresh on every run, so
-# an unbounded floor lets an upstream major redden `main` on its release day.
-# Dependabot's minor-and-patch group proposes the bumps; majors stop at the
-# ceiling and land as a change someone reads.
-# The gate's own tools (uv, pre-commit, twine, pip-audit) are not part of
-# this toolchain -- they live exact-pinned in ci/requirements.txt.
+# Upper bounds stop at each tool's next breaking release, so Dependabot proposes
+# that bump as a PR rather than CI picking it up unannounced.
 dev = [
-    "ruff>=0.16.3,<1",     # linter + formatter
+    "ruff>=0.16.3,<0.17",  # linter + formatter; 0.x minors break
     "pytest>=9.1,<10",     # test runner
-    "pyright>=1.1,<2",     # static type checker
+    "pyright==1.1.414",    # static type checker; every release is 1.1.x
     "codespell>=2.4,<3",   # spell checker (code, comments, docs)
 ]
 # Docs site toolchain (Sphinx + MyST + furo). Install with `uv pip install -e '.[docs]'`.
