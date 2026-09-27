@@ -52,7 +52,7 @@ For questions the user didn't have answers to (e.g., version corrections, verify
 
 ### 6. Manual Steps
 
-Present both the Required items that need manual action (adding secrets, enabling private vulnerability reporting) and the Recommended checklist items that require manual action in GitHub Settings. Call out **private vulnerability reporting** (Settings > Security) by name: until it is on, the advisory form `.github/SECURITY.md` sends every reporter to does not exist.
+Present both the Required items that need manual action (enabling private vulnerability reporting) and the Recommended checklist items that require manual action in GitHub Settings. Call out **private vulnerability reporting** (Settings > Security) by name: until it is on, the advisory form `.github/SECURITY.md` sends every reporter to does not exist.
 
 ### 7. Cleanup
 

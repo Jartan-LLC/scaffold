@@ -43,7 +43,7 @@ Open a PR either way, so CI runs before the changes land.
 |------|----------|
 | `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Go, Docker, GitHub CLI, desktop-lite; plus Claude Code CLI and codebase-memory-mcp (structural code graph, best-effort), both installed via `post-create.sh`, and [Liza](.devcontainer/liza/README.md) (pinned; activation and its agent toolchain are opt-in switches) |
 | `.claude/` | Claude Code configuration — enabled plugins (skills & agents from the grimoire marketplace) and the `/onboard` setup command |
-| `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + dependency audit + docs build; Node steps + Docker job commented), Claude Code as CI agent (@claude in issues/PRs), Dependabot auto-patching, publish/release + OpenSSF Scorecard + weekly external-link-check + Liza smoke-test workflows, issue/PR + code-of-conduct + security templates |
+| `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + weekly external-link-check + Liza smoke-test workflows, issue/PR + code-of-conduct + security templates |
 | `pyproject.toml`, `ci/requirements.txt` | Python packaging + tool config (ruff, pytest, pyright, codespell) — minimal src-layout stub; rename or delete. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use |
 | `src/app/`, `tests/` | Placeholder package (CLI entry point + logging setup, PEP 561 typed) + smoke/logging tests so CI is green on first fork |
 | `Makefile`, `.pre-commit-config.yaml` | Task runner (`make install`/`lint`/`test`/`check`/`docs`, backed by [uv](https://docs.astral.sh/uv/) and a project-local `.venv`) + the single lint source (ruff, codespell, shellcheck, markdownlint, lychee, actionlint, zizmor, hygiene) that `make lint` and CI both run |
@@ -92,16 +92,6 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Docs — set `project`/`author`/`project_copyright` in `docs/conf.py`; write the `docs/index.md` landing page (replace the `# Project Docs` title + `TODO(/onboard)`); update the `pip install app` line in `docs/getting-started.md` to the renamed package; after renaming the package, update the `automodule` module names in `docs/reference.md` (`/onboard` does this; the docs build fails if they're left stale)
 - [ ] Create a `LICENSE` file — rename one of the included templates (`LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`, `LICENSE.proprietary`) to `LICENSE`, fill in `[year]` and `[fullname]`, delete the others
 - [ ] Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match your stack
-- [ ] Add secrets to your repo:
-  - `ANTHROPIC_API_KEY` — for the Claude Code workflow
-  - `APP_ID` — GitHub App ID
-  - `APP_PRIVATE_KEY` — GitHub App private key
-  - **GitHub App setup**:
-    1. Create a GitHub App at <https://github.com/settings/apps>
-    2. Under Permissions, grant Contents, Issues, and Pull Requests (Read & Write)
-    3. Under Webhook, uncheck "Active" (not needed for this workflow)
-    4. Install the app on your repo
-    5. Store the App ID and a generated private key as repo secrets
 
 ### Recommended
 
@@ -117,7 +107,6 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Enable secret scanning with push protection (Settings > Security > Secret Protection)
 - [ ] Configure branch ruleset for `main` — require PR reviews, require CI to pass, block force pushes
 - [ ] Enable auto-merge (Settings > General > Allow auto-merge) — Dependabot minor/patch PRs auto-merge after CI passes
-- [ ] Review `.github/workflows/claude.yml` — uses `--dangerously-skip-permissions` which grants Claude unrestricted tool access in CI
 
 ### Cleanup
 
