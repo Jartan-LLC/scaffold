@@ -125,8 +125,8 @@ if command -v codebase-memory-mcp &>/dev/null; then
     codebase-memory-mcp config set auto_index true || echo "Warning: could not enable codebase-memory-mcp auto_index" >&2
 fi
 
-# Liza always installs; INSTALL_LIZA_TOOLS and ACTIVATE_LIZA (containerEnv) opt the
-# project in further. See .devcontainer/liza/README.md.
+# Liza always installs; ACTIVATE_LIZA and INSTALL_LIZA_TOOLS (containerEnv, on by
+# default) activate it and add its toolchain. See .devcontainer/liza/README.md.
 liza_installed=false
 if bash .devcontainer/liza/install.sh; then
     liza_installed=true

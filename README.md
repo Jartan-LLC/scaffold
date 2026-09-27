@@ -47,7 +47,7 @@ Open a PR either way, so CI runs before the changes land.
 
 | Area | Contents |
 |------|----------|
-| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Go, Docker, GitHub CLI, desktop-lite; plus Claude Code CLI and codebase-memory-mcp (structural code graph, best-effort), both installed via `post-create.sh`, and [Liza](.devcontainer/liza/README.md) (pinned; activation and its agent toolchain are opt-in switches) |
+| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Go, Docker, GitHub CLI, desktop-lite; plus Claude Code CLI and codebase-memory-mcp (structural code graph, best-effort), both installed via `post-create.sh`, and [Liza](.devcontainer/liza/README.md) (pinned; activation and its agent toolchain are on by default, each with an opt-out switch) |
 | `.claude/` | Claude Code configuration — enabled plugins (skills & agents from the grimoire marketplace) and the `/onboard` setup command |
 | `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + weekly external-link-check + Liza smoke-test workflows, issue/PR + code-of-conduct + security templates |
 | `pyproject.toml`, `ci/requirements.txt` | Python packaging + tool config (ruff, pytest, pyright, codespell) — minimal src-layout stub; rename or delete. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use |
@@ -79,7 +79,7 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Update `.devcontainer/devcontainer.json` — change the desktop-lite password, add/remove language features and extensions for your stack
 - [ ] Update `.devcontainer/post-create.sh` — add dependency installation for your stack
 - [ ] Update `.devcontainer/post-start.sh` — add commands that should run on each container start (Docker socket fix and Codespaces env overrides are included)
-- [ ] Decide on Liza — set the `ACTIVATE_LIZA` and `INSTALL_LIZA_TOOLS` defaults in `.devcontainer/devcontainer.json`, or remove it ([Removing Liza](.devcontainer/liza/README.md#removing-liza))
+- [ ] Decide on Liza — it's on by default; to opt out, set the `ACTIVATE_LIZA` and/or `INSTALL_LIZA_TOOLS` defaults in `.devcontainer/devcontainer.json` to `false`, or remove it ([Removing Liza](.devcontainer/liza/README.md#removing-liza))
 - [ ] Update `.gitignore` — add language-specific patterns for your stack
 - [ ] Update `.editorconfig` — adjust formatting rules for your language (e.g., tabs for Go)
 - [ ] Update `.github/CODEOWNERS` — uncomment and set owner usernames/teams

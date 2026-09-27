@@ -33,8 +33,8 @@
     "CONTAINER_WORKSPACE_FOLDER": "${containerWorkspaceFolder}",
     // The committed default is the project's choice; the same-named variable on your
     // host overrides it for you. See .devcontainer/liza/README.md.
-    "ACTIVATE_LIZA": "${localEnv:ACTIVATE_LIZA:false}",
-    "INSTALL_LIZA_TOOLS": "${localEnv:INSTALL_LIZA_TOOLS:false}"
+    "ACTIVATE_LIZA": "${localEnv:ACTIVATE_LIZA:true}",
+    "INSTALL_LIZA_TOOLS": "${localEnv:INSTALL_LIZA_TOOLS:true}"
   },
   "forwardPorts": [6080],
   "portsAttributes": {
