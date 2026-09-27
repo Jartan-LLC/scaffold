@@ -22,9 +22,10 @@ install: deps  ## Install deps, then wire the pre-commit hook
 lint:  ## Lint all files via pre-commit (ruff, codespell, shellcheck, markdownlint, lychee, actionlint, zizmor, hygiene)
 	pre-commit run --all-files
 
-fix:  ## Auto-format and apply ruff's safe fixes
-	ruff format .
-	ruff check --fix .
+# A hook run that rewrites files exits 1; the rerun passes unless a finding or error remains.
+fix:  ## Apply ruff's safe fixes and formatting via its pre-commit hooks (git-tracked files: `git add` new ones first)
+	pre-commit run ruff-check --all-files || pre-commit run ruff-check --all-files
+	pre-commit run ruff-format --all-files || pre-commit run ruff-format --all-files
 
 typecheck:  ## Static type check (pyright, strict)
 	pyright

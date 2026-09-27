@@ -9,7 +9,7 @@ make install
 That creates `./.venv`, installs the package with its dev extras, and wires the
 pre-commit hook. Every other `make` target runs out of that venv, so you never
 need to activate it — activate anyway (`source .venv/bin/activate`) if you want
-`pytest` and `ruff` directly on your shell's PATH.
+`pytest` directly on your shell's PATH.
 
 Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/getting-started/installation/).
 `make lint` runs the [pre-commit](https://pre-commit.com/) hooks; some need
