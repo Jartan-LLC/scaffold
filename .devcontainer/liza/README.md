@@ -144,8 +144,8 @@ workflow runs it on every change under `.devcontainer/`, alongside a full contai
 
 1. In each clone, run `bash .devcontainer/liza/deactivate.sh` and, if the toolchain was on,
    `bash .devcontainer/liza/deactivate.sh --tools`, while this directory still exists.
-2. Delete this directory. In `.github/workflows/devcontainer.yml`, drop the `smoke` job and
-   the `e2e` job's Liza matrix; in `.devcontainer/verify.sh`, drop the Liza checks.
+2. Delete this directory. In `.github/workflows/ci.yml`, drop the `liza-smoke` job and the
+   `devcontainer` job's Liza matrix; in `.devcontainer/verify.sh`, drop the Liza checks.
 3. In `devcontainer.json`, drop the `liza-${devcontainerId}` mount, the two switches and
    the Go feature (its entry in `devcontainer-lock.json` too).
 4. In `post-create.sh`, drop the Liza block, the "Liza is installed but not active" note,
