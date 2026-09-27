@@ -35,16 +35,38 @@ rm .claude/settings.json.liza-shim-held
 check "init refuses while a held settings file exists" test "$held_rc" -ne 0
 check "committed settings.json untouched after the refusal" git diff --quiet -- .claude/settings.json
 
+# Stubbed runs use $stub_home as HOME, so a stub script stands in for Liza's init.
 stub="$stub_home/.liza/libexec/liza"
 mkdir -p "$(dirname "$stub")" "$stub_home/.claude"
+liza_dir=$(dirname "$shim")
+# The stub runs the script on stdin. In it, `settings <jq filter>` edits settings.json as
+# init's merge does, and $hook is a filter adding one Liza-like hook.
+stub_liza() {
+    {
+        cat <<'EOF'
+#!/bin/sh
+settings() { jq "$1" .claude/settings.json >.claude/t.json && mv .claude/t.json .claude/settings.json; }
+hook='.hooks.SessionStart = [{hooks: [{type: "command", command: "s"}]}]'
+EOF
+        cat
+    } >"$stub"
+    chmod +x "$stub"
+}
+# A fresh clone of HEAD with empty local settings; prints its path.
+stub_clone() {  # name
+    git clone -q "$repo" "$stub_home/$1" && echo '{}' >"$stub_home/$1/.claude/settings.local.json" \
+        && echo "$stub_home/$1"
+}
+stub_init() { (cd "$1" && HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null); }  # clone
+stub_deactivate() { (cd "$1" && HOME="$stub_home" bash "$liza_dir/deactivate.sh"); }  # clone
+
 for scenario in "fails:exit 1" \
     "truncates the settings:printf '{\"hooks\":' >.claude/settings.json" \
     "empties the hooks:echo '{\"hooks\":{\"SessionStart\":[]}}' >.claude/settings.json" \
     "skips the merge:true"; do
     name=${scenario%%:*}
-    printf '#!/bin/sh\n%s\n' "${scenario#*:}" >"$stub"
-    chmod +x "$stub"
-    HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>&1
+    echo "${scenario#*:}" | stub_liza
+    stub_init "$clone" 2>/dev/null
     stub_rc=$?
     check "init exits non-zero when liza $name" test "$stub_rc" -ne 0
     check "local settings intact when liza $name" cmp -s .claude/settings.local.json "$personal_copy"
@@ -54,8 +76,8 @@ done
 # An init that overwrites a user's file and then fails leaves that file as it was.
 mkdir -p .claude/hooks
 echo "user file" >.claude/hooks/user.sh
-printf '#!/bin/sh\necho liza >.claude/hooks/user.sh\nexit 1\n' >"$stub"
-HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>"$clone/.git/partial.err"
+printf 'echo liza >.claude/hooks/user.sh\nexit 1\n' | stub_liza
+stub_init "$clone" 2>"$clone/.git/partial.err"
 partial_rc=$?
 liza_git_dir=$(git rev-parse --git-path liza)
 replaced_dir="$liza_git_dir/replaced"
@@ -67,7 +89,7 @@ rm -rf -- "$liza_git_dir"
 
 # The same when init is interrupted (the whole process group, as Ctrl-C would be).
 echo "user file" >.claude/hooks/user.sh
-printf '#!/bin/sh\necho liza >.claude/hooks/user.sh\nsleep 30\n' >"$stub"
+printf 'echo liza >.claude/hooks/user.sh\nsleep 30\n' | stub_liza
 HOME="$stub_home" setsid "$shim" init --claude --yes </dev/null >/dev/null 2>"$clone/.git/interrupt.err" &
 shim_pid=$!
 for _ in $(seq 50); do
@@ -86,7 +108,6 @@ rm -f .claude/hooks/user.sh && rmdir .claude/hooks
 check "git status clean after the failures" test -z "$(git status --porcelain)"
 
 # The pre-activation state, with a hook of the user's own, for the deactivation checks.
-liza_dir=$(dirname "$shim")
 exclude_file=$(git rev-parse --git-path info/exclude)
 jq '.hooks.PreToolUse = [{matcher: "Bash", hooks: [{type: "command", command: "echo mine"}]}]' \
     "$personal_copy" >.claude/settings.local.json
@@ -169,7 +190,7 @@ check "activation succeeds after a corrupt-record deactivate" liza init --claude
 
 # rtk's hook lands in an activated clone once, and not again on re-activation. The stubs
 # stand in for liza (a no-op init keeps the real hooks above) and for rtk.
-printf '#!/bin/sh\n' >"$stub"
+stub_liza </dev/null
 mkdir -p "$stub_home/.liza/bin"
 printf '#!/bin/sh\n' >"$stub_home/.liza/bin/rtk"
 chmod +x "$stub_home/.liza/bin/rtk"
@@ -178,52 +199,43 @@ rtk_hooks() {
         '[.hooks.PreToolUse[]?.hooks[]? | select(.command == $c)] | length' .claude/settings.local.json
 }
 for run in first second; do
-    HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>&1
+    stub_init "$clone" 2>/dev/null
     check "one rtk hook after the $run stubbed activation" test "$(rtk_hooks)" = 1
 done
 
 # Re-activations that change what Liza writes, in a fresh clone with a stub liza: the
 # first adds an entry and sets a key, the second swaps the entry and sets the key again.
 # Deactivation restores the original, neither the swapped-out entry nor the first value.
-merge_clone="$stub_home/merge-clone"
-git clone -q "$repo" "$merge_clone"
+merge_clone=$(stub_clone merge-clone)
 echo '{"permissions":{"allow":["mine"]},"model":"m0"}' >"$merge_clone/.claude/settings.local.json"
 cp "$merge_clone/.claude/settings.local.json" "$merge_clone/.git/original.json"
-cat >"$stub" <<'EOF'
-#!/bin/sh
-jq '.hooks.SessionStart = [{hooks: [{type: "command", command: "s"}]}]
-    | .permissions.allow += ["liza-1"] | .model = "m1"' .claude/settings.json >.claude/t.json \
-    && mv .claude/t.json .claude/settings.json
+stub_liza <<'EOF'
+settings "$hook"
+settings '.permissions.allow += ["liza-1"] | .model = "m1"'
 EOF
-(cd "$merge_clone" && HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>&1)
-cat >"$stub" <<'EOF'
-#!/bin/sh
-jq '.permissions.allow = (.permissions.allow - ["liza-1"] + ["liza-2"]) | .model = "m2"' \
-    .claude/settings.json >.claude/t.json && mv .claude/t.json .claude/settings.json
+stub_init "$merge_clone" 2>/dev/null
+stub_liza <<'EOF'
+settings '.permissions.allow = (.permissions.allow - ["liza-1"] + ["liza-2"]) | .model = "m2"'
 EOF
-(cd "$merge_clone" && HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>&1)
+stub_init "$merge_clone" 2>/dev/null
 check "re-activations changed the settings" jq -e '.model == "m2"' "$merge_clone/.claude/settings.local.json"
-(cd "$merge_clone" && HOME="$stub_home" bash "$liza_dir/deactivate.sh")
+stub_deactivate "$merge_clone"
 check "deactivate after changing re-activations restores the original" \
     test "$(jq -S . "$merge_clone/.claude/settings.local.json")" = "$(jq -S . "$merge_clone/.git/original.json")"
 
 # An init that removes a user's file or replaces their symlink, with a stub liza:
 # deactivate restores both.
-gone_clone="$stub_home/gone-clone"
-git clone -q "$repo" "$gone_clone"
+gone_clone=$(stub_clone gone-clone)
 mkdir -p "$gone_clone/.claude/hooks" "$gone_clone/.claude/links"
-echo '{}' >"$gone_clone/.claude/settings.local.json"
 echo "user file" >"$gone_clone/.claude/hooks/removed.sh"
 ln -s /user/target "$gone_clone/.claude/links/linked.sh"
-cat >"$stub" <<'EOF'
-#!/bin/sh
+stub_liza <<'EOF'
 rm -f .claude/hooks/removed.sh .claude/links/linked.sh
 echo liza >.claude/links/linked.sh
 echo liza >.claude/links/created.sh
-jq '.hooks.SessionStart = [{hooks: [{type: "command", command: "s"}]}]' .claude/settings.json >.claude/t.json \
-    && mv .claude/t.json .claude/settings.json
+settings "$hook"
 EOF
-(cd "$gone_clone" && HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>&1)
+stub_init "$gone_clone" 2>/dev/null
 check "the stub init removed the user's file" test ! -e "$gone_clone/.claude/hooks/removed.sh"
 # A deactivate that fails part-way (here: the links directory is read-only, so restoring
 # the symlink and removing the created file fail while the other restore succeeds) keeps
@@ -232,7 +244,7 @@ check "the stub init removed the user's file" test ! -e "$gone_clone/.claude/hoo
 if [ "$(id -u)" != 0 ]; then
     gone_record="$(git -C "$gone_clone" rev-parse --absolute-git-dir)/liza"
     chmod a-w "$gone_clone/.claude/links"
-    (cd "$gone_clone" && HOME="$stub_home" bash "$liza_dir/deactivate.sh" 2>/dev/null)
+    stub_deactivate "$gone_clone" 2>/dev/null
     failed_rc=$?
     chmod u+w "$gone_clone/.claude/links"
     check "a deactivate that can't restore fails" test "$failed_rc" -ne 0
@@ -240,8 +252,9 @@ if [ "$(id -u)" != 0 ]; then
         test -f "$gone_record/activation.json" -a -d "$gone_record/originals"
     check "and keeps the leftover file hidden" grep -qx /.claude/links/created.sh "$gone_clone/.git/info/exclude"
 fi
-check "deactivate (re)run succeeds" \
-    bash -c "cd '$gone_clone' && HOME='$stub_home' bash '$liza_dir/deactivate.sh' 2>'$stub_home/rerun.err'"
+stub_deactivate "$gone_clone" 2>"$stub_home/rerun.err"
+rerun_rc=$?
+check "deactivate (re)run succeeds" test "$rerun_rc" -eq 0
 check "the rerun takes no restored file for an edit" \
     test ! -e "$gone_clone/.claude/hooks/removed.sh.pre-liza" -a ! -s "$stub_home/rerun.err"
 check "the rerun removes the created file and its exclude line" \
@@ -255,18 +268,14 @@ check "deactivate restores a user symlink init replaced" \
 # A backup that can't be made (an unreadable user file) stops init before it runs. The
 # stub liza succeeds on its own, so only the refusal can fail this activation.
 if [ "$(id -u)" != 0 ]; then
-    refuse_clone="$stub_home/refuse-clone"
-    git clone -q "$repo" "$refuse_clone"
+    refuse_clone=$(stub_clone refuse-clone)
     mkdir -p "$refuse_clone/.claude/hooks"
-    echo '{}' >"$refuse_clone/.claude/settings.local.json"
-    cat >"$stub" <<'EOF'
-#!/bin/sh
-jq '.hooks.SessionStart = [{hooks: [{type: "command", command: "s"}]}]' .claude/settings.json >.claude/t.json \
-    && mv .claude/t.json .claude/settings.json
+    stub_liza <<'EOF'
+settings "$hook"
 EOF
     echo "user file" >"$refuse_clone/.claude/hooks/unreadable.sh"
     chmod 000 "$refuse_clone/.claude/hooks/unreadable.sh"
-    (cd "$refuse_clone" && HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>"$stub_home/refuse.err")
+    stub_init "$refuse_clone" 2>"$stub_home/refuse.err"
     refuse_rc=$?
     chmod 600 "$refuse_clone/.claude/hooks/unreadable.sh"
     check "init refuses when a backup fails" test "$refuse_rc" -ne 0
@@ -275,49 +284,39 @@ EOF
         test "$(cat "$refuse_clone/.claude/hooks/unreadable.sh")" = "user file" -a ! -L "$refuse_clone/CLAUDE.local.md"
 fi
 
-# Saving a .pre-liza copy fails (read-only directory): the original isn't lost, and a rerun
-# saves it. A stub liza overwrites .claude/keep/f.sh.
-if [ "$(id -u)" != 0 ]; then
-    cat >"$stub" <<'EOF'
-#!/bin/sh
+# The next two scenarios' stub liza overwrites a user file, .claude/keep/f.sh.
+stub_liza <<'EOF'
 echo liza >.claude/keep/f.sh
-jq '.hooks.SessionStart = [{hooks: [{type: "command", command: "s"}]}]' .claude/settings.json >.claude/t.json \
-    && mv .claude/t.json .claude/settings.json
+settings "$hook"
 EOF
-    preliza_clone="$stub_home/preliza-clone"
-    git clone -q "$repo" "$preliza_clone"
+
+# Saving a .pre-liza copy fails (read-only directory): the original isn't lost, and a rerun
+# saves it.
+if [ "$(id -u)" != 0 ]; then
+    preliza_clone=$(stub_clone preliza-clone)
     mkdir -p "$preliza_clone/.claude/keep"
-    echo '{}' >"$preliza_clone/.claude/settings.local.json"
     echo "user file" >"$preliza_clone/.claude/keep/f.sh"
-    (cd "$preliza_clone" && HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>&1)
+    stub_init "$preliza_clone" 2>/dev/null
     echo "# edited" >>"$preliza_clone/.claude/keep/f.sh"
     chmod a-w "$preliza_clone/.claude/keep"
-    (cd "$preliza_clone" && HOME="$stub_home" bash "$liza_dir/deactivate.sh" 2>/dev/null)
+    stub_deactivate "$preliza_clone" 2>/dev/null
     preliza_rc=$?
     chmod u+w "$preliza_clone/.claude/keep"
     check "a deactivate that can't save a .pre-liza copy fails" test "$preliza_rc" -ne 0
     check "and keeps the original for a rerun" test -d "$preliza_clone/.git/liza/originals"
-    (cd "$preliza_clone" && HOME="$stub_home" bash "$liza_dir/deactivate.sh" 2>/dev/null)
+    stub_deactivate "$preliza_clone" 2>/dev/null
     check "the rerun saves the .pre-liza copy" \
         test "$(cat "$preliza_clone/.claude/keep/f.sh.pre-liza" 2>/dev/null)" = "user file"
 fi
 
 # An original saved before the record's write failed (a corrupt record here): deactivate
 # puts it beside the file instead of dropping it with the rest of the record.
-orphan_clone="$stub_home/orphan-clone"
-git clone -q "$repo" "$orphan_clone"
+orphan_clone=$(stub_clone orphan-clone)
 mkdir -p "$orphan_clone/.claude/keep" "$orphan_clone/.git/liza"
-echo '{}' >"$orphan_clone/.claude/settings.local.json"
 echo "user file" >"$orphan_clone/.claude/keep/f.sh"
 echo '{' >"$orphan_clone/.git/liza/activation.json"
-cat >"$stub" <<'EOF'
-#!/bin/sh
-echo liza >.claude/keep/f.sh
-jq '.hooks.SessionStart = [{hooks: [{type: "command", command: "s"}]}]' .claude/settings.json >.claude/t.json \
-    && mv .claude/t.json .claude/settings.json
-EOF
-(cd "$orphan_clone" && HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>"$stub_home/orphan.err")
-(cd "$orphan_clone" && HOME="$stub_home" bash "$liza_dir/deactivate.sh" 2>"$stub_home/orphan-deactivate.err")
+stub_init "$orphan_clone" 2>/dev/null
+stub_deactivate "$orphan_clone" 2>"$stub_home/orphan-deactivate.err"
 check "deactivate saves an unrecorded original beside its file" \
     test "$(cat "$orphan_clone/.claude/keep/f.sh.pre-liza" 2>/dev/null)" = "user file"
 check "and names it" grep -q -F -- "f.sh.pre-liza" "$stub_home/orphan-deactivate.err"
