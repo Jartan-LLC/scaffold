@@ -4,9 +4,6 @@ echo "Setting up development environment..."
 
 source .devcontainer/fetch-verified.sh
 
-# Enable pnpm via corepack (ships with Node.js)
-sudo corepack enable || echo "Warning: corepack enable failed; pnpm may not be available" >&2
-
 # Installed here, not via the devcontainer feature: the feature installs as root,
 # leaving @anthropic-ai unwritable so auto-update fails forever. Must precede
 # codebase-memory-mcp, which registers its MCP server only if claude is present.
@@ -111,8 +108,14 @@ if [ "${INSTALL_LIZA_TOOLS:-false}" != true ] && ! command -v codebase-memory-mc
         && fetch_verified \
             "${CBM_BASE_URL}/checksums.txt" \
             "$CBM_CHECKSUMS_SHA256" "$cbm_tmp/checksums.txt"; then
-        CBM_DOWNLOAD_URL="$CBM_BASE_URL" bash "$cbm_tmp/install.sh" \
-            || echo "Warning: codebase-memory-mcp install failed" >&2
+        # The installer exits non-zero when it can't register the MCP server through the
+        # ~/.claude.json symlink made above; Claude Code's own command writes through it.
+        CBM_DOWNLOAD_URL="$CBM_BASE_URL" bash "$cbm_tmp/install.sh"
+        if [ ! -x "$HOME/.local/bin/codebase-memory-mcp" ] \
+            || ! { claude mcp get codebase-memory-mcp >/dev/null 2>&1 \
+                || claude mcp add --scope user codebase-memory-mcp -- "$HOME/.local/bin/codebase-memory-mcp" >/dev/null; }; then
+            echo "Warning: codebase-memory-mcp install failed" >&2
+        fi
     else
         echo "Warning: codebase-memory-mcp installer or checksums.txt did not match its pinned digest; install skipped" >&2
     fi
