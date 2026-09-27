@@ -44,6 +44,23 @@ install the toolchain first):
 bash .devcontainer/liza/activate.sh
 ```
 
+To undo activation, and, separately, the toolchain's context7 registration and
+codebase-memory-mcp switch-off:
+
+```bash
+bash .devcontainer/liza/deactivate.sh
+bash .devcontainer/liza/deactivate.sh --tools
+```
+
+Activation records what it added in `.git/liza/activation.json`, and deactivation removes
+exactly that. A settings value you've changed since is left as you set it; a created file
+you've edited since is kept, and named. A file of yours that init overwrote or removed is
+restored, or saved beside it as `<name>.pre-liza` and named, when you've edited Liza's
+version since or the record couldn't be written. A failed run keeps everything and a
+rerun finishes it. An entry identical to one Liza added is indistinguishable from it and
+goes with Liza's. A clone activated before records existed gets a partial undo that says
+what it left. With a switch still on, the next rebuild applies it again.
+
 The shim covers any `liza init`, including the multi-agent one below, and loads the
 toolchain's `LIZA_ENABLE_*` gates for it when `INSTALL_LIZA_TOOLS` is on.
 `~/.liza/libexec/liza init` bypasses it and writes to the committed
