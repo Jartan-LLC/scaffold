@@ -1,5 +1,5 @@
 # LF on checkout for every text file, overriding each clone's core.autocrlf to match
-# .editorconfig; new file types need no per-extension eol.
+# .editorconfig. The file's only eol setting; other patterns set none.
 * text=auto eol=lf
 
 # Explicit text files
