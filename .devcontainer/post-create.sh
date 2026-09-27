@@ -10,11 +10,7 @@ sudo corepack enable || echo "Warning: corepack enable failed; pnpm may not be a
 # Installed here, not via the devcontainer feature: the feature installs as root,
 # leaving @anthropic-ai unwritable so auto-update fails forever. Must precede
 # codebase-memory-mcp, which registers its MCP server only if claude is present.
-#
-# Deliberately unpinned, and the one exception to the pinning rule this file
-# otherwise follows: Claude Code is kept free to auto-update because its
-# freshness is what makes it useful (Jonathan, JAR-220). Pinning it here would
-# also fight the non-root install above, which exists to let it self-update.
+# Unpinned on purpose, unlike every other fetch here: it is kept self-updating.
 echo "Installing Claude Code CLI..."
 claude_install_failed=0
 # Retry once: a registry blip during create otherwise costs a rebuild.
@@ -55,7 +51,7 @@ while IFS= read -r -d '' pyproject_file; do
     uv pip install --system -e "${dir}[dev]" || echo "Warning: uv pip install failed for $dir" >&2
 done < <(find . -name "pyproject.toml" -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.tox/*" -type f -print0)
 
-# pre-commit binary comes from the .[dev] install above.
+# pre-commit comes from ci/requirements.txt, installed by the requirements loop above.
 if command -v pre-commit &>/dev/null && [ -f .pre-commit-config.yaml ]; then
     echo "Wiring pre-commit git hook..."
     pre-commit install || echo "Warning: pre-commit install failed" >&2
@@ -91,52 +87,20 @@ fi
 # uv pip install --system "headroom-ai[proxy]"
 # headroom init claude
 
-# Install codebase-memory-mcp (structural code graph for Claude Code).
-#
-# This is the one place in the template that runs third-party code fetched at
-# create time, and the container it runs in bind-mounts the host Docker socket
-# (docker-outside-of-docker, below) — so nothing here is best-effort about
-# provenance. Registered as SEC-2026-0054, High. Three things get pinned:
-#
-#   1. the installer script — fetched at a commit rather than a branch, so the
-#      URL is an immutable content address, and its bytes are checked against
-#      CBM_INSTALLER_SHA256 before bash ever sees them;
-#   2. checksums.txt — pinned here rather than trusted from the release. The
-#      installer verifies each archive against this file but fetches it from the
-#      same location as the archive, so on its own that check is circular:
-#      whoever can replace a release asset can replace the checksum file beside
-#      it. One digest covers every architecture, because every archive is
-#      verified through this file;
-#   3. the release the installer downloads — CBM_DOWNLOAD_URL replaces the
-#      installer's own /releases/latest/download default. A tag names a mutable
-#      location, so this bounds *which* release, not *which bytes*; item 2 is
-#      what makes the bytes fixed.
-#
-# Residual, accepted by Security at Low: the installer refetches checksums.txt
-# itself, so a swap landing between our check and its fetch is not caught. The
-# attacker still has to replace a published release asset rather than push to a
-# default branch. Closing it fully means serving the assets from loopback
-# (install.sh accepts an http://127.0.0.1 CBM_DOWNLOAD_URL) — not taken, because
-# that path is documented upstream as being for testing, and a template every
-# fork inherits should not depend on someone else's test seam. The durable fix
-# is sigstore verification of the release bundles, which also removes the manual
-# digest bump below; tracked as JAR-326.
-#
-# To move to a newer release: set CBM_RELEASE, read install.sh's commit at that
-# tag, and recompute both digests with
-#   curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/<commit>/install.sh | sha256sum
-#   curl -fsSL https://github.com/DeusData/codebase-memory-mcp/releases/download/<tag>/checksums.txt | sha256sum
+# Install codebase-memory-mcp (structural code graph for Claude Code). This
+# container can reach the host Docker socket, so the fetch is pinned three ways:
+# install.sh by commit and digest, checksums.txt by digest (the installer checks
+# every archive against it), and the release via CBM_DOWNLOAD_URL.
+# Known gap: install.sh refetches checksums.txt after our check; verifying the
+# release's sigstore bundles would close it and retire the manual digest bump.
+# To bump: set CBM_RELEASE to the new tag and CBM_INSTALLER_COMMIT to that tag's
+# commit, then recompute both digests with `curl -fsSL <url> | sha256sum`.
 CBM_RELEASE="v0.10.5"
 CBM_INSTALLER_COMMIT="77195634e13fd3bcd0d24543de5f876b4679f1cf"  # frozen: v0.10.5
 CBM_INSTALLER_SHA256="2fdd4d6563fc8e540bb32e233c5fdef22ecf05d7ebd5a80657cd4fec953b3475"
 CBM_CHECKSUMS_SHA256="6fbd04babc7815b5f2dc4b3330ff9a8f1728a1375aecd94ff13534fe2e02e764"
 CBM_BASE_URL="https://github.com/DeusData/codebase-memory-mcp/releases/download/${CBM_RELEASE}"
 
-# The old invocation passed `--ui`. Upstream removed that flag in v0.10.0 when
-# the UI became part of the single archive, and the installer's arg loop has no
-# default case, so it has been silently ignored ever since. Nothing is lost by
-# dropping it: checksums.txt gives the `-ui-` and plain archives identical
-# digests, so they are the same bytes under two names.
 # Skipped when INSTALL_LIZA_TOOLS is on: Liza's toolchain replaces it (liza/tools.sh).
 if [ "${INSTALL_LIZA_TOOLS:-false}" != true ] && ! command -v codebase-memory-mcp &>/dev/null; then
     echo "Installing codebase-memory-mcp ${CBM_RELEASE}..."
@@ -162,15 +126,18 @@ if command -v codebase-memory-mcp &>/dev/null; then
     codebase-memory-mcp config set auto_index true || echo "Warning: could not enable codebase-memory-mcp auto_index" >&2
 fi
 
-# Liza always installs; INSTALL_LIZA_TOOLS and ACTIVATE_LIZA (containerEnv) opt the
-# project in further. See .devcontainer/liza/README.md.
-liza_installed=false
+# Liza always installs; ACTIVATE_LIZA and INSTALL_LIZA_TOOLS (containerEnv, on by
+# default) activate it and add its toolchain. See .devcontainer/liza/README.md.
+liza_installed=false liza_tools_failed=false liza_activation_failed=false
 if bash .devcontainer/liza/install.sh; then
     liza_installed=true
+    # Run here so a failure is recorded; activate.sh's own tools.sh run then skips
+    # every tool whose pin already matches.
+    if [ "${INSTALL_LIZA_TOOLS:-false}" = true ]; then
+        bash .devcontainer/liza/tools.sh || liza_tools_failed=true
+    fi
     if [ "${ACTIVATE_LIZA:-false}" = true ]; then
-        bash .devcontainer/liza/activate.sh </dev/null >/dev/null || echo "Warning: Liza activation failed" >&2
-    elif [ "${INSTALL_LIZA_TOOLS:-false}" = true ]; then
-        bash .devcontainer/liza/tools.sh
+        bash .devcontainer/liza/activate.sh </dev/null >/dev/null || liza_activation_failed=true
     fi
 fi
 
@@ -186,6 +153,12 @@ if [ "$claude_install_failed" = 1 ]; then
 fi
 if $liza_installed && [ ! -x "$HOME/.liza/bin/rg" ]; then
     echo "ERROR: ripgrep install failed; Liza's agents search with rg. Run 'bash .devcontainer/liza/install.sh' to retry." >&2
+fi
+if $liza_tools_failed; then
+    echo "ERROR: Liza toolchain install failed (see the warning above). Run 'bash .devcontainer/liza/tools.sh' to retry." >&2
+fi
+if $liza_activation_failed; then
+    echo "ERROR: Liza activation failed. Run 'bash .devcontainer/liza/activate.sh' to retry." >&2
 fi
 
 echo "Development environment setup complete!"

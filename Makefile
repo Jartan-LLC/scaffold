@@ -39,10 +39,8 @@ docs:  ## Build the docs site, warnings-as-errors (needs the docs extra)
 	sphinx-build -W -b html docs docs/_build/html
 
 # The one gate: reproduces every CI check locally on the active interpreter
-# (CI additionally sweeps the 3.12/3.13 matrix — see ci.yml). Self-installs the
-# CI-only tools (pre-commit, twine, pip-audit) that are kept out of the dev
-# extras — they are exact-pinned in ci/requirements.txt, the same file CI
-# installs from, so this gate and that one run identical tools.
+# (CI additionally sweeps the 3.12/3.13 matrix — see ci.yml). Also installs
+# ci/requirements.txt, the pinned gate tools CI uses.
 check: | .venv  ## Run every CI check (lint, typecheck, test, build, audit, docs)
 	uv pip install -q -e '.[dev,docs]' -r ci/requirements.txt
 	$(MAKE) lint typecheck test

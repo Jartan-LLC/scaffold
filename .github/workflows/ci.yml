@@ -3,9 +3,8 @@ name: CI
 on:
   pull_request:
     branches: [main]
-  # A build on `main` plus a weekly one. Dev extras and hook envs resolve at run
-  # time within their bounds, so `main` can go red with no commit touching it;
-  # without these, the next unrelated PR is what discovers the drift.
+  # Dev extras and hook envs resolve at run time within their bounds, so `main`
+  # can go red with no commit touching it; these catch that before the next PR does.
   push:
     branches: [main]
   schedule:
@@ -43,9 +42,8 @@ jobs:
           enable-cache: true
 
       # All file linters live in .pre-commit-config.yaml (the single source, shared
-      # with `make lint`). Install only pre-commit — it manages its own hook envs, so
-      # no pyproject/dev-extras, which keeps this job language-agnostic. The runner
-      # is exact-pinned in ci/requirements.txt; the hook revs there are frozen SHAs.
+      # with `make lint`). pre-commit manages its own hook envs, so no
+      # pyproject/dev-extras, which keeps this job language-agnostic.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/pre-commit

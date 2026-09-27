@@ -8,21 +8,22 @@ pinned, and keeps activation local to your clone.
 
 - Every container gets the `liza` binary (pinned release, checksum-verified), a real
   `rg`, and Liza's global files in `~/.liza`, a volume kept per project across rebuilds.
-- Two switches decide the rest: activating Liza for the clone, and installing its agent
-  toolchain.
+- Two switches, both on by default, decide the rest: activating Liza for the clone, and
+  installing its agent toolchain.
 - Activation writes only local files, so collaborators and CI are unaffected.
 
 ## Switches
 
 | Variable | Default | When `true` |
 |---|---|---|
-| `ACTIVATE_LIZA` | `false` | container create runs [`activate.sh`](activate.sh) |
-| `INSTALL_LIZA_TOOLS` | `false` | installs the toolchain below instead of codebase-memory-mcp |
+| `ACTIVATE_LIZA` | `true` | container create runs [`activate.sh`](activate.sh) |
+| `INSTALL_LIZA_TOOLS` | `true` | installs the toolchain below instead of codebase-memory-mcp |
 
 The committed default lives in `devcontainer.json` (`containerEnv`), as
-`${localEnv:ACTIVATE_LIZA:false}`. Change the `false` to set the project's default. A
-variable of the same name on your host overrides it for you. Either change takes
-effect on the next rebuild.
+`${localEnv:ACTIVATE_LIZA:true}`. Change the `true` to `false` to opt the project out. A
+variable of the same name on your host overrides it for you, such as
+`INSTALL_LIZA_TOOLS=false` to skip the toolchain. Either change takes effect on the next
+rebuild.
 
 ## Activation
 

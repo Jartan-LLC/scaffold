@@ -25,8 +25,6 @@ every Claude Code session loads it; Liza agents also enforce the tiers (Liza's `
 
 - Read README.md and relevant docs before modifying unfamiliar code.
 - Update docs and skills alongside code changes.
-- Run the `doc-reviewer` pass on any docs change before it reaches review (see Docs in
-  `CLAUDE.md`).
 - Write Google-style docstrings for public modules, classes, and functions (enforced by
   ruff `D`) and full type annotations (enforced by pyright `strict`).
 - Keep `>>>` examples in those docstrings runnable — `make test` executes every one under
@@ -36,7 +34,8 @@ every Claude Code session loads it; Liza agents also enforce the tiers (Liza's `
 - Don't wrap things the underlying library already expresses clearly.
 - Don't speculate about fixes — investigate first, then propose.
 - Don't hardcode derived counts in comments — they drift silently.
-- Don't put paragraph-length inline comments in CI/config files.
+- Comments state only the load-bearing why. Rationale goes in the commit message; a PR
+  body carries only the gotchas.
 
 ## Tier 3 (Preferences)
 <!-- Degraded gracefully. -->

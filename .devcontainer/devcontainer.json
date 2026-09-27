@@ -1,11 +1,6 @@
 {
-  // Pinned by digest, the same discipline devcontainer-lock.json applies to the
-  // features below. The tag stays in the string so a reader can see which base
-  // this is; the digest is what Docker resolves. Nothing refreshes this
-  // automatically — Dependabot's docker ecosystem does not read devcontainer.json
-  // — so it rots until someone moves it. Re-resolve with:
-  //   docker buildx imagetools inspect mcr.microsoft.com/devcontainers/base:debian-12
-  "image": "mcr.microsoft.com/devcontainers/base:debian-12@sha256:23fa69fed758b7927c60061317d73baf7d66b9fca5c344e80bce3a940b229af0",
+  // Build from a Dockerfile so Dependabot can bump the base image.
+  "build": { "dockerfile": "Dockerfile" },
   "mounts": [
     "source=claude-data,target=/home/vscode/.claude,type=volume",
     // Per project, unlike claude-data: each fork pins its own Liza version and tools.
@@ -38,8 +33,8 @@
     "CONTAINER_WORKSPACE_FOLDER": "${containerWorkspaceFolder}",
     // The committed default is the project's choice; the same-named variable on your
     // host overrides it for you. See .devcontainer/liza/README.md.
-    "ACTIVATE_LIZA": "${localEnv:ACTIVATE_LIZA:false}",
-    "INSTALL_LIZA_TOOLS": "${localEnv:INSTALL_LIZA_TOOLS:false}"
+    "ACTIVATE_LIZA": "${localEnv:ACTIVATE_LIZA:true}",
+    "INSTALL_LIZA_TOOLS": "${localEnv:INSTALL_LIZA_TOOLS:true}"
   },
   "forwardPorts": [6080],
   "portsAttributes": {
