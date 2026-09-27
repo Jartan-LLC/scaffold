@@ -49,9 +49,7 @@ had_global_contract=false
 if [ -e "$global_contract" ] || [ -L "$global_contract" ]; then had_global_contract=true; fi
 untracked_before=$(git -C "$top" ls-files --others --exclude-standard)
 
-# Snapshots for the activation record written at the end. A clone already activated
-# before records existed has Liza's entries in its "before", so deactivate.sh falls
-# back for that one.
+# Snapshots for the activation record written at the end.
 here=$(dirname "$(readlink -f "$0")")
 # shellcheck source=.devcontainer/liza/activation-lib.sh
 source "$here/activation-lib.sh"
@@ -66,8 +64,6 @@ recorded_before=$(fingerprint "${recorded_files[@]}")
 git_before=$(fingerprint "$git_dir"/liza* "$hooks_dir"/*)
 exclude_before=$(cat "$exclude_file" 2>/dev/null)
 pre_settings=$(cat "$local_settings" 2>/dev/null || echo '{}')
-already_active=false
-[ "$(readlink "$top/CLAUDE.local.md")" = "$core_contract" ] && already_active=true
 # Liza's init overwrites an untracked file of the user's at a path it writes to. Copy the
 # candidates (files and symlinks) aside, so one it changes or removes can be kept for
 # deactivate.sh to restore.
@@ -222,8 +218,7 @@ done >>"$exclude_file"
 # Record what this activation changed, so deactivate.sh undoes exactly that. A user file
 # init overwrote keeps its original under originals/; an earlier activation's copy wins.
 mkdir -p "$record_dir"
-[ -f "$record" ] || jq -n --argjson legacy "$already_active" \
-    '{legacy: $legacy, settings: [], files: [], overwritten: [], exclude_lines: []}' >"$record"
+[ -f "$record" ] || echo '{"settings": [], "files": [], "overwritten": [], "exclude_lines": []}' >"$record"
 overwritten=()
 for path in "${!fp_before[@]}"; do
     now=$(fingerprint "$path")

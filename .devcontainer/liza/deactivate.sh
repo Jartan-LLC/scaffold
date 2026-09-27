@@ -49,16 +49,12 @@ if [ "${1:-}" = --tools ]; then
 fi
 
 settings=.claude/settings.local.json
-liza_home="$HOME/.liza/"
 core_contract="$HOME/.liza/CORE.md"
 record_dir=$(git_path "$top" liza)
 record="$record_dir/activation.json"
 exclude_file=$(git_path "$top" info/exclude)
-hooks_dir=$(git_path "$top" hooks)
 
-if [ ! -f "$record" ] && [ "$(readlink CLAUDE.local.md)" != "$core_contract" ] \
-    && ! jq -e -L "$here" --arg h "$liza_home" 'include "activation-record"; has_liza_hooks($h)' \
-        "$settings" >/dev/null 2>&1; then
+if [ ! -f "$record" ] && [ "$(readlink CLAUDE.local.md)" != "$core_contract" ]; then
     finish  # never activated
 fi
 
@@ -72,13 +68,11 @@ trap 'rmdir "$lock"' EXIT
 drop_lines=()  # exclude lines to remove
 kept=()        # files left for the user to check, with where their original is
 accounted=()   # originals the record lists
-# A record that can't be read undoes like one that was never written. One marked legacy
-# came from re-activating a clone activated before records existed: undo it, then fall back.
-record_ok=false legacy=true
-if recorded_legacy=$(jq -r '.legacy' "$record" 2>/dev/null); then
-    record_ok=true legacy=$recorded_legacy
-fi
-if $record_ok; then
+if ! jq -e . "$record" >/dev/null 2>&1; then
+    # No readable record: only the contract link and any saved originals can be undone.
+    echo "deactivate: no readable activation record, so Liza's settings entries and files" \
+        "were left; check $settings and $exclude_file." >&2
+else
     if [ -f "$settings" ]; then
         jq -L "$here" --slurpfile rec "$record" 'include "activation-record"; revert($rec[0].settings)' \
             "$settings" >"$settings.tmp" && mv "$settings.tmp" "$settings" || failed+=("settings revert")
@@ -120,30 +114,6 @@ if $record_ok; then
         printf '%s\n' "${recorded[@]}" | grep -q -F -- "$path " && continue
         [ -f "$path" ] && remove_created "$path"
     done
-fi
-if [ "$legacy" = true ]; then
-    # Liza's settings from before the record can't be told from the user's, so remove only
-    # what is recognizably Liza's and say what was left.
-    if [ -f "$settings" ]; then
-        mapfile -t hook_scripts < <(jq -r -L "$here" --arg h "$liza_home" \
-            'include "activation-record"; liza_hook_scripts($h)[]' "$settings")
-        jq -L "$here" --arg h "$liza_home" 'include "activation-record"; drop_liza_hooks($h)' \
-            "$settings" >"$settings.tmp" && mv "$settings.tmp" "$settings" || failed+=("legacy hook removal")
-        for script in "${hook_scripts[@]}"; do
-            remove_created "$top/$script" && drop_lines+=("/$script")
-        done
-    fi
-    for link in .claude/skills/*; do
-        [ -L "$link" ] && [[ "$(readlink "$link")" == "$liza_home"* ]] || continue
-        remove_created "$link" && drop_lines+=("/$link")
-    done
-    for hook in "$hooks_dir"/*; do
-        [[ "${hook##*/}" == liza-index* ]] || [ "$(readlink "$hook")" = liza-index-hook.sh ] || continue
-        remove_created "$hook"
-    done
-    remove_created "$(git rev-parse --absolute-git-dir)/liza-provider-activations.json"
-    echo "deactivate: this clone's activation wasn't recorded, so Liza's permissions and its" \
-        "own lines in $exclude_file were left; check them and $settings." >&2
 fi
 
 # An original the record doesn't list (the record's write failed after it was saved) is the

@@ -1,5 +1,5 @@
 # The activation record (.git/liza/activation.json) that shim.sh writes and deactivate.sh
-# undoes: {legacy, settings, files, overwritten, exclude_lines}.
+# undoes: {settings, files, overwritten, exclude_lines}.
 #
 # settings holds the changes activation made to settings.local.json, each one of:
 #   {op: "add-elem", path, value}    an array element activation added
@@ -74,17 +74,3 @@ def record_activation($pre; $post; $created; $recorded_before; $recorded_after;
   | .files = ([.files[] | select(_listed($rewritten) | not)] + $rewritten + ($created | _entries)
       + [$git_after | _entries | .[] | select(_listed($gb) | not)] | unique_by(.path))
   | .exclude_lines = (.exclude_lines + ($exclude_added | split("\n") | map(select(. != ""))) | unique);
-
-# The fallback for a clone activated before records existed: hooks recognizably Liza's.
-def _is_liza_hook($liza_home): (.command // "") | contains($liza_home) or test("\\.claude/hooks/");
-def has_liza_hooks($liza_home): any(.hooks[]?[]?.hooks[]?; (.command // "") | contains($liza_home));
-def liza_hook_scripts($liza_home):
-  [.hooks[]?[]?.hooks[]? | select(_is_liza_hook($liza_home)) | .command
-   | capture("(?<p>\\.claude/hooks/[^\" ]+)").p] | unique;
-def drop_liza_hooks($liza_home):
-  if .hooks == null then . else
-    (.hooks |= (map_values(map(.hooks |= map(select(_is_liza_hook($liza_home) | not)))
-                           | map(select(.hooks | length > 0)))
-                | with_entries(select(.value | length > 0))))
-    | if .hooks == {} then del(.hooks) else . end
-  end;

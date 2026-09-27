@@ -58,8 +58,7 @@ you've edited since is kept, and named. A file of yours that init overwrote or r
 restored, or saved beside it as `<name>.pre-liza` and named, when you've edited Liza's
 version since or the record couldn't be written. A failed run keeps everything and a
 rerun finishes it. An entry identical to one Liza added is indistinguishable from it and
-goes with Liza's. A clone activated before records existed gets a partial undo that says
-what it left. With a switch still on, the next rebuild applies it again.
+goes with Liza's. With a switch still on, the next rebuild applies it again.
 
 The shim covers any `liza init`, including the multi-agent one below, and loads the
 toolchain's `LIZA_ENABLE_*` gates for it when `INSTALL_LIZA_TOOLS` is on.

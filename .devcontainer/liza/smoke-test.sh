@@ -156,18 +156,7 @@ check "and saves the user's original beside it" test "$(cat "$edited.pre-liza")"
 check "and names where" grep -q -F -- "$edited.pre-liza" "$clone/.git/pre-liza.err"
 rm -f -- "$edited" "$edited.pre-liza"
 
-# A clone activated before activation records existed gets a partial undo, said aloud.
 check "re-activation succeeds" liza init --claude --yes
-rm -f "$(git rev-parse --git-path liza)/activation.json"
-bash "$liza_dir/deactivate.sh" 2>"$clone/.git/legacy.err"
-check "legacy deactivate unlinks the contract" test ! -L CLAUDE.local.md
-check "legacy deactivate removes Liza's hooks" test "$(jq --arg h "$HOME/.liza/" \
-    '[.hooks[]?[]?.hooks[]?.command | select(contains($h) or test("\\.claude/hooks/"))] | length' \
-    .claude/settings.local.json)" = 0
-check "legacy deactivate keeps the user's hook" \
-    jq -e '[.hooks.PreToolUse[]?.hooks[]?.command] | index("echo mine")' .claude/settings.local.json
-check "legacy deactivate says what it left" grep -q permissions "$clone/.git/legacy.err"
-check "activation succeeds after a legacy deactivate" liza init --claude --yes
 
 # A record that can't be read: activation says so, and deactivation falls back.
 echo '{' >"$(git rev-parse --git-path liza)/activation.json"
