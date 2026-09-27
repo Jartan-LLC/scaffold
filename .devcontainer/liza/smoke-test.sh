@@ -57,11 +57,13 @@ echo "user file" >.claude/hooks/user.sh
 printf '#!/bin/sh\necho liza >.claude/hooks/user.sh\nexit 1\n' >"$stub"
 HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>"$clone/.git/partial.err"
 partial_rc=$?
-replaced_dir=$(sed -n 's/.* is kept in \(.*\)\/replaced\.$/\1/p' "$clone/.git/partial.err")
+liza_git_dir=$(git rev-parse --git-path liza)
+replaced_dir="$liza_git_dir/replaced"
 check "init that fails after overwriting a user file exits non-zero" test "$partial_rc" -ne 0
 check "and puts the user file back" test "$(cat .claude/hooks/user.sh)" = "user file"
-check "and keeps what it replaced, named" test "$(cat "$replaced_dir/replaced/.claude/hooks/user.sh" 2>/dev/null)" = liza
-[ -n "$replaced_dir" ] && rm -rf -- "$replaced_dir"
+check "and keeps what it replaced, named" test "$(cat "$replaced_dir/.claude/hooks/user.sh" 2>/dev/null)" = liza \
+    -a -n "$(grep -F "$replaced_dir" "$clone/.git/partial.err")"
+rm -rf -- "$liza_git_dir"
 
 # The same when init is interrupted (the whole process group, as Ctrl-C would be).
 echo "user file" >.claude/hooks/user.sh
@@ -75,12 +77,11 @@ done
 kill -INT -- "-$shim_pid"
 wait "$shim_pid"
 interrupt_rc=$?
-replaced_dir=$(sed -n 's/.* is kept in \(.*\)\/replaced\.$/\1/p' "$clone/.git/interrupt.err")
 check "interrupted init exits non-zero" test "$interrupt_rc" -ne 0
 check "and puts the user file back" test "$(cat .claude/hooks/user.sh)" = "user file"
 check "and releases the lock and the committed settings" \
     test ! -e .claude/.liza-shim.lock -a ! -e .claude/settings.json.liza-shim-held
-[ -n "$replaced_dir" ] && rm -rf -- "$replaced_dir"
+rm -rf -- "$liza_git_dir"
 rm -f .claude/hooks/user.sh && rmdir .claude/hooks
 check "git status clean after the failures" test -z "$(git status --porcelain)"
 
@@ -162,8 +163,6 @@ check "re-activation succeeds" liza init --claude --yes
 echo '{' >"$(git rev-parse --git-path liza)/activation.json"
 liza init --claude --yes </dev/null >/dev/null 2>"$clone/.git/corrupt.err"
 check "activation over a corrupt record warns" grep -q "could not record" "$clone/.git/corrupt.err"
-corrupt_kept=$(sed -n 's/.* kept as they were in \(.*\)\.$/\1/p' "$clone/.git/corrupt.err")
-[ -n "$corrupt_kept" ] && rm -rf -- "$corrupt_kept"
 check "deactivate over a corrupt record succeeds" bash "$liza_dir/deactivate.sh"
 check "and unlinks the contract" test ! -L CLAUDE.local.md
 check "activation succeeds after a corrupt-record deactivate" liza init --claude --yes
@@ -276,8 +275,8 @@ EOF
         test "$(cat "$refuse_clone/.claude/hooks/unreadable.sh")" = "user file" -a ! -L "$refuse_clone/CLAUDE.local.md"
 fi
 
-# Saving an original after init fails (read-only originals/), and later saving a .pre-liza
-# copy fails: neither may lose the user's file. A stub liza overwrites .claude/keep/f.sh.
+# Saving a .pre-liza copy fails (read-only directory): the original isn't lost, and a rerun
+# saves it. A stub liza overwrites .claude/keep/f.sh.
 if [ "$(id -u)" != 0 ]; then
     cat >"$stub" <<'EOF'
 #!/bin/sh
@@ -285,27 +284,11 @@ echo liza >.claude/keep/f.sh
 jq '.hooks.SessionStart = [{hooks: [{type: "command", command: "s"}]}]' .claude/settings.json >.claude/t.json \
     && mv .claude/t.json .claude/settings.json
 EOF
-    for name in nosave preliza; do
-        git clone -q "$repo" "$stub_home/$name-clone"
-        mkdir -p "$stub_home/$name-clone/.claude/keep"
-        echo '{}' >"$stub_home/$name-clone/.claude/settings.local.json"
-        echo "user file" >"$stub_home/$name-clone/.claude/keep/f.sh"
-    done
-
-    nosave_clone="$stub_home/nosave-clone"
-    mkdir -p "$nosave_clone/.git/liza/originals"
-    chmod a-w "$nosave_clone/.git/liza/originals"
-    (cd "$nosave_clone" && HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>"$stub_home/nosave.err")
-    nosave_rc=$?
-    chmod u+w "$nosave_clone/.git/liza/originals"
-    kept_dir=$(sed -n 's/.*it is kept in \(.*\)\.$/\1/p' "$stub_home/nosave.err")
-    check "activation that can't save an original fails" test "$nosave_rc" -ne 0
-    check "and keeps the original where it says" test "$(cat "$kept_dir/.claude/keep/f.sh" 2>/dev/null)" = "user file"
-    check "and doesn't record it as restorable" \
-        test "$(jq '.overwritten | length' "$nosave_clone/.git/liza/activation.json")" = 0
-    [ -n "$kept_dir" ] && rm -rf -- "$kept_dir"
-
     preliza_clone="$stub_home/preliza-clone"
+    git clone -q "$repo" "$preliza_clone"
+    mkdir -p "$preliza_clone/.claude/keep"
+    echo '{}' >"$preliza_clone/.claude/settings.local.json"
+    echo "user file" >"$preliza_clone/.claude/keep/f.sh"
     (cd "$preliza_clone" && HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>&1)
     echo "# edited" >>"$preliza_clone/.claude/keep/f.sh"
     chmod a-w "$preliza_clone/.claude/keep"
@@ -334,8 +317,6 @@ jq '.hooks.SessionStart = [{hooks: [{type: "command", command: "s"}]}]' .claude/
     && mv .claude/t.json .claude/settings.json
 EOF
 (cd "$orphan_clone" && HOME="$stub_home" "$shim" init --claude --yes </dev/null >/dev/null 2>"$stub_home/orphan.err")
-orphan_kept=$(sed -n 's/.* kept as they were in \(.*\)\.$/\1/p' "$stub_home/orphan.err")
-[ -n "$orphan_kept" ] && rm -rf -- "$orphan_kept"
 (cd "$orphan_clone" && HOME="$stub_home" bash "$liza_dir/deactivate.sh" 2>"$stub_home/orphan-deactivate.err")
 check "deactivate saves an unrecorded original beside its file" \
     test "$(cat "$orphan_clone/.claude/keep/f.sh.pre-liza" 2>/dev/null)" = "user file"

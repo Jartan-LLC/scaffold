@@ -64,58 +64,65 @@ recorded_before=$(fingerprint "${recorded_files[@]}")
 git_before=$(fingerprint "$git_dir"/liza* "$hooks_dir"/*)
 exclude_before=$(cat "$exclude_file" 2>/dev/null)
 pre_settings=$(cat "$local_settings" 2>/dev/null || echo '{}')
-# Liza's init overwrites an untracked file of the user's at a path it writes to. Copy the
-# candidates (files and symlinks) aside, so one it changes or removes can be kept for
-# deactivate.sh to restore.
+# --- Back up the user's files init may clobber ---
+# Liza's init overwrites or removes an untracked file of the user's at a path it writes
+# to. Each such candidate (file or symlink) is copied to originals/ first, and the copy
+# stays only if init changes the file. Liza's own files are skipped, and so is a file an
+# earlier activation already saved: that first copy is the user's.
+originals="$record_dir/originals"
+mapfile -t saved < <(jq -r '(.overwritten // [])[].path' "$record" 2>/dev/null)
 mapfile -t candidates < <({
     git -C "$top" ls-files --others -- .claude ':(glob)*'
     git -C "$top" ls-files --others --ignored --exclude-standard -- .claude ':(glob)*'
 } | sort -u | grep -v -x -F -e .claude/settings.local.json -e .claude/settings.json | sed "s|^|$top/|")
-snapshot="" snapshot_kept=false
-# shellcheck disable=SC2329 # called from the EXIT traps
-drop_snapshot() { $snapshot_kept || { [ -n "$snapshot" ] && rm -rf -- "$snapshot"; }; }
-trap drop_snapshot EXIT
-# Without a backup, init could destroy a user file for good: stop before it runs.
-backup_failed() {
-    rmdir "$lock"
-    echo "liza shim: could not back up $1 before init; nothing was changed." >&2
-    exit 1
+
+# Drops the copies of candidates other than the paths given.
+prune_originals() {  # paths to keep...
+    local path
+    for path in "${!fp_before[@]}"; do
+        printf '%s\n' "$@" | grep -q -x -F -- "$path" || rm -f -- "$originals/${path#"$top"/}"
+    done
+    find "$record_dir" -depth -type d -empty -delete 2>/dev/null
 }
-snapshot=$(mktemp -d) || backup_failed "the untracked files"
+
 declare -A fp_before=()
 for path in "${candidates[@]}"; do
+    printf '%s\n' "${recorded_files[@]}" "${saved[@]}" | grep -q -x -F -- "$path" && continue
     fp=$(fingerprint "$path")
     [ -n "$fp" ] || continue
     fp_before[$path]=$fp
-    { mkdir -p "$snapshot/$(dirname "${path#"$top"/}")" && cp -P -p "$path" "$snapshot/${path#"$top"/}"; } \
-        || backup_failed "$path"
+    # Without this copy, init could destroy the file for good: stop before it runs.
+    if ! { mkdir -p "$(dirname "$originals/${path#"$top"/}")" && cp -P -p "$path" "$originals/${path#"$top"/}"; }; then
+        prune_originals
+        rmdir "$lock"
+        echo "liza shim: could not back up $path before init; nothing was changed." >&2
+        exit 1
+    fi
 done
 
 # A failed or interrupted init is undone for the user's files too: each candidate it changed
-# goes back from the snapshot. What it replaces could be init's write or the user's own edit
-# made during init, which can't be told apart, so that is set aside in the snapshot, kept.
+# goes back from originals/. What it replaces could be init's write or the user's own edit
+# made during init, which can't be told apart, so that is set aside in replaced/.
 restore_candidates() {
-    local path rel replaced=false
+    local path rel replaced=false kept=()
     for path in "${!fp_before[@]}"; do
         [ "$(fingerprint "$path")" = "${fp_before[$path]}" ] && continue
         rel=${path#"$top"/}
         if [ -e "$path" ] || [ -L "$path" ]; then
-            if ! { mkdir -p "$snapshot/replaced/$(dirname "$rel")" && cp -P -p "$path" "$snapshot/replaced/$rel"; }; then
-                snapshot_kept=true
-                echo "liza shim: left $path as the failed init left it; its original is kept in $snapshot." >&2
+            if ! { mkdir -p "$(dirname "$record_dir/replaced/$rel")" && cp -P -p "$path" "$record_dir/replaced/$rel"; }; then
+                kept+=("$path")
+                echo "liza shim: left $path as the failed init left it; its original is in $originals." >&2
                 continue
             fi
             replaced=true
         fi
         rm -f -- "$path"
-        cp -P -p "$snapshot/$rel" "$path" && continue
-        snapshot_kept=true
-        echo "liza shim: could not restore $path after the failed init; its original is kept in $snapshot." >&2
+        cp -P -p "$originals/$rel" "$path" && continue
+        kept+=("$path")
+        echo "liza shim: could not restore $path after the failed init; its original is in $originals." >&2
     done
-    if $replaced; then
-        snapshot_kept=true
-        echo "liza shim: restored the files the failed init changed; what it replaced is kept in $snapshot/replaced." >&2
-    fi
+    $replaced && echo "liza shim: restored the files the failed init changed; what it replaced is in $record_dir/replaced." >&2
+    prune_originals "${kept[@]}"
 }
 
 # Liza always merges into .claude/settings.json. Putting the local file in its place for
@@ -144,8 +151,10 @@ release() {
 [ -f "$local_settings" ] && cp -p "$local_settings" "$backup_settings"
 [ -f "$shared_settings" ] && mv "$shared_settings" "$held_settings"
 [ -f "$local_settings" ] && mv "$local_settings" "$shared_settings"
-trap 'release; restore_candidates; drop_snapshot' EXIT
+trap 'release; restore_candidates' EXIT
 trap 'exit 130' INT TERM
+
+# --- Run Liza's init ---
 
 # Liza reads the toolchain's LIZA_ENABLE_* gates at init time, and the shell running init
 # (a script, /onboard, Liza's operator agent) may not have loaded them.
@@ -158,7 +167,7 @@ fi
 rc=$?
 
 release
-trap drop_snapshot EXIT
+trap - EXIT
 if [ "$rc" -ne 0 ]; then
     restore_candidates
     exit "$rc"
@@ -169,6 +178,7 @@ if ! $init_ok; then
     exit 1
 fi
 
+# --- Finish activation locally ---
 # rtk's own `rtk init -g` writes this hook to ~/.claude/settings.json, rewriting commands
 # in every project; here it applies to activated clones only.
 rtk="$HOME/.liza/bin/rtk"
@@ -215,26 +225,23 @@ for path in "${created[@]}"; do
     echo "/${path#"$top"/}"
 done >>"$exclude_file"
 
-# Record what this activation changed, so deactivate.sh undoes exactly that. A user file
-# init overwrote keeps its original under originals/; an earlier activation's copy wins.
-mkdir -p "$record_dir"
-[ -f "$record" ] || echo '{"settings": [], "files": [], "overwritten": [], "exclude_lines": []}' >"$record"
-overwritten=()
+# --- Record what this activation changed, so deactivate.sh undoes exactly that ---
+# Candidates init changed keep their copy in originals/ and are recorded as overwritten,
+# with the fingerprint of Liza's version ("absent" if init removed the file).
+overwritten=() keep=("${saved[@]}")
 for path in "${!fp_before[@]}"; do
     now=$(fingerprint "$path")
     now=${now:-"$path absent"}
     [ "$now" != "${fp_before[$path]}" ] || continue
-    printf '%s\n' "${recorded_files[@]}" | grep -q -x -F -- "$path" && continue
-    original="$record_dir/originals/${path#"$top"/}"
-    # Init has already run: if the original can't be saved, the snapshot is its last copy.
-    if ! { [ -e "$original" ] || [ -L "$original" ]; } \
-        && ! { mkdir -p "$(dirname "$original")" && cp -P -p "$snapshot/${path#"$top"/}" "$original"; }; then
-        snapshot_kept=true
-        echo "liza shim: could not save the original of $path; it is kept in $snapshot." >&2
-        continue
-    fi
-    overwritten+=("$now")
+    overwritten+=("$now") keep+=("$path")
 done
+prune_originals "${keep[@]}"
+
+# Each fingerprint list is "<path> <fingerprint>" lines, taken before and after init:
+# files already recorded (a later init may rewrite them), new worktree files, and the git
+# dir's hooks and liza* files. activation-record.jq folds them into the record.
+mkdir -p "$record_dir"
+[ -f "$record" ] || echo '{"settings": [], "files": [], "overwritten": [], "exclude_lines": []}' >"$record"
 if ! { jq -L "$here" --slurpfile pre <(printf '%s' "$pre_settings") --slurpfile post "$local_settings" \
         --arg created "$(fingerprint "${created[@]}")" \
         --arg recorded_before "$recorded_before" --arg recorded_after "$(fingerprint "${recorded_files[@]}")" \
@@ -246,10 +253,7 @@ if ! { jq -L "$here" --slurpfile pre <(printf '%s' "$pre_settings") --slurpfile 
                           $git_before; $git_after; $overwritten; $exclude_added)
     ' "$record" >"$record.tmp" && mv "$record.tmp" "$record"; }; then
     rm -f "$record.tmp"
-    snapshot_kept=true
     echo "liza shim: could not record this activation; deactivate.sh will only partly undo it." \
-        "Files init overwrote are kept as they were in $snapshot." >&2
+        "Originals of files init overwrote are in $originals." >&2
+    exit 1
 fi
-
-$snapshot_kept && exit 1
-exit $rc
