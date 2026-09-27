@@ -20,13 +20,19 @@ git fetch upstream
 
 **If you used *Use this template*** — the button on this repository — GitHub started your history
 fresh, so there is nothing to merge: `git merge upstream/main` stops at `fatal: refusing to merge
-unrelated histories`. Port the change instead, and name the upstream commit in your PR body so it
-stays possible to ask which repositories took it:
+unrelated histories`. Port changes by hand instead, and keep the newest upstream commit you have
+dealt with — ported or deliberately skipped — in `.scaffold-sync` at your repository root:
 
 ```bash
-git log --oneline main..upstream/main   # what the template has that you do not
+# First time only: the template commit your repository was created from
+git rev-list -1 --before="$(git log --reverse --format=%cI | head -1)" upstream/main > .scaffold-sync
+
+git log --oneline --reverse "$(cat .scaffold-sync)"..upstream/main  # not yet dealt with, oldest first
 git show <sha>                          # the change to port; apply the equivalent by hand
+echo <sha> > .scaffold-sync             # once everything up to <sha> is ported or skipped
 ```
+
+Commit `.scaffold-sync` with the port, so the file always matches what the repository contains.
 
 **If you forked this repository**, the history is shared and the merge works:
 
