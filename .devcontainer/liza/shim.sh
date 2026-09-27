@@ -138,8 +138,11 @@ restore_settings() {
 # Liza writes settings non-atomically and only warns when the merge fails, so the result
 # is kept only if init succeeded and it parses and carries Liza's hooks; otherwise the
 # backup, the one copy of the untracked local settings, goes back.
-init_ok=true rc=1
+init_ok=true rc=1 released=false
+# Runs once: a signal before the EXIT trap is swapped below would run it again.
 release() {
+    $released && return
+    released=true
     restore_settings
     if [ "$rc" -ne 0 ] || ! jq -e '.hooks.SessionStart | length > 0' "$local_settings" >/dev/null 2>&1; then
         init_ok=false

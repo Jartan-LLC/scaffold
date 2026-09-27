@@ -333,19 +333,25 @@ check "deactivate saves an unrecorded original beside its file" \
 check "and names it" grep -q -F -- "f.sh.pre-liza" "$stub_home/orphan-deactivate.err"
 
 # Files under Liza's own exclude lines: one its tools generate goes, edited or not; one the
-# user had before activation stays.
+# user had before activation stays, and so does one at a nested path the shim doesn't scan.
 generated_clone=$(stub_clone generated-clone)
 echo "user file" >"$generated_clone/insights.json"
+mkdir -p "$generated_clone/sub"
+echo "user file" >"$generated_clone/sub/x.log"
 stub_liza <<'EOF'
-printf 'insights.json\ngenerated.log\n' >>.git/info/exclude
+printf 'insights.json\ngenerated.log\nsub/x.log\n' >>.git/info/exclude
 settings "$hook"
 EOF
 stub_init "$generated_clone" 2>/dev/null
 echo "# edited" >>"$generated_clone/insights.json"
 echo liza >"$generated_clone/generated.log"
-check "deactivate over generated files succeeds" stub_deactivate "$generated_clone"
+stub_deactivate "$generated_clone" 2>"$stub_home/generated.err"
+generated_rc=$?
+check "deactivate over generated files succeeds" test "$generated_rc" -eq 0
 check "and removes a generated file" test ! -e "$generated_clone/generated.log"
 check "and keeps one the user had before activation, with its edit" grep -qx "# edited" "$generated_clone/insights.json"
+check "and keeps a nested one, named" \
+    test "$(cat "$generated_clone/sub/x.log")" = "user file" -a -n "$(grep -F sub/x.log "$stub_home/generated.err")"
 
 # A re-activation that rewrites a file init had overwritten (a Liza pin bump): deactivate
 # still restores the user's original in place.

@@ -127,6 +127,12 @@ else
         path="$top/${line#/}"
         printf '%s\n' "${recorded[@]}" | grep -q -F -- "$path " && continue
         printf '%s\n' "${preexisting[@]}" | grep -q -x -F -- "$path" && continue
+        # The shim only saw the top level and .claude/ before init: elsewhere, the file may
+        # be the user's.
+        if [[ "${line#/}" == */* && "${line#/}" != .claude/* ]]; then
+            [ -f "$path" ] && kept+=("$path")
+            continue
+        fi
         [ -f "$path" ] && remove_created "$path"
     done
 fi
