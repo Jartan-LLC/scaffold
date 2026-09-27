@@ -59,7 +59,7 @@ Open a PR either way, so CI runs before the changes land.
 | `CHANGELOG.md`, `CONTRIBUTING.md` | Keep-a-Changelog skeleton and a Python contributor guide |
 | `.env.example`, `.prettierrc` | Env-var template and Prettier config (for JS/TS work) |
 | `.editorconfig` | Language-aware formatting — 4-space Python, 2-space JS/TS, tabs for Makefiles |
-| `.gitattributes` | Syntax-aware diffs for 20+ languages, binary normalization for lock files |
+| `.gitattributes` | Syntax-aware diffs for 20+ languages, LF checkout on every platform |
 | `.gitignore` | Comprehensive patterns for Node, Python, Docker, IDEs, env files, build artifacts |
 | `CLAUDE.md` | Imports the project rules; corrections, verification commands, skill index |
 | `GUARDRAILS.md` | Project rules ranked by how firmly each holds (never / ask first / default / preference) — the tiers Liza agents enforce |

@@ -1,5 +1,6 @@
-# Normalize line endings
-* text=auto
+# LF on checkout for every text file, overriding each clone's core.autocrlf to match
+# .editorconfig; new file types need no per-extension eol.
+* text=auto eol=lf
 
 # Explicit text files
 *.md text diff=markdown
@@ -46,6 +47,5 @@
 *.zip binary
 *.gz binary
 
-# Lock files — treat as binary for cleaner diffs
-*-lock.json binary
-*.lock binary
+# GitHub collapses lock files by Linguist's generated list, which misses this one
+devcontainer-lock.json linguist-generated=true
