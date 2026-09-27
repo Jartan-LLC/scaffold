@@ -30,7 +30,7 @@
 *.astro text
 *.vue text
 *.svelte text
-*.sh text eol=lf diff=bash
+*.sh text diff=bash
 
 # Binary files
 *.png binary
