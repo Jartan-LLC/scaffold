@@ -1,0 +1,60 @@
+name: Devcontainer
+
+# Proves changes under .devcontainer/ by running them: the Liza shim's activation and
+# deactivation in a throwaway clone (smoke), and the real container built and created,
+# post-create included, for each combination of the Liza switches (e2e). The weekly run catches
+# breakage from what post-create installs unpinned, such as Claude Code.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".devcontainer/**"
+      - ".github/workflows/devcontainer.yml"
+  push:
+    branches: [main]
+    paths:
+      - ".devcontainer/**"
+      - ".github/workflows/devcontainer.yml"
+  schedule:
+    - cron: "40 7 * * 1" # weekly, Monday 07:40 UTC (offset from ci/scorecard/link-check)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: bash .devcontainer/liza/install.sh
+      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: bash .devcontainer/liza/smoke-test.sh
+
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        activate: [true, false]
+        tools: [true, false]
+    # Read by devcontainer.json's ${localEnv:…} defaults, as a host override would be.
+    env:
+      ACTIVATE_LIZA: ${{ matrix.activate }}
+      INSTALL_LIZA_TOOLS: ${{ matrix.tools }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: devcontainers/ci@513af61f4de4f75d37e4438f184ba4358f0fc1ca # v0.3.1900000450
+        with:
+          push: never
+          runCmd: bash .devcontainer/verify.sh

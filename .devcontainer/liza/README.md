@@ -135,24 +135,23 @@ With `INSTALL_LIZA_TOOLS=true`, [`tools.sh`](tools.sh) installs these into
 | semble | [`semble-requirements.txt`](semble-requirements.txt) | the command in its header |
 | `AGENT_TOOLS*.md` | both variants here | diff upstream `contracts/AGENT_TOOLS.md` between the old and new Liza tags; carry the changes into both |
 
-Then run [`smoke-test.sh`](smoke-test.sh), which activates a throwaway clone and checks
-activation stays local and idempotent; CI runs it on every change to this directory.
+Then run [`smoke-test.sh`](smoke-test.sh), which activates and deactivates a throwaway
+clone and checks activation stays local, idempotent and reversible. CI's devcontainer
+workflow runs it on every change under `.devcontainer/`, alongside a full container build.
 
 ## Removing Liza
 
-1. Delete this directory and `.github/workflows/liza-smoke.yml`.
-2. In `devcontainer.json`, drop the `liza-${devcontainerId}` mount, the two switches and
+1. In each clone, run `bash .devcontainer/liza/deactivate.sh` and, if the toolchain was on,
+   `bash .devcontainer/liza/deactivate.sh --tools`, while this directory still exists.
+2. Delete this directory. In `.github/workflows/devcontainer.yml`, drop the `smoke` job and
+   the `e2e` job's Liza matrix; in `.devcontainer/verify.sh`, drop the Liza checks.
+3. In `devcontainer.json`, drop the `liza-${devcontainerId}` mount, the two switches and
    the Go feature (its entry in `devcontainer-lock.json` too).
-3. In `post-create.sh`, drop the Liza block, the "Liza is installed but not active" note,
+4. In `post-create.sh`, drop the Liza block, the "Liza is installed but not active" note,
    and the `INSTALL_LIZA_TOOLS` condition on codebase-memory-mcp.
-4. Delete the Liza section of `.gitignore`; drop the Liza mention and checklist item from
+5. Delete the Liza section of `.gitignore`; drop the Liza mention and checklist item from
    `README.md` and the Liza parts of `.claude/commands/onboard.md`. Keep `GUARDRAILS.md`:
    it holds the project rules.
-5. In each clone that was activated: delete `CLAUDE.local.md`, the Liza entries in
-   `.claude/settings.local.json`, the `.claude/skills/` links into `~/.liza` and Liza's
-   `.claude/hooks/` scripts, and the Liza lines in `.git/info/exclude`. If the toolchain was
-   on, run `claude mcp remove --scope local context7` and re-enable codebase-memory-mcp with
-   `/mcp`.
 6. Remove the volume from the host: `docker volume rm liza-<devcontainerId>`.
 
 ## See also
