@@ -20,6 +20,8 @@ if [ "${INSTALL_LIZA_TOOLS:-false}" = true ]; then
     # shellcheck disable=SC2016 # $t expands in the inner bash
     check "Liza toolchain installed" bash -c 'cd ~/.liza/bin && for t in rg ast-grep yq stacklit scip-search \
         functional-clusters mdtoc bash-policy semble; do [ -x "$t" ] || exit 1; done'
+    # rtk and mdq ship x86_64 binaries only.
+    [ "$(uname -m)" = x86_64 ] && check "rtk and mdq installed" test -x ~/.liza/bin/rtk -a -x ~/.liza/bin/mdq
     check "context7 registered" claude mcp get context7
 else
     check "codebase-memory-mcp registered" claude mcp get codebase-memory-mcp

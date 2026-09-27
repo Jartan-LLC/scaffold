@@ -58,7 +58,9 @@ record_dir=$(git_path "$top" liza)
 record="$record_dir/activation.json"
 exclude_file=$(git_path "$top" info/exclude)
 
-if [ ! -f "$record" ] && [ "$(readlink CLAUDE.local.md)" != "$core_contract" ]; then
+# Originals without a record or link: an activation interrupted before either was made.
+if [ ! -f "$record" ] && [ ! -d "$record_dir/originals" ] \
+    && [ "$(readlink CLAUDE.local.md)" != "$core_contract" ]; then
     finish  # never activated
 fi
 

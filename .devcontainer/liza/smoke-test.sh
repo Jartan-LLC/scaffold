@@ -63,7 +63,8 @@ stub_deactivate() { (cd "$1" && HOME="$stub_home" bash "$liza_dir/deactivate.sh"
 for scenario in "fails:exit 1" \
     "truncates the settings:printf '{\"hooks\":' >.claude/settings.json" \
     "empties the hooks:echo '{\"hooks\":{\"SessionStart\":[]}}' >.claude/settings.json" \
-    "skips the merge:true"; do
+    "skips the merge:true" \
+    "merges then fails:settings \"\$hook\"; exit 1"; do
     name=${scenario%%:*}
     echo "${scenario#*:}" | stub_liza
     stub_init "$clone" 2>/dev/null
@@ -96,6 +97,7 @@ for _ in $(seq 50); do
     [ "$(cat .claude/hooks/user.sh)" = liza ] && break
     sleep 0.1
 done
+check "the stub overwrote the user file before the interrupt" test "$(cat .claude/hooks/user.sh)" = liza
 kill -INT -- "-$shim_pid"
 wait "$shim_pid"
 interrupt_rc=$?
@@ -209,14 +211,16 @@ for run in first second; do
 done
 
 # Re-activations that change what Liza writes, in a fresh clone with a stub liza: the
-# first adds an entry and sets a key, the second swaps the entry and sets the key again.
-# Deactivation restores the original, neither the swapped-out entry nor the first value.
+# first adds an entry, sets a key and removes one, the second swaps the entry and sets the
+# key again. Deactivation restores the original, neither the swapped-out entry nor the
+# first value.
 merge_clone=$(stub_clone merge-clone)
-echo '{"permissions":{"allow":["mine"]},"model":"m0"}' >"$merge_clone/.claude/settings.local.json"
+echo '{"permissions":{"allow":["mine"],"defaultMode":"acceptEdits"},"model":"m0"}' \
+    >"$merge_clone/.claude/settings.local.json"
 cp "$merge_clone/.claude/settings.local.json" "$merge_clone/.git/original.json"
 stub_liza <<'EOF'
 settings "$hook"
-settings '.permissions.allow += ["liza-1"] | .model = "m1"'
+settings '.permissions.allow += ["liza-1"] | .model = "m1" | del(.permissions.defaultMode)'
 EOF
 stub_init "$merge_clone" 2>/dev/null
 stub_liza <<'EOF'
@@ -343,6 +347,33 @@ check "deactivate over generated files succeeds" stub_deactivate "$generated_clo
 check "and removes a generated file" test ! -e "$generated_clone/generated.log"
 check "and keeps one the user had before activation, with its edit" grep -qx "# edited" "$generated_clone/insights.json"
 
+# A re-activation that rewrites a file init had overwritten (a Liza pin bump): deactivate
+# still restores the user's original in place.
+reinit_clone=$(stub_clone reinit-clone)
+mkdir -p "$reinit_clone/.claude/keep"
+echo "user file" >"$reinit_clone/.claude/keep/f.sh"
+for version in 1 2; do
+    stub_liza <<EOF
+echo liza-$version >.claude/keep/f.sh
+settings "\$hook"
+EOF
+    stub_init "$reinit_clone" 2>/dev/null
+done
+check "re-activation rewrote the overwritten file" test "$(cat "$reinit_clone/.claude/keep/f.sh")" = liza-2
+check "deactivate after the rewrite succeeds" stub_deactivate "$reinit_clone"
+check "and restores the user's original in place" \
+    test "$(cat "$reinit_clone/.claude/keep/f.sh")" = "user file" -a ! -e "$reinit_clone/.claude/keep/f.sh.pre-liza"
+
+# Originals with no record and no contract link (an activation interrupted before either):
+# deactivate still saves them beside their files.
+interrupted_clone=$(stub_clone interrupted-clone)
+mkdir -p "$interrupted_clone/.git/liza/originals/.claude/keep" "$interrupted_clone/.claude/keep"
+echo "user file" >"$interrupted_clone/.git/liza/originals/.claude/keep/f.sh"
+echo liza >"$interrupted_clone/.claude/keep/f.sh"
+stub_deactivate "$interrupted_clone" 2>/dev/null
+check "deactivate saves originals left without a record" \
+    test "$(cat "$interrupted_clone/.claude/keep/f.sh.pre-liza" 2>/dev/null)" = "user file"
+
 # --tools undoes the toolchain's changes, and only with --tools. A stub claude logs its
 # calls; a stub ~/.claude.json holds the local context7 registration and the
 # codebase-memory-mcp switch-off.
@@ -351,6 +382,7 @@ mkdir -p "$tools_home/bin"
 cat >"$tools_home/bin/claude" <<EOF
 #!/bin/sh
 echo "\$*" >>"$tools_home/claude-calls"
+[ -z "\${CLAUDE_STUB_FAIL:-}" ]
 EOF
 chmod +x "$tools_home/bin/claude"
 jq -n --arg p "$clone" \
@@ -366,6 +398,11 @@ rm -f "$tools_home/claude-calls"
 jq -n '{mcpServers: {context7: {}}}' >"$tools_home/.claude.json"
 HOME="$tools_home" PATH="$tools_home/bin:$PATH" bash "$liza_dir/deactivate.sh" --tools
 check "--tools leaves a user-scope context7 alone" test ! -e "$tools_home/claude-calls"
+jq -n --arg p "$clone" '{projects: {($p): {mcpServers: {context7: {}}}}}' >"$tools_home/.claude.json"
+HOME="$tools_home" CLAUDE_STUB_FAIL=1 PATH="$tools_home/bin:$PATH" bash "$liza_dir/deactivate.sh" --tools 2>/dev/null
+tools_failed_rc=$?
+check "--tools fails when a removal fails" test "$tools_failed_rc" -ne 0
+rm -f "$tools_home/claude-calls"
 
 mkdir .claude/.liza-shim.lock
 bash "$liza_dir/deactivate.sh" 2>/dev/null

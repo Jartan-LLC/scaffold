@@ -4,7 +4,7 @@
 # settings holds the changes activation made to settings.local.json, each one of:
 #   {op: "add-elem", path, value}    an array element activation added
 #   {op: "rem-elem", path, value}    an array element activation replaced
-#   {op: "set", path, before, after} a scalar activation set; before is null when absent
+#   {op: "set", path, before, after} a value activation set or removed; null when absent
 #   {op: "created", path}            a container that didn't exist before activation
 # files holds {path, fp} for each file activation created, fp from activation-lib.sh's
 # fingerprint, so a file edited since can be kept. overwritten holds the same for each
@@ -15,7 +15,7 @@
 def _changes($pre; $post; $path):
   if ($post | type) == "object" and ($pre == null or ($pre | type) == "object") then
     (if $pre == null then [{op: "created", path: $path}] else [] end)
-    + ([$post | keys[] as $k | _changes($pre[$k]; $post[$k]; $path + [$k])] | add // [])
+    + ([($pre // {}) + $post | keys[] as $k | _changes($pre[$k]; $post[$k]; $path + [$k])] | add // [])
   elif ($post | type) == "array" and ($pre == null or ($pre | type) == "array") then
     ($pre // []) as $p
     | (if $pre == null then [{op: "created", path: $path}] else [] end)

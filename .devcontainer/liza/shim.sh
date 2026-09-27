@@ -74,6 +74,8 @@ pre_settings=$(cat "$local_settings" 2>/dev/null || echo '{}')
 # earlier activation already saved: that first copy is the user's.
 originals="$record_dir/originals"
 mapfile -t saved < <(jq -r '(.overwritten // [])[].path' "$record" 2>/dev/null)
+declare -A saved_before=()
+for path in "${saved[@]}"; do saved_before[$path]=$(fingerprint "$path"); done
 mapfile -t candidates < <({
     git -C "$top" ls-files --others -- .claude ':(glob)*'
     git -C "$top" ls-files --others --ignored --exclude-standard -- .claude ':(glob)*'
@@ -134,12 +136,12 @@ restore_settings() {
     [ -f "$held_settings" ] && mv -f "$held_settings" "$shared_settings"
 }
 # Liza writes settings non-atomically and only warns when the merge fails, so the result
-# is kept only if it parses and carries Liza's hooks; otherwise the backup, the one copy
-# of the untracked local settings, goes back.
-init_ok=true
+# is kept only if init succeeded and it parses and carries Liza's hooks; otherwise the
+# backup, the one copy of the untracked local settings, goes back.
+init_ok=true rc=1
 release() {
     restore_settings
-    if ! jq -e '.hooks.SessionStart | length > 0' "$local_settings" >/dev/null 2>&1; then
+    if [ "$rc" -ne 0 ] || ! jq -e '.hooks.SessionStart | length > 0' "$local_settings" >/dev/null 2>&1; then
         init_ok=false
         if [ -f "$backup_settings" ]; then
             mv -f "$backup_settings" "$local_settings"
@@ -233,6 +235,12 @@ for path in "${!fp_before[@]}"; do
     now=${now:-"$path absent"}
     [ "$now" != "${fp_before[$path]}" ] || continue
     overwritten+=("$now") keep+=("$path")
+done
+# A file an earlier activation overwrote keeps that first original; one this init rewrote
+# again takes the new fingerprint, so deactivate still restores it.
+for path in "${saved[@]}"; do
+    now=$(fingerprint "$path")
+    [ "$now" != "${saved_before[$path]}" ] && overwritten+=("${now:-"$path absent"}")
 done
 prune_originals "${keep[@]}"
 
