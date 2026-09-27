@@ -31,6 +31,7 @@ backup_settings="$claude_dir/settings.local.json.liza-shim-backup"
 global_contract="$HOME/.claude/CLAUDE.md"
 core_contract="$HOME/.liza/CORE.md"
 
+# --- Lock the clone for this init ---
 mkdir -p "$claude_dir"
 # mkdir is atomic: a second concurrent init would otherwise swap the already-swapped files.
 lock="$claude_dir/.liza-shim.lock"
@@ -45,11 +46,10 @@ if [ -e "$held_settings" ]; then
     exit 1
 fi
 
+# --- Snapshot the state before init ---
 had_global_contract=false
 if [ -e "$global_contract" ] || [ -L "$global_contract" ]; then had_global_contract=true; fi
 untracked_before=$(git -C "$top" ls-files --others --exclude-standard)
-
-# Snapshots for the activation record written at the end.
 here=$(dirname "$(readlink -f "$0")")
 # shellcheck source=.devcontainer/liza/activation-lib.sh
 source "$here/activation-lib.sh"
@@ -64,6 +64,7 @@ recorded_before=$(fingerprint "${recorded_files[@]}")
 git_before=$(fingerprint "$git_dir"/liza* "$hooks_dir"/*)
 exclude_before=$(cat "$exclude_file" 2>/dev/null)
 pre_settings=$(cat "$local_settings" 2>/dev/null || echo '{}')
+
 # --- Back up the user's files init may clobber ---
 # Liza's init overwrites or removes an untracked file of the user's at a path it writes
 # to. Each such candidate (file or symlink) is copied to originals/ first, and the copy
@@ -125,6 +126,7 @@ restore_candidates() {
     prune_originals "${kept[@]}"
 }
 
+# --- Swap the local settings in for init to merge into ---
 # Liza always merges into .claude/settings.json. Putting the local file in its place for
 # the run lets Liza's own merge write the local file, and the committed one is never opened.
 restore_settings() {
@@ -155,7 +157,6 @@ trap 'release; restore_candidates' EXIT
 trap 'exit 130' INT TERM
 
 # --- Run Liza's init ---
-
 # Liza reads the toolchain's LIZA_ENABLE_* gates at init time, and the shell running init
 # (a script, /onboard, Liza's operator agent) may not have loaded them.
 if [ "${INSTALL_LIZA_TOOLS:-false}" = true ] && [ -f "$HOME/.liza/toolchain/env.sh" ]; then

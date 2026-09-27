@@ -30,6 +30,7 @@ remove_created() {
     rm -f -- "$1" || { failed+=("removing $1"); return 1; }
 }
 
+# --- --tools: undo the toolchain's changes to Claude Code, and nothing else ---
 if [ "${1:-}" = --tools ]; then
     command -v claude >/dev/null || finish
     if claude mcp get context7 >/dev/null 2>&1; then
@@ -48,6 +49,7 @@ if [ "${1:-}" = --tools ]; then
     finish
 fi
 
+# --- Undo activation, from its record ---
 settings=.claude/settings.local.json
 core_contract="$HOME/.liza/CORE.md"
 record_dir=$(git_path "$top" liza)
@@ -73,6 +75,7 @@ if ! jq -e . "$record" >/dev/null 2>&1; then
     echo "deactivate: no readable activation record, so Liza's settings entries and files" \
         "were left; check $settings and $exclude_file." >&2
 else
+    # Liza's settings entries go; entries the user added or changed since stay.
     if [ -f "$settings" ]; then
         jq -L "$here" --slurpfile rec "$record" 'include "activation-record"; revert($rec[0].settings)' \
             "$settings" >"$settings.tmp" && mv "$settings.tmp" "$settings" || failed+=("settings revert")
@@ -87,7 +90,9 @@ else
         accounted+=("$original")
         now=$(fingerprint "$path")
         restored=$(fingerprint "$original")
-        [ -n "$now" ] && [ "${now#"$path" }" = "${restored#"$original" }" ] && continue  # a rerun
+        # Already restored by an earlier, failed run: the two fingerprints (minus their
+        # differing paths) match.
+        [ -n "$now" ] && [ "${now#"$path" }" = "${restored#"$original" }" ] && continue
         if [ "${now:-"$path absent"}" = "$entry" ]; then
             rm -f -- "$path"
             cp -P -p "$original" "$path" || failed+=("restoring $path")
@@ -99,6 +104,7 @@ else
             fi
         fi
     done
+    # A file activation created goes, unless it was edited since.
     mapfile -t recorded < <(jq -r '.files[] | "\(.path) \(.fp)"' "$record")
     for entry in "${recorded[@]}"; do
         path=${entry% *}
@@ -131,6 +137,7 @@ if [ -d "$record_dir/originals" ]; then
     done < <(find "$record_dir/originals" \( -type f -o -type l \) -print0)
 fi
 
+# --- Clean up: what is left for the user, the contract link, emptied settings and dirs ---
 [ ${#kept[@]} -eq 0 ] || echo "deactivate: left these for you to check: ${kept[*]}" >&2
 if [ -f "$settings" ] && [ "$(jq -c . "$settings" 2>/dev/null)" = "{}" ]; then
     rm -f "$settings"
