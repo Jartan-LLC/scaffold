@@ -12,8 +12,8 @@ if [[ "$shim" != */.devcontainer/liza/shim.sh ]]; then
 fi
 
 repo=$(git rev-parse --show-toplevel) || exit 1
-clone=$(mktemp -d)
-stub_home=$(mktemp -d)
+clone=$(mktemp -d) || exit 1
+stub_home=$(mktemp -d) || exit 1
 trap 'rm -rf "$clone" "$stub_home"' EXIT
 git clone -q "$repo" "$clone" && cd "$clone" || exit 1
 

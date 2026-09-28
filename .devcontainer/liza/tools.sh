@@ -87,7 +87,7 @@ install_pinned() {  # tool  pin  installer-command...
 # Downloads a release asset, checks its digest, and installs one binary from it.
 release_binary() {  # tool  url  sha256  member-in-archive (empty for a bare binary)
     local tmp rc
-    tmp=$(mktemp -d)
+    tmp=$(mktemp -d) || return 1
     fetch_verified "$2" "$3" "$tmp/asset" && case "$2" in
         *.zip) unzip -p "$tmp/asset" "$4" >"$tmp/$1" ;;
         *.tar.gz) tar -xzf "$tmp/asset" -O "$4" >"$tmp/$1" ;;
@@ -100,7 +100,7 @@ release_binary() {  # tool  url  sha256  member-in-archive (empty for a bare bin
 
 go_build() {  # tool  repo  commit
     local src rc
-    src=$(mktemp -d)
+    src=$(mktemp -d) || return 1
     git -C "$src" init -q \
         && git -C "$src" fetch -q --depth 1 "https://github.com/$2" "$3" \
         && git -C "$src" checkout -q FETCH_HEAD \
