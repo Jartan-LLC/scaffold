@@ -27,10 +27,18 @@ declare -A YQ_SHA256=(
     [x86_64]="c5f056448f973ae7d39b5401949648a78f2dc1947d6a8eb65be60d5c504b9385"
     [aarch64]="88a1016bc1d657375a35864e4f44b6f333df8ff97b559f51bba0adcb2169df09"
 )
-# x86_64 only: rtk's one arm64 Linux build needs glibc 2.39, newer than Debian 12's
-# (scaffold issue 124), and mdq publishes no arm64 Linux build.
+# rtk's only arm64 Linux build is glibc-linked and needs glibc 2.39, which the base image
+# provides.
 RTK_VERSION="v0.50.0"
-RTK_SHA256_X86_64="bc2b8902b0d9c796c82ef45f16ae2307e17757afeca5ee156235a3dc7bda5f89"
+declare -A RTK_TARGET=(
+    [x86_64]="x86_64-unknown-linux-musl"
+    [aarch64]="aarch64-unknown-linux-gnu"
+)
+declare -A RTK_SHA256=(
+    [x86_64]="bc2b8902b0d9c796c82ef45f16ae2307e17757afeca5ee156235a3dc7bda5f89"
+    [aarch64]="d1cc49dfa2cd443fc32625444b59fe616b6c80478cca210985118347174dd758"
+)
+# x86_64 only: mdq publishes no arm64 Linux build.
 MDQ_VERSION="v0.10.0"
 MDQ_SHA256_X86_64="673ed676382f54a21e4381d845236c776b2b71ed8dc1cc3e92cf6d66a39edb07"
 
@@ -132,15 +140,15 @@ install_pinned ast-grep "$AST_GREP_VERSION" release_binary ast-grep \
 install_pinned yq "$YQ_VERSION" release_binary yq \
     "https://github.com/mikefarah/yq/releases/download/$YQ_VERSION/yq_linux_$goarch" \
     "${YQ_SHA256[$arch]}" ""
+install_pinned rtk "$RTK_VERSION" release_binary rtk \
+    "https://github.com/rtk-ai/rtk/releases/download/$RTK_VERSION/rtk-${RTK_TARGET[$arch]}.tar.gz" \
+    "${RTK_SHA256[$arch]}" rtk
 if [ "$arch" = x86_64 ]; then
-    install_pinned rtk "$RTK_VERSION" release_binary rtk \
-        "https://github.com/rtk-ai/rtk/releases/download/$RTK_VERSION/rtk-x86_64-unknown-linux-musl.tar.gz" \
-        "$RTK_SHA256_X86_64" rtk
     install_pinned mdq "$MDQ_VERSION" release_binary mdq \
         "https://github.com/yshavit/mdq/releases/download/$MDQ_VERSION/mdq-linux-x64-musl.tar.gz" \
         "$MDQ_SHA256_X86_64" mdq
 else
-    echo "Warning: rtk and mdq have no build that runs on arm64 Debian 12; skipped" >&2
+    echo "Warning: mdq publishes no arm64 Linux build; skipped" >&2
 fi
 for tool in "${!GO_TOOLS[@]}"; do
     read -r repo commit <<<"${GO_TOOLS[$tool]}"
