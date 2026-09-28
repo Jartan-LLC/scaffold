@@ -79,6 +79,11 @@ if [ "$(whoami)" = "vscode" ]; then
     else
         echo "Warning: $HOME/.claude not found; config will not persist across rebuilds" >&2
     fi
+
+    # The gh-config volume is root-owned when fresh, and so is ~/.config if the mount
+    # had to create it. The parent stays non-recursive: it holds other tools' files.
+    sudo chown vscode:vscode "$HOME/.config" || echo "Warning: could not fix ownership on $HOME/.config" >&2
+    sudo chown -R vscode:vscode "$HOME/.config/gh" || echo "Warning: could not fix ownership on $HOME/.config/gh" >&2
 fi
 
 # Optional: Headroom token compression proxy (https://github.com/chopratejas/headroom)
