@@ -1,7 +1,6 @@
 # scaffold
 
 [![CI](https://github.com/Jartan-LLC/scaffold/actions/workflows/ci.yml/badge.svg)](https://github.com/Jartan-LLC/scaffold/actions/workflows/ci.yml)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Jartan-LLC/scaffold)
 
 A production-grade Python repo, already wired: dev container, quality gate, hardened CI,
 releases and auto-updates, green on the first push.
@@ -12,7 +11,7 @@ cleanly ([how](docs/onboard.md#not-a-python-project)).
 ## Quick start
 
 1. [Use this template](https://github.com/new?template_name=scaffold&template_owner=Jartan-LLC),
-   then open your new repository in its dev container or in Codespaces.
+   then open your new repository in its dev container.
 2. Run `/onboard` in Claude Code. It interviews you, configures the project and lists the
    manual steps left. To set up by hand instead, follow the
    [setup checklist](docs/onboard.md).
