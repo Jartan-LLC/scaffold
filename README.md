@@ -47,7 +47,7 @@ Open a PR either way, so CI runs before the changes land.
 
 | Area | Contents |
 |------|----------|
-| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Go, Docker, GitHub CLI, desktop-lite; plus Claude Code CLI and codebase-memory-mcp (structural code graph, best-effort), both installed via `post-create.sh`, and [Liza](.devcontainer/liza/README.md) (pinned; activation and its agent toolchain are on by default, each with an opt-out switch) |
+| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Go, Docker, GitHub CLI, desktop-lite; plus Claude Code CLI and codebase-memory-mcp (structural code graph, best-effort), both installed via `post-create.sh`, and [Liza](.devcontainer/liza/README.md) (pinned; activation and its agent toolchain are on by default, each with an opt-out switch). `post-create.sh` also runs `make install`, which installs the project's dependencies into the system Python, as CI does: `containerEnv` sets `UV_SYSTEM_PYTHON`, so the container has no project `.venv` |
 | `.claude/` | Claude Code configuration — enabled plugins (skills & agents from the grimoire marketplace) and the `/onboard` setup command |
 | `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates |
 | `pyproject.toml`, `ci/requirements.txt`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell) — minimal src-layout stub; rename or delete. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
@@ -77,7 +77,7 @@ If you prefer to set up manually instead of using `/onboard`:
 - [ ] Update `CLAUDE.md` Skills section — add project-specific skills/conventions as they emerge
 - [ ] Update `GUARDRAILS.md` — add project rules as they emerge, at the tier each must hold
 - [ ] Update `.devcontainer/devcontainer.json` — change the desktop-lite password, add/remove language features and extensions for your stack
-- [ ] Update `.devcontainer/post-create.sh` — add dependency installation for your stack
+- [ ] Add your stack's dependency installation to the `Makefile`'s `deps` target — `make install` runs it, on a bare host and from `.devcontainer/post-create.sh`
 - [ ] Update `.devcontainer/post-start.sh` — add commands that should run on each container start (Docker socket fix and Codespaces env overrides are included)
 - [ ] Decide on Liza — it's on by default; to opt out, set the `ACTIVATE_LIZA` and/or `INSTALL_LIZA_TOOLS` defaults in `.devcontainer/devcontainer.json` to `false`, or remove it ([Removing Liza](.devcontainer/liza/README.md#removing-liza))
 - [ ] Update `.gitignore` — add language-specific patterns for your stack

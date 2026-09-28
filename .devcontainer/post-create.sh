@@ -18,15 +18,6 @@ npm install -g @anthropic-ai/claude-code \
     || npm install -g @anthropic-ai/claude-code \
     || claude_install_failed=1
 
-# Install Node.js dependencies from all package.json files. .devcontainer/ is skipped:
-# Liza's npm tools there are installed by liza/tools.sh, only when enabled.
-echo "Installing Node.js dependencies..."
-while IFS= read -r -d '' pkg_file; do
-    dir=$(dirname "$pkg_file")
-    echo "  Installing from $dir..."
-    (cd "$dir" && CI=true pnpm install) || echo "Warning: pnpm install failed in $dir" >&2
-done < <(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.pnpm-store/*" -not -path "*/.venv/*" -not -path "./.devcontainer/*" -type f -print0)
-
 # Pinned from ci/requirements.txt so the container matches CI, and bootstrapped
 # with pip because that is what the python devcontainer feature ships.
 echo "Installing uv..."
@@ -37,25 +28,10 @@ else
     echo "Warning: no pinned uv in ci/requirements.txt; Python installs below will fail" >&2
 fi
 
-echo "Installing Python dependencies..."
-while IFS= read -r -d '' req_file; do
-    echo "  Installing from $req_file..."
-    uv pip install --system -r "$req_file" || echo "Warning: uv pip install failed for $req_file" >&2
-done < <(find . -name "requirements.txt" -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.tox/*" -type f -print0)
-
-# Install Python dependencies from all pyproject.toml files (editable installs)
-echo "Installing Python editable packages..."
-while IFS= read -r -d '' pyproject_file; do
-    dir=$(dirname "$pyproject_file")
-    echo "  Installing from $dir..."
-    uv pip install --system -e "${dir}[dev]" || echo "Warning: uv pip install failed for $dir" >&2
-done < <(find . -name "pyproject.toml" -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.tox/*" -type f -print0)
-
-# pre-commit comes from ci/requirements.txt, installed by the requirements loop above.
-if command -v pre-commit &>/dev/null && [ -f .pre-commit-config.yaml ]; then
-    echo "Wiring pre-commit git hook..."
-    pre-commit install || echo "Warning: pre-commit install failed" >&2
-fi
+# Into the system Python: containerEnv sets UV_SYSTEM_PYTHON (CONTRIBUTING.md, Setup).
+echo "Installing project dependencies (make install)..."
+make_install_failed=false
+make install || make_install_failed=true
 
 # vscode-user-specific setup (volume mounts, ownership fixes)
 if [ "$(whoami)" = "vscode" ]; then
@@ -161,6 +137,9 @@ $liza_installed && [ ! -L CLAUDE.local.md ] && echo "Note: Liza is installed but
 # Codespaces path override.
 if [ "$claude_install_failed" = 1 ]; then
     echo "ERROR: Claude Code CLI install failed. Run 'npm install -g @anthropic-ai/claude-code' to retry." >&2
+fi
+if $make_install_failed; then
+    echo "ERROR: Project dependency install failed (see make's output above). Run 'make install' to retry." >&2
 fi
 if $liza_installed && [ ! -x "$HOME/.liza/bin/rg" ]; then
     echo "ERROR: ripgrep install failed; Liza's agents search with rg. Run 'bash .devcontainer/liza/install.sh' to retry." >&2
