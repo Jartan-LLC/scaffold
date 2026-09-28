@@ -111,7 +111,7 @@ With `INSTALL_LIZA_TOOLS=true`, [`tools.sh`](tools.sh) installs these into
 | Tool | Installed from | Notes |
 |---|---|---|
 | ast-grep, yq | release binary + sha256 | |
-| rtk, mdq | release binary + sha256 | mdq is x86_64 only: it publishes no arm64 Linux build |
+| rtk, mdq | release binary + sha256 | mdq publishes no arm64 Linux build |
 | stacklit, scip-search, functional-clusters, mdtoc, bash-policy | source at a pinned commit, built with the Go feature | no upstream release binaries |
 | scip-python, scip-typescript, context7 MCP | [`npm/package-lock.json`](npm/package-lock.json) | context7 registered at local scope |
 | semble | [`semble-requirements.txt`](semble-requirements.txt) (hash-locked) | model pinned by revision and sha256; never downloads at runtime |
