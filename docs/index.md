@@ -11,4 +11,6 @@ source docstrings.
 
 getting-started
 reference
+scaffold
+onboard
 ```
