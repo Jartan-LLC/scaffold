@@ -11,6 +11,12 @@ check() {  # description  command...
 check "Claude Code CLI runs" claude --version
 check "pnpm available" pnpm --version
 check "pre-commit hook wired" test -f "$(git rev-parse --git-path hooks)/pre-commit"
+# make install put the project into this Python; the name follows /onboard's rename.
+if [ -f pyproject.toml ]; then
+    pkg=$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"][0].rpartition("/")[2])')
+    check "package $pkg imports" python -c "import $pkg"
+    check "pytest collects the suite" pytest --collect-only -q
+fi
 if [ "${ACTIVATE_LIZA:-false}" = true ]; then
     check "Liza activated and recorded" test -L CLAUDE.local.md -a -f "$(git rev-parse --git-path liza)/activation.json"
 else

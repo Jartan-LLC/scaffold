@@ -3,13 +3,13 @@
 ## Setup
 
 ```bash
+uv venv        # skip in the devcontainer or with an environment already active
 make install
 ```
 
-That creates `./.venv`, installs the package with its dev extras, and wires the
-pre-commit hook. Every other `make` target runs out of that venv, so you never
-need to activate it — activate anyway (`source .venv/bin/activate`) if you want
-`pytest` directly on your shell's PATH.
+`make install` installs the project's dependencies and wires the pre-commit hook. Make
+targets find the environment themselves; activate `.venv` only if you want `pytest`
+directly on your shell's PATH.
 
 Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/getting-started/installation/).
 `make lint` runs the [pre-commit](https://pre-commit.com/) hooks; some need
@@ -21,8 +21,8 @@ Docker (actionlint, lychee) and Node (markdownlint) — the devcontainer has bot
 make check
 ```
 
-Runs the same checks CI does (on your active interpreter — CI also sweeps the
-3.12/3.13 matrix); all must pass before merge.
+Runs the same checks CI does (CI also sweeps the 3.12/3.13 matrix); all must pass
+before merge.
 
 ## Conventions
 

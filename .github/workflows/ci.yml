@@ -53,15 +53,24 @@ jobs:
       - run: pre-commit run --all-files --show-diff-on-failure
 
       # Node/JS (secondary) — uncomment after adding package.json + committing a lockfile.
-      # `prettier --check` is the generic part; drop `astro check` unless you use Astro.
-      # - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      # Drop `version:` if package.json pins pnpm in `packageManager`: the action rejects both.
+      # The key names pnpm's major, which the store path and pnpm/setup's own `cache` key omit.
+      # - uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
       #   with:
-      #     version: 10
-      # - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+      #     version: 12
+      #     runtime: node@22
+      #     install: false
+      # - id: pnpm-store
+      #   run: |
+      #     {
+      #       echo "path=$(pnpm store path)"
+      #       echo "major=$(pnpm --version | cut -d. -f1)"
+      #     } >> "$GITHUB_OUTPUT"
+      # - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       #   with:
-      #     node-version: "22"
-      #     cache: pnpm
-      #     cache-dependency-path: pnpm-lock.yaml
+      #     path: ${{ steps.pnpm-store.outputs.path }}
+      #     key: pnpm-store-${{ runner.os }}-${{ steps.pnpm-store.outputs.major }}-${{ hashFiles('pnpm-lock.yaml') }}
+      #     restore-keys: pnpm-store-${{ runner.os }}-${{ steps.pnpm-store.outputs.major }}-
       # - run: pnpm install --frozen-lockfile
       # - run: pnpm exec prettier --check .
 

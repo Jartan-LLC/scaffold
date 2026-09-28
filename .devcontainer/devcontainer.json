@@ -10,7 +10,8 @@
       "version": "3.12"
     },
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "lts"
+      "version": "lts",
+      "pnpmVersion": "12"
     },
     "ghcr.io/devcontainers/features/go:1": {
       "version": "1.27.1"
@@ -28,7 +29,8 @@
     "HOST_PROJECT_PATH": "${localWorkspaceFolder}",
     "CONTAINER_WORKSPACE_FOLDER": "${containerWorkspaceFolder}",
     "ACTIVATE_LIZA": "${localEnv:ACTIVATE_LIZA:true}",
-    "INSTALL_LIZA_TOOLS": "${localEnv:INSTALL_LIZA_TOOLS:true}"
+    "INSTALL_LIZA_TOOLS": "${localEnv:INSTALL_LIZA_TOOLS:true}",
+    "UV_SYSTEM_PYTHON": "1"
   },
   "forwardPorts": [6080],
   "portsAttributes": {

@@ -31,7 +31,7 @@ Work through every Required checklist item that can be automated. Also:
 - Replace the template README with a project README
 - License: rename the chosen `LICENSE.<type>` file to `LICENSE`, delete the others, and fill in `[year]` and `[fullname]`. Available: `LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`, `LICENSE.proprietary` (all rights reserved, for private/closed-source work). If the user wants a different license, delete the others and create the appropriate file.
 - Update `.devcontainer/devcontainer.json` — change the `desktop-lite` `password`, add/remove language features and extensions to match the chosen stack
-- Update `.devcontainer/post-create.sh` — add dependency installation for the chosen stack (e.g., `go mod download`, `cargo build`)
+- Add dependency installation for the chosen stack (e.g., `go mod download`, `cargo build`) to the `Makefile`'s `deps` target, which `make install` runs on a bare host and from `.devcontainer/post-create.sh`
 - Update `.devcontainer/post-start.sh` — add commands that should run on each container start
 - Update `.gitignore` — add language-specific patterns for the chosen stack
 - Update `.editorconfig` — adjust formatting rules for the chosen language (e.g., tabs for Go)
