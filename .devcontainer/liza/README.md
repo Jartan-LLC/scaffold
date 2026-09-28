@@ -88,19 +88,19 @@ Each Claude session selects its mode at start; start a new session to switch.
 ```
 
 When the doer asks where to create its worktree, answer `.adversarial/worktrees/<name>`.
-Before its first `make check` there, the doer runs `uv venv` and `make deps` in it, so the
+Before its first `make check` there, the doer runs `uv venv` and `make install` in it, so the
 checks run against the worktree's own code rather than the main checkout's install.
 
 **Multi-agent.** Commit a goal document first, then:
 
 ```bash
-liza init "<goal>" --spec specs/<goal>.md --post-worktree-cmd "uv venv -q --allow-existing && make deps"
+liza init "<goal>" --spec specs/<goal>.md --post-worktree-cmd "uv venv -q --allow-existing && make install"
 liza tui
 ```
 
 The command gives each task worktree its own `.venv`, which every `make` target there then
-uses, and installs into it with `make deps`; `make install` would fail there, since Liza
-sets the worktree's `core.hooksPath` and `pre-commit install` refuses that. Fill in
+uses, and installs into it with `make install`, which leaves out the git hook there: Liza
+sets the worktree's `core.hooksPath`, and `pre-commit install` refuses that. Fill in
 [`GUARDRAILS.md`](../../GUARDRAILS.md) before a first run. Liza's
 [Getting Started](https://github.com/liza-mas/liza/blob/main/GETTING_STARTED.md) covers
 the rest of the run: checkpoints, the operator session, logs.
