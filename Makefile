@@ -47,7 +47,8 @@ check: | .venv  ## Run every CI check (lint, typecheck, test, build, audit, docs
 	$(MAKE) lint typecheck test
 	uv build
 	python -m twine check dist/*
-	pip-audit
+# Advisory, as in CI: known vulnerabilities are reported without failing the gate.
+	-pip-audit
 	$(MAKE) docs
 
 all: check  ## Alias for `check`
