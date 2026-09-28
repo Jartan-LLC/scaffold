@@ -9,7 +9,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 ### Required
 
 - [ ] Fill in `CLAUDE.md` and `GUARDRAILS.md` ([details](#project-instructions))
-- [ ] Adapt the devcontainer and the `Makefile`'s `deps` target to your stack ([details](#devcontainer))
+- [ ] Adapt the devcontainer and the `Makefile`'s `install` target to your stack ([details](#devcontainer))
 - [ ] Keep, turn off or remove Liza ([details](scaffold.md#liza))
 - [ ] Add your stack's patterns to `.gitignore` and rules to `.editorconfig`
 - [ ] Set owners in `.github/CODEOWNERS`
@@ -54,7 +54,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 - `post-start.sh`: add commands to run on each container start. The Docker socket fix and
   Codespaces environment overrides are already there.
 - Dependencies: add your stack's install (for example `go mod download`) to the `Makefile`'s
-  `deps` target. `make install` runs it on a bare host and from `post-create.sh`.
+  `install` target, which runs on a bare host and from `post-create.sh`.
 
 ## Python package
 

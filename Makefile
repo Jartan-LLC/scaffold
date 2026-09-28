@@ -1,5 +1,5 @@
 # Task runner for the local dev loop. Run `make` or `make help` to list targets.
-.PHONY: help deps install lint fix typecheck test test-integration docs check all
+.PHONY: help install lint fix typecheck test test-integration docs check all
 
 # Every target uses one Python environment, chosen here: this
 # checkout's .venv, else the active one, else, in the main checkout only, the system
@@ -31,18 +31,22 @@ MANIFEST_EXCLUDES := $(foreach d,.worktrees .adversarial .liza .devcontainer nod
 manifests = $(if $(CHECKOUT_GIT_DIR),$(shell git ls-files -- ':(glob)**/$(1)' $(MANIFEST_EXCLUDES)),$(wildcard $(1)))
 PY_PROJECTS = $(patsubst %/pyproject.toml,./%,$(patsubst pyproject.toml,.,$(call manifests,pyproject.toml)))
 NODE_DIRS = $(patsubst %/,%,$(dir $(call manifests,package.json)))
+# Only the root project has a docs extra.
+comma := ,
+extras = $(if $(filter .,$(1)),dev$(comma)docs,dev)
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
 
-deps:  ## Install every tracked Python and Node manifest (no git hook)
-	$(UV_INSTALL) $(foreach p,$(PY_PROJECTS),-e '$(p)[dev]') $(foreach r,$(call manifests,requirements.txt),-r $(r))
+# pre-commit install refuses a checkout without git or with core.hooksPath set, which Liza
+# sets in task worktrees.
+install:  ## Install every tracked Python and Node manifest, then wire the pre-commit hook
+	$(UV_INSTALL) $(foreach p,$(PY_PROJECTS),-e '$(p)[$(call extras,$(p))]') $(foreach r,$(call manifests,requirements.txt),-r $(r))
 	$(if $(NODE_DIRS),@command -v pnpm >/dev/null || { echo "pnpm not found; it installs: $(NODE_DIRS)" >&2; exit 1; })
 	$(if $(NODE_DIRS),$(foreach d,$(NODE_DIRS),CI=true pnpm --dir $(d) install &&) true)
-
-install: deps  ## Install deps, then wire the pre-commit hook
-	# Skip hook wiring outside a git checkout (e.g. an unpacked sdist); real failures still surface.
-	if git rev-parse --git-dir >/dev/null 2>&1; then pre-commit install; fi
+	@if ! git rev-parse --git-dir >/dev/null 2>&1; then :; \
+	elif [ -n "$$(git config core.hooksPath)" ]; then echo "core.hooksPath is set; skipping pre-commit install"; \
+	else pre-commit install; fi
 
 lint:  ## Lint all files via pre-commit (ruff, codespell, shellcheck, markdownlint, lychee, actionlint, zizmor, hygiene)
 	pre-commit run --all-files
@@ -61,14 +65,10 @@ test:  ## Run the unit suite (matches CI: excludes integration-marked tests)
 test-integration:  ## Run only integration-marked tests
 	pytest -m integration
 
-docs:  ## Build the docs site, warnings-as-errors (needs the docs extra)
+docs:  ## Build the docs site, warnings-as-errors
 	sphinx-build -W -b html docs docs/_build/html
 
-# The one gate: reproduces every CI check locally in the selected environment
-# (CI additionally sweeps the 3.12/3.13 matrix — see ci.yml). Also installs
-# ci/requirements.txt, the pinned gate tools CI uses.
 check:  ## Run every CI check (lint, typecheck, test, build, audit, docs)
-	$(UV_INSTALL) -q -e '.[dev,docs]' -r ci/requirements.txt
 	$(MAKE) lint typecheck test
 	uv build
 	python -m twine check dist/*
