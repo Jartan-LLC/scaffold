@@ -1,8 +1,43 @@
 # Setting up the template
 
-Details for the README's post-fork checklist, one section per item that needs more than a
-line. Delete this page (and its entry in `index.md`) once the checklist is done;
-[`scaffold.md`](scaffold.md) covers what stays useful afterwards.
+The setup checklist, then the details for each item that needs more than a line. `/onboard`
+in Claude Code works through it for you. Delete this page (and its entry in `index.md`) at
+Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
+
+## Checklist
+
+### Required
+
+- [ ] Fill in `CLAUDE.md` and `GUARDRAILS.md` ([details](#project-instructions))
+- [ ] Adapt the devcontainer and the `Makefile`'s `deps` target to your stack ([details](#devcontainer))
+- [ ] Keep, turn off or remove Liza ([details](scaffold.md#liza))
+- [ ] Add your stack's patterns to `.gitignore` and rules to `.editorconfig`
+- [ ] Set owners in `.github/CODEOWNERS`
+- [ ] Set the security and conduct contacts, and enable private vulnerability reporting ([details](#security-and-conduct-contacts))
+- [ ] Replace the `ORG/REPO` placeholders, except in `.lycheeignore`, where you delete the line ([details](#orgrepo-placeholders))
+- [ ] Rename the Python package ([details](#python-package)), or tear down Python ([details](#not-a-python-project))
+- [ ] Replace `tests/test_smoke.py` with real tests
+- [ ] Prune `.github/workflows/ci.yml` and `.github/dependabot.yml` to your stack ([details](scaffold.md#ci))
+- [ ] Update the docs site ([details](#docs-site))
+- [ ] Create `LICENSE` from one of the `LICENSE.*` templates (fill in `[year]` and `[fullname]`), and delete the rest
+- [ ] Switch off plugin skills that don't fit your stack ([details](#claude-settings))
+
+### Recommended
+
+- [ ] Set up publishing: package, image, docs site ([details](scaffold.md#publishing))
+- [ ] Create the `major`/`minor`/`patch` labels Dependabot adds to its PRs ([details](#dependabot-labels))
+- [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
+- [ ] Enable CodeQL default setup (Settings > Security > Code scanning)
+- [ ] Delete `.github/workflows/scorecard.yml` if you don't want an OpenSSF score (it skips on private repos)
+- [ ] Enable secret scanning with push protection (Settings > Security > Secret Protection)
+- [ ] Configure branch ruleset for `main` — require PR reviews, require CI to pass, block force pushes
+- [ ] Enable auto-merge (Settings > General > Allow auto-merge) — Dependabot minor/patch PRs auto-merge after CI passes
+
+### Cleanup
+
+- [ ] Replace `README.md` with your own
+- [ ] Delete this page and its entry in `docs/index.md`
+- [ ] Delete `.claude/commands/onboard.md`
 
 ## Project instructions
 
@@ -37,11 +72,11 @@ Rename the `app` stub to your import name:
 
 ## Not a Python project
 
-Do this last: it deletes the docs site, this page included. Keep `docs/scaffold.md`, which
-reads fine on GitHub without Sphinx.
+Do this after the other Required items: it deletes the docs site. Keep `docs/scaffold.md`,
+which reads fine on GitHub without Sphinx, and this page, which Cleanup deletes.
 
 1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
-2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md`,
+2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md` and this page,
    `.readthedocs.yaml.example`,
    `.github/workflows/pages.yml.example`, `.github/workflows/publish-pypi.yml` and
    `.github/workflows/dependency-audit.yml`. If not containerized, also `Dockerfile`,

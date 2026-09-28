@@ -2,11 +2,11 @@
 
 Production-ready project scaffold with a containerized dev environment, GitHub automation, and Claude Code as a development workflow agent.
 
-**Python-first:** linting, typing, tests, packaging, Docker, and docs are wired up and active out of the box (Node/JS is a supported second). Using another stack? Everything Python is stubbed and clearly deletable — see the checklist below.
+**Python-first:** linting, typing, tests, packaging, Docker, and docs are wired up and active out of the box (Node/JS is a supported second). Using another stack? Everything Python is stubbed and clearly deletable — see [docs/onboard.md](docs/onboard.md#not-a-python-project).
 
 ## Getting Started
 
-Run `/onboard` in Claude Code to set up this template for your project. It will interview you, configure all the files, and tell you which manual steps remain.
+Run `/onboard` in Claude Code to set up this template for your project. It will interview you, configure all the files, and tell you which manual steps remain. To set up by hand instead, follow the checklist in [docs/onboard.md](docs/onboard.md).
 
 ## What's Included
 
@@ -25,42 +25,3 @@ Run `/onboard` in Claude Code to set up this template for your project. It will 
 
 Every file, and how the parts work: [docs/scaffold.md](docs/scaffold.md). To pull in later
 template improvements, see [Syncing template updates](docs/scaffold.md#syncing-template-updates).
-
-## Post-Fork Checklist
-
-If you prefer to set up manually instead of using `/onboard`:
-
-### Required
-
-Details for each item: [docs/onboard.md](docs/onboard.md).
-
-- [ ] Fill in `CLAUDE.md` and `GUARDRAILS.md` ([details](docs/onboard.md#project-instructions))
-- [ ] Adapt the devcontainer and the `Makefile`'s `deps` target to your stack ([details](docs/onboard.md#devcontainer))
-- [ ] Keep, turn off or remove Liza ([details](docs/scaffold.md#liza))
-- [ ] Add your stack's patterns to `.gitignore` and rules to `.editorconfig`
-- [ ] Set owners in `.github/CODEOWNERS`
-- [ ] Set the security and conduct contacts, and enable private vulnerability reporting ([details](docs/onboard.md#security-and-conduct-contacts))
-- [ ] Replace the `ORG/REPO` placeholders, except in `.lycheeignore`, where you delete the line ([details](docs/onboard.md#orgrepo-placeholders))
-- [ ] Rename the Python package ([details](docs/onboard.md#python-package)), or tear down Python ([details](docs/onboard.md#not-a-python-project))
-- [ ] Replace `tests/test_smoke.py` with real tests
-- [ ] Prune `.github/workflows/ci.yml` and `.github/dependabot.yml` to your stack ([details](docs/scaffold.md#ci))
-- [ ] Update the docs site ([details](docs/onboard.md#docs-site))
-- [ ] Create `LICENSE` from one of the `LICENSE.*` templates (fill in `[year]` and `[fullname]`), and delete the rest
-- [ ] Switch off plugin skills that don't fit your stack ([details](docs/onboard.md#claude-settings))
-
-### Recommended
-
-- [ ] Set up publishing: package, image, docs site ([details](docs/scaffold.md#publishing))
-- [ ] Create the `major`/`minor`/`patch` labels Dependabot adds to its PRs ([details](docs/onboard.md#dependabot-labels))
-- [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
-- [ ] Enable CodeQL default setup (Settings > Security > Code scanning)
-- [ ] Delete `.github/workflows/scorecard.yml` if you don't want an OpenSSF score (it skips on private repos)
-- [ ] Enable secret scanning with push protection (Settings > Security > Secret Protection)
-- [ ] Configure branch ruleset for `main` — require PR reviews, require CI to pass, block force pushes
-- [ ] Enable auto-merge (Settings > General > Allow auto-merge) — Dependabot minor/patch PRs auto-merge after CI passes
-
-### Cleanup
-
-- [ ] Replace this README with your own
-- [ ] Delete `docs/onboard.md` and its entry in `docs/index.md`
-- [ ] Delete `.claude/commands/onboard.md`

@@ -12,9 +12,9 @@ Configure this template repo for a new project.
 
 Check `gh auth status`. If not authenticated, tell the user to run `gh auth login` before continuing — onboarding uses `gh` commands for repo configuration.
 
-### 2. Read `README.md`
+### 2. Read `docs/onboard.md`
 
-Read its post-fork checklist and `docs/onboard.md`, which details each item (`docs/scaffold.md` covers the parts that stay, such as Liza, CI and publishing). They are the source of truth for what needs to change.
+Its checklist is the source of truth for what needs to change, and its sections detail each item (`docs/scaffold.md` covers the parts that stay, such as Liza, CI and publishing).
 
 ### 3. Interview
 
@@ -34,7 +34,7 @@ Work through every Required checklist item that can be automated, following `doc
 - `SECURITY.md`: always set the contact. Set supported versions and response targets only if the user gave them, and leave any other `TODO(/onboard)` unanswered: a timing commitment the user never chose is worse than an unset field with a stated default
 - Liza: activation and the toolchain each ran at container creation unless the host set its switch to `false`. For each the user declines, set its default to `false` in `.devcontainer/devcontainer.json` and run its undo in this clone, a no-op if it never ran (`docs/scaffold.md`, Liza)
 - Create the Dependabot `major`/`minor`/`patch` labels (`docs/onboard.md`, Dependabot labels)
-- Once every item is done, delete `docs/onboard.md` and its entry in `docs/index.md`, unless the non-Python teardown already removed them
+- Once every item is done, delete `docs/onboard.md` and, unless the non-Python teardown removed `docs/index.md`, its entry there
 
 For questions the user didn't have answers to (e.g., version corrections, verify commands), leave the placeholder comments in place — they are written so that Claude will fill them in naturally when the information is discovered during normal development. Only replace placeholders that have actual answers.
 

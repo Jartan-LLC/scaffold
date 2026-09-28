@@ -20,7 +20,8 @@ extensions = [
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 
-myst_enable_extensions = ["colon_fence", "deflist"]
+myst_enable_extensions = ["colon_fence", "deflist", "tasklist"]
+myst_heading_anchors = 3  # `#section` links, as GitHub resolves them
 
 exclude_patterns = ["_build"]
 
