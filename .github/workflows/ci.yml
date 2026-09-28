@@ -135,9 +135,13 @@ jobs:
       - run: uv build
       - run: python -m twine check dist/*
 
+  # Advisory: an unfixable transitive advisory must not fail every run, so the job may
+  # fail and `check` deliberately does not gate on it. dependency-audit.yml tracks
+  # findings in an issue.
   audit:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -304,12 +308,12 @@ jobs:
     if: always()
     # When you uncomment integration-tests / docker above, add them to BOTH the
     # needs list and the results array below.
-    needs: [lint, typecheck, test, build, audit, docs, changes, liza-smoke, devcontainer]
+    needs: [lint, typecheck, test, build, docs, changes, liza-smoke, devcontainer]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - run: |
-          results=("${{ needs.lint.result }}" "${{ needs.typecheck.result }}" "${{ needs.test.result }}" "${{ needs.build.result }}" "${{ needs.audit.result }}" "${{ needs.docs.result }}" "${{ needs.changes.result }}" "${{ needs.liza-smoke.result }}" "${{ needs.devcontainer.result }}")
+          results=("${{ needs.lint.result }}" "${{ needs.typecheck.result }}" "${{ needs.test.result }}" "${{ needs.build.result }}" "${{ needs.docs.result }}" "${{ needs.changes.result }}" "${{ needs.liza-smoke.result }}" "${{ needs.devcontainer.result }}")
           for r in "${results[@]}"; do
             if [[ "$r" != "success" && "$r" != "skipped" ]]; then
               echo "Check failed: $r"

@@ -1,14 +1,15 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"
-    directory: "/"
+    # "/" does not reach composite actions; the glob covers any a fork adds.
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "weekly"
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     groups:
       minor-and-patch:
         update-types:
@@ -24,8 +25,6 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     groups:
       minor-and-patch:
         update-types:
@@ -45,8 +44,6 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     groups:
       minor-and-patch:
         update-types:
@@ -63,8 +60,6 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     groups:
       minor-and-patch:
         update-types:
@@ -81,8 +76,6 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     groups:
       minor-and-patch:
         update-types:
@@ -107,8 +100,6 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     cooldown:
       default-days: 7
 
@@ -119,12 +110,26 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     groups:
       minor-and-patch:
         update-types:
           - "minor"
           - "patch"
+    cooldown:
+      default-days: 7
+
+  # Grouped by name, not update-types: with SHA-frozen revs an update-types group splits into
+  # one PR per hook (dependabot/dependabot-core#15266, open as of 2026-09-28).
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      hooks:
+        patterns:
+          - "*"
     cooldown:
       default-days: 7
