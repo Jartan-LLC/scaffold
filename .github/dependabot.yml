@@ -1,5 +1,8 @@
 version: 2
 updates:
+  # directory "/" does not reach composite actions: a fork that adds one under
+  # .github/actions/ lists it with `directories: ["/", "/.github/actions/*"]`, or its pins
+  # are never updated and nothing reports it.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -7,8 +10,6 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     groups:
       minor-and-patch:
         update-types:
@@ -24,8 +25,6 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     groups:
       minor-and-patch:
         update-types:
@@ -45,8 +44,6 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     groups:
       minor-and-patch:
         update-types:
@@ -63,8 +60,6 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     groups:
       minor-and-patch:
         update-types:
@@ -81,8 +76,6 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     groups:
       minor-and-patch:
         update-types:
@@ -107,8 +100,6 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     cooldown:
       default-days: 7
 
@@ -119,12 +110,27 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependency"
     groups:
       minor-and-patch:
         update-types:
           - "minor"
           - "patch"
+    cooldown:
+      default-days: 7
+
+  # Grouped by name, not update-types: with frozen SHA pins an update-types group falls back
+  # to one PR per hook (dependabot/dependabot-core#15266). Only default-days: this ecosystem
+  # does not support the semver-*-days cooldowns.
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      hooks:
+        patterns:
+          - "*"
     cooldown:
       default-days: 7

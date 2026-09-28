@@ -3,8 +3,8 @@
 # Its revs are the only ruff and codespell versions; `make fix` runs the ruff hooks.
 # Env operations (pyright, uv build, twine, pip-audit, sphinx) live in the Makefile.
 #
-# Revs are pinned to commit SHAs (# frozen: vX.Y.Z). Bump all with:
-#   pre-commit autoupdate --freeze
+# Revs are pinned to commit SHAs (# frozen: vX.Y.Z); Dependabot's pre-commit entry bumps
+# them. Bump all by hand with: pre-commit autoupdate --freeze
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: c59bba8fb259db0fec2bbb77ad8ba51ea7341b56 # frozen: v0.15.20
