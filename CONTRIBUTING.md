@@ -13,8 +13,8 @@ Every `make` target uses the first of these Python environments:
 
 1. this checkout's `./.venv`;
 2. the active environment (`VIRTUAL_ENV`);
-3. in the devcontainer's own checkout, the system Python, because the container sets
-   `UV_SYSTEM_PYTHON` (`1` or `true`);
+3. the system Python, when `UV_SYSTEM_PYTHON` is `1` or `true`, as the devcontainer
+   sets it;
 4. none: installing targets stop and ask you to run `uv venv` or activate one.
 
 The Makefile tells uv which one, since uv alone ignores `.venv` under `UV_SYSTEM_PYTHON`

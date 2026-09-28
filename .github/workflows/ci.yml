@@ -54,7 +54,7 @@ jobs:
 
       # Node/JS (secondary) — uncomment after adding package.json + committing a lockfile.
       # Drop `version:` if package.json pins pnpm in `packageManager`: the action rejects both.
-      # The key names pnpm's major because the store path does not change with it.
+      # The key names pnpm's major, which the store path and pnpm/setup's own `cache` key omit.
       # - uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
       #   with:
       #     version: 12
