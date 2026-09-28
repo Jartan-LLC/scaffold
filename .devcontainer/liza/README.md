@@ -156,8 +156,8 @@ workflow runs it on every change under `.devcontainer/`, alongside a full contai
 4. In `post-create.sh`, drop the Liza block, the "Liza is installed but not active" note,
    and the `INSTALL_LIZA_TOOLS` condition on codebase-memory-mcp.
 5. Delete the Liza section of `.gitignore`; drop the Liza mention and checklist item from
-   `README.md` and the Liza parts of `.claude/commands/onboard.md`. Keep `GUARDRAILS.md`:
-   it holds the project rules.
+   `README.md`, the Liza section of `docs/scaffold.md` and the Liza parts of
+   `.claude/commands/onboard.md`. Keep `GUARDRAILS.md`: it holds the project rules.
 6. Remove the volume from the host: `docker volume rm liza-<devcontainerId>`.
 
 ## See also

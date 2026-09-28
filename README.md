@@ -71,44 +71,28 @@ If you prefer to set up manually instead of using `/onboard`:
 
 ### Required
 
-- [ ] Update `CLAUDE.md` — replace placeholder comments:
-  - Project name and description (the `# Project Name` heading and the `<!-- ONE LINE: … -->` comment under it)
-  - Corrections with any version-specific overrides for your stack
-- [ ] Update `CLAUDE.md` Skills section — add project-specific skills/conventions as they emerge
-- [ ] Update `GUARDRAILS.md` — add project rules as they emerge, at the tier each must hold
-- [ ] Update `.devcontainer/devcontainer.json` — change the desktop-lite password, add/remove language features and extensions for your stack
-- [ ] Add your stack's dependency installation to the `Makefile`'s `deps` target — `make install` runs it, on a bare host and from `.devcontainer/post-create.sh`
-- [ ] Update `.devcontainer/post-start.sh` — add commands that should run on each container start (Docker socket fix and Codespaces env overrides are included)
-- [ ] Decide on Liza — it's on by default; to opt out, set the `ACTIVATE_LIZA` and/or `INSTALL_LIZA_TOOLS` defaults in `.devcontainer/devcontainer.json` to `false`, or remove it ([Removing Liza](.devcontainer/liza/README.md#removing-liza))
-- [ ] Update `.gitignore` — add language-specific patterns for your stack
-- [ ] Update `.editorconfig` — adjust formatting rules for your language (e.g., tabs for Go)
-- [ ] Update `.github/CODEOWNERS` — uncomment and set owner usernames/teams
-- [ ] Update `.github/SECURITY.md` — set supported versions, response timeline, and the private security contact. That contact is the reporter's only channel if the advisory form is unavailable, and it is published publicly, so use an address you are willing to publish
-- [ ] Enable private vulnerability reporting (Settings > Security) — until it is on, the advisory form `.github/SECURITY.md` sends every reporter to does not exist
-- [ ] Update `.github/CODE_OF_CONDUCT.md` — set the enforcement contact (replace `[INSERT CONTACT METHOD]`)
-- [ ] Update `.github/ISSUE_TEMPLATE/config.yml` — replace `ORG/REPO` in contact link URLs with your GitHub org and repo name
-- [ ] Update `CHANGELOG.md` — replace `ORG/REPO` in the `[Unreleased]` link with your GitHub org and repo (otherwise the link 404s)
-- [ ] Tidy `.lycheeignore` — delete **only** the `https://github.com/ORG/REPO` line, once ORG/REPO is real (delete rather than replace, or the pattern would ignore your own repo's links). Leave every other line: the file marks which are permanent, and deleting the `file://` advisory-form pattern makes the link check fail on your security policy
-- [ ] Update `.github/dependabot.yml` — remove ecosystems you don't use, add ones you need, adjust directories if not at root
-- [ ] Rename the Python package (`/onboard` does all this; skip the `packages` edit and `python -m build` fails) — set `pyproject.toml` `name` + `description`, rename the `src/app/` directory, update `[tool.hatch.build.targets.wheel]` `packages` to match, update the `app` imports in `src/app/__main__.py` and `tests/` (`from app.log import …` in `__main__.py`/`test_log.py`, `from app.__main__ import …` in `test_smoke.py`), and the `python -m app` references (`__main__.py` `prog=`, `Dockerfile` `CMD` hint).
-- [ ] **Not a Python project?** Delete `pyproject.toml`, `src/`, `tests/`, the docs stack (`docs/`, `.readthedocs.yaml.example`, `.github/workflows/pages.yml.example`), `.github/workflows/publish-pypi.yml`, and — if not containerized — `Dockerfile`, `.dockerignore`, `.github/workflows/publish-docker.yml`; adapt `CONTRIBUTING.md` (rewrite the `make install` setup and the "Requires Python 3.12+ and uv" line); trim the `ruff-pre-commit` entry (its `ruff-check` and `ruff-format` hooks) from `.pre-commit-config.yaml` (keep the language-agnostic hooks — codespell, shellcheck, markdownlint, lychee, actionlint, zizmor, hygiene; move codespell's `[tool.codespell]` skip config to a `.codespellrc` before deleting `pyproject.toml`); repoint the `Makefile` targets at your stack's lint/format/typecheck/test/build commands so `make check` stays your one verify gate; delete `.github/workflows/dependency-audit.yml`; in `.github/workflows/ci.yml` remove the `typecheck`/`test`/`build`/`audit`/`docs` jobs (and their `check.needs` + results entries; the advisory `audit` job has none) — the `lint` job just runs pre-commit and stays.
-- [ ] Replace `tests/test_smoke.py` with real tests — it only exists so the `test` CI job is green out of the box
-- [ ] Review `.github/workflows/ci.yml` — the `lint`/`typecheck`/`test`/`build`/`audit`/`docs` jobs are ACTIVE and pass against the shipped stubs; `audit` is advisory and outside the `check` aggregator. Delete jobs you don't need (and their entries in the `check` aggregator). To enable extras, uncomment the `docker`/`integration-tests` jobs and add each to `check.needs` + the results array; the Node checks are commented *steps inside the `lint` job* (uncomment them there — no `check` change needed)
-- [ ] Docs — set `project`/`author`/`project_copyright` in `docs/conf.py`; write the `docs/index.md` landing page (replace the `# Project Docs` title + `TODO(/onboard)`); update the `pip install app` line in `docs/getting-started.md` to the renamed package; after renaming the package, update the `automodule` module names in `docs/reference.md` (`/onboard` does this; the docs build fails if they're left stale)
-- [ ] Create a `LICENSE` file — rename one of the included templates (`LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`, `LICENSE.proprietary`) to `LICENSE`, fill in `[year]` and `[fullname]`, delete the others
-- [ ] Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match your stack
+Details for each item: [docs/scaffold.md](docs/scaffold.md).
+
+- [ ] Fill in `CLAUDE.md` and `GUARDRAILS.md` ([details](docs/scaffold.md#project-instructions))
+- [ ] Adapt the devcontainer and the `Makefile`'s `deps` target to your stack ([details](docs/scaffold.md#devcontainer))
+- [ ] Keep, turn off or remove Liza ([details](docs/scaffold.md#liza))
+- [ ] Add your stack's patterns to `.gitignore` and rules to `.editorconfig`
+- [ ] Set owners in `.github/CODEOWNERS`
+- [ ] Set the security and conduct contacts, and enable private vulnerability reporting ([details](docs/scaffold.md#security-and-conduct-contacts))
+- [ ] Replace the `ORG/REPO` placeholders ([details](docs/scaffold.md#orgrepo-placeholders))
+- [ ] Rename the Python package ([details](docs/scaffold.md#python-package)), or tear down Python ([details](docs/scaffold.md#not-a-python-project))
+- [ ] Replace `tests/test_smoke.py` with real tests
+- [ ] Prune `.github/workflows/ci.yml` and `.github/dependabot.yml` to your stack ([details](docs/scaffold.md#ci))
+- [ ] Update the docs site ([details](docs/scaffold.md#docs-site))
+- [ ] Create `LICENSE` from one of the `LICENSE.*` templates (fill in `[year]` and `[fullname]`), and delete the rest
+- [ ] Switch off plugin skills that don't fit your stack ([details](docs/scaffold.md#claude-settings))
 
 ### Recommended
 
-- [ ] Set up publishing — the release/publish workflows are opt-in: nothing runs until you push a `v*` tag.
-  - **`release.yml`** — creates a GitHub Release with auto-generated notes on every `v*` tag. Language-agnostic; keep it even if you publish no package or image.
-  - **`publish-pypi.yml`** — a stub `pyproject.toml` is included (rename the package first). Create the `pypi` [Environment](https://docs.github.com/actions/deployment/targeting-different-environments) — `gh api -X PUT repos/{owner}/{repo}/environments/pypi` (this also clears the "environment `pypi` is not valid" warning the GitHub Actions VS Code extension shows until it exists) — then configure [PyPI Trusted Publishing (OIDC)](https://docs.pypi.org/trusted-publishers/) for it (no token secret). Optionally uncomment the tag-vs-version check.
-  - **`publish-docker.yml`** — a stub `Dockerfile` is included (give it a real entrypoint). Publishes multi-arch images to `ghcr.io/OWNER/REPO` using the built-in `GITHUB_TOKEN` — no secret needed. Create the `ghcr` Environment (`gh api -X PUT repos/{owner}/{repo}/environments/ghcr`) and add required reviewers to gate image publishing on `v*` tags. Each release is tagged `X.Y.Z` and `X.Y`; `latest` moves only when the pushed tag is the highest release, so a patch cut on an older line can't drag it backwards.
-  - All trigger on `v*` tags. `publish-pypi.yml` still fails until you rename the package and configure PyPI Trusted Publishing; delete whichever publish workflow (and its stub) you don't need.
+- [ ] Set up publishing: package, image, docs site ([details](docs/scaffold.md#publishing))
 - [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
 - [ ] Enable CodeQL default setup (Settings > Security > Code scanning)
-- [ ] OpenSSF Scorecard (`.github/workflows/scorecard.yml`) needs a **public** repo to publish its score/badge — on a private fork it skips automatically, so delete it only if you don't want it at all
-- [ ] Publish docs (optional) — **GitHub Pages**: set Settings > Pages > Source = "GitHub Actions", then rename `.github/workflows/pages.yml.example` → `pages.yml` (single-version). **Versioned**: rename `.readthedocs.yaml.example` → `.readthedocs.yaml` and import the repo at readthedocs.org. Pick one; the docs *build* is already checked on every PR either way
+- [ ] Delete `.github/workflows/scorecard.yml` if you don't want an OpenSSF score (it skips on private repos)
 - [ ] Enable secret scanning with push protection (Settings > Security > Secret Protection)
 - [ ] Configure branch ruleset for `main` — require PR reviews, require CI to pass, block force pushes
 - [ ] Enable auto-merge (Settings > General > Allow auto-merge) — Dependabot minor/patch PRs auto-merge after CI passes
@@ -116,4 +100,5 @@ If you prefer to set up manually instead of using `/onboard`:
 ### Cleanup
 
 - [ ] Replace this README with your own
+- [ ] Delete `docs/scaffold.md` and its entry in `docs/index.md`
 - [ ] Delete `.claude/commands/onboard.md`

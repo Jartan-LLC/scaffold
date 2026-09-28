@@ -14,7 +14,7 @@ Check `gh auth status`. If not authenticated, tell the user to run `gh auth logi
 
 ### 2. Read `README.md`
 
-Read the post-fork checklist. This is the source of truth for what needs to change.
+Read its post-fork checklist and `docs/scaffold.md`, which details each item. They are the source of truth for what needs to change.
 
 ### 3. Interview
 
@@ -26,27 +26,14 @@ Summarize what you understood and what changes you'll make. Wait for the user to
 
 ### 5. Apply
 
-Work through every Required checklist item that can be automated. Also:
+Work through every Required checklist item that can be automated, following `docs/scaffold.md` for how and the interview for the values. Also:
 
 - Replace the template README with a project README
-- License: rename the chosen `LICENSE.<type>` file to `LICENSE`, delete the others, and fill in `[year]` and `[fullname]`. Available: `LICENSE.MIT`, `LICENSE.Apache-2.0`, `LICENSE.AGPL-3.0`, `LICENSE.proprietary` (all rights reserved, for private/closed-source work). If the user wants a different license, delete the others and create the appropriate file.
-- Update `.devcontainer/devcontainer.json` — change the `desktop-lite` `password`, add/remove language features and extensions to match the chosen stack
-- Add dependency installation for the chosen stack (e.g., `go mod download`, `cargo build`) to the `Makefile`'s `deps` target, which `make install` runs on a bare host and from `.devcontainer/post-create.sh`
-- Update `.devcontainer/post-start.sh` — add commands that should run on each container start
-- Update `.gitignore` — add language-specific patterns for the chosen stack
-- Update `.editorconfig` — adjust formatting rules for the chosen language (e.g., tabs for Go)
-- If Python: rename the package stub — set `pyproject.toml` `name` + `description`, rename the `src/app/` directory to the import name (update `[tool.hatch.build.targets.wheel]` `packages` to match), update `src/app/__main__.py` (its `from app.log import`, `prog=`, and `python -m app` docstring — or replace that stub), the `Dockerfile` `CMD` hint, and the `from app.log import` in `tests/test_log.py`, and replace `tests/test_smoke.py` with a real test. If not Python: follow the README's **Not a Python project?** teardown (delete the Python artifacts, adapt `CONTRIBUTING.md`, trim the `ruff-pre-commit` entry (its `ruff-check` and `ruff-format` hooks), prune the Python `ci.yml` jobs — the `lint` job stays)
-- The `Makefile` stays in every fork — it's the language-agnostic verify entry point. Point its `lint`/`typecheck`/`test`/`build` targets at the build/test/lint commands from the interview (keep `make check` as the aggregate gate); for a Python project the shipped targets already match, so only edit if the user's commands differ
-- Fill in `CHANGELOG.md` — replace `ORG/REPO` in the `[Unreleased]` link with the GitHub org/repo
-- Replace `ORG/REPO` in `.github/ISSUE_TEMPLATE/config.yml` contact links with the GitHub org/repo
-- Tidy `.lycheeignore` — delete **only** the `https://github.com/ORG/REPO` line (delete rather than replace, or you'd ignore your own repo's links). Leave every other line; the `file://` advisory-form pattern is permanent
-- Set the code-of-conduct enforcement contact in `.github/CODE_OF_CONDUCT.md` (replace `[INSERT CONTACT METHOD]`)
-- Set the private security contact in `.github/SECURITY.md` — always set, never left as a placeholder. Use angle brackets (`<security@example.org>`); a bare address fails markdownlint. Then delete the `unconfigured-contact` block: both markers, the paragraph between them, and the blank line after the closing marker (leaving that blank line fails lint). Keep the paragraph that follows — it stays true once a contact is set. Also set the supported-version rows (replacing the commented table hint) and the first-reply/fix targets if the user gave them; leave any other `TODO(/onboard)` unanswered, since a timing commitment the user never chose is worse than an unset field with a stated default
-- Docs: set `project`/`author`/`project_copyright` in `docs/conf.py`; write the `docs/index.md` landing page (replace `# Project Docs` + the `TODO(/onboard)` comment); update the `pip install app` line in `docs/getting-started.md` to the renamed package; after the package rename, update the `automodule` module names in `docs/reference.md` (replace `app.log`/`app.__main__` with the renamed package's modules — the docs build fails if left stale)
-- Create the optional SemVer labels, which Dependabot adds to its PRs only when they exist (it creates its own `dependencies` and ecosystem labels): `gh label create major --color B60205 --description "Major version update" --force`, `gh label create minor --color FBCA04 --description "Minor version update" --force`, `gh label create patch --color 0E8A16 --description "Patch version update" --force`
-- When removing skills, also update any agent files that reference them in their `skills:` frontmatter
-- Liza: `ACTIVATE_LIZA` and `INSTALL_LIZA_TOOLS` default to `true` in `.devcontainer/devcontainer.json`. This container already ran both at create, so for each the user declines, change its `${localEnv:…:true}` default to `false` and undo it in this clone: `bash .devcontainer/liza/deactivate.sh` for activation, `bash .devcontainer/liza/deactivate.sh --tools` for the toolchain (codebase-memory-mcp then installs on the next rebuild). If the build/test commands differ from `make check`, update the Tier 1 rule in `GUARDRAILS.md`. To remove Liza, follow **Removing Liza** in `.devcontainer/liza/README.md`
-- Add `skillOverrides` to `.claude/settings.json` — disable installed plugin skills that don't match the chosen stack. If multiple plugins cover the same domain, keep the more specific one. Keep universal skills enabled. Set disabled skills to `"off"`. Example: `"skillOverrides": { "go-review": "off", "springboot-patterns": "off" }`
+- License: keep the chosen `LICENSE.<type>` as `LICENSE`; for a license not among the templates, create it and delete all of them
+- Point the `Makefile`'s `lint`/`typecheck`/`test`/`build` targets at the interview's commands, keeping `make check` as the gate (a Python project's shipped targets already match). If the verify command changes, update the Tier 1 rule in `GUARDRAILS.md`
+- `SECURITY.md`: always set the contact. Set supported versions and response targets only if the user gave them, and leave any other `TODO(/onboard)` unanswered: a timing commitment the user never chose is worse than an unset field with a stated default
+- Liza: this container already ran activation and the toolchain, so for each the user declines, flip its default and undo it in this clone (`docs/scaffold.md`, Liza)
+- Once every item is done, delete `docs/scaffold.md` and its entry in `docs/index.md`
 
 For questions the user didn't have answers to (e.g., version corrections, verify commands), leave the placeholder comments in place — they are written so that Claude will fill them in naturally when the information is discovered during normal development. Only replace placeholders that have actual answers.
 

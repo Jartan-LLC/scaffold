@@ -1,0 +1,128 @@
+# Adapting the template
+
+Details for the README's post-fork checklist, one section per item that needs more than a
+line. Delete this page (and its entry in `index.md`) once the checklist is done.
+
+## Project instructions
+
+- `CLAUDE.md`: replace the `# Project Name` heading and the `<!-- ONE LINE: … -->` comment
+  under it; add version-specific overrides for your stack under Corrections; add skills and
+  conventions under Skills as they emerge.
+- `GUARDRAILS.md`: add project rules as they emerge, at the tier each must hold. If your
+  verify command is not `make check`, update the Tier 1 rule.
+
+## Devcontainer
+
+- `devcontainer.json`: change the `desktop-lite` password; add or remove features and
+  extensions for your stack.
+- `post-start.sh`: add commands to run on each container start. The Docker socket fix and
+  Codespaces environment overrides are already there.
+- Dependencies: add your stack's install (for example `go mod download`) to the `Makefile`'s
+  `deps` target. `make install` runs it on a bare host and from `post-create.sh`.
+
+## Liza
+
+On by default. To opt out, set the `ACTIVATE_LIZA` and/or `INSTALL_LIZA_TOOLS` default in
+`devcontainer.json` to `false`. A container built before the change keeps what already ran;
+undo it with `bash .devcontainer/liza/deactivate.sh` (activation) or
+`bash .devcontainer/liza/deactivate.sh --tools` (toolchain). To remove Liza entirely, follow
+"Removing Liza" in `.devcontainer/liza/README.md`.
+
+## Python package
+
+Rename the `app` stub to your import name:
+
+1. `pyproject.toml`: set `name` and `description`, and point
+   `[tool.hatch.build.targets.wheel]` `packages` at the new directory. Without it the
+   build fails.
+2. Rename `src/app/`.
+3. Update the imports: `from app.log import …` in `src/app/__main__.py` and
+   `tests/test_log.py`, `from app.__main__ import …` in `tests/test_smoke.py`.
+4. Update the `python -m app` references: `prog=` and the module docstring in `__main__.py`,
+   and the `Dockerfile` `CMD` hint.
+5. Update the docs (Docs site, below).
+
+## Not a Python project
+
+Do this last: it deletes `docs/`, this page included.
+
+1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
+2. Delete `pyproject.toml`, `src/`, `tests/`, `docs/`, `.readthedocs.yaml.example`,
+   `.github/workflows/pages.yml.example`, `.github/workflows/publish-pypi.yml` and
+   `.github/workflows/dependency-audit.yml`. If not containerized, also `Dockerfile`,
+   `.dockerignore` and `.github/workflows/publish-docker.yml`.
+3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
+4. In `.github/workflows/ci.yml`, remove the `typecheck`, `test`, `build`, `audit` and
+   `docs` jobs and their `check` entries (CI, below). `lint` stays.
+5. Point the `Makefile`'s `lint`, `typecheck`, `test` and `build` targets at your stack's
+   commands, so `make check` stays the one verify gate.
+6. Rewrite `CONTRIBUTING.md`'s setup for your stack.
+
+## Security and conduct contacts
+
+- `.github/SECURITY.md`: set the private security contact. It is published, and it is the
+  reporter's only channel when the advisory form is unavailable. Write it in angle
+  brackets (`<security@example.org>`); a bare address fails markdownlint. Then delete the
+  `unconfigured-contact` block: both markers, the paragraph between them and the blank
+  line after the closing marker. Set the supported versions and response targets.
+- Enable private vulnerability reporting (Settings > Security). Until it is on, the advisory
+  form `SECURITY.md` links to does not exist.
+- `.github/CODE_OF_CONDUCT.md`: replace `[INSERT CONTACT METHOD]`.
+
+## ORG/REPO placeholders
+
+- `.github/ISSUE_TEMPLATE/config.yml` and the `[Unreleased]` link in `CHANGELOG.md`:
+  replace `ORG/REPO` with your org and repo.
+- `.lycheeignore`: delete only the `https://github.com/ORG/REPO` line. Replacing it would
+  make the link check ignore your own repo. Keep every other line; the `file://`
+  advisory-form pattern is permanent.
+
+## CI
+
+`ci.yml`'s `lint`, `typecheck`, `test`, `build` and `docs` jobs gate the `check`
+aggregator; `audit` runs but is advisory. Removing a gating job also means removing its
+`check.needs` and results entries. To add the `docker` or `integration-tests` job,
+uncomment it and add it to both. The Node checks are commented steps inside `lint`.
+
+In `.github/dependabot.yml`, remove the ecosystems you don't use, add the ones you need,
+and adjust `directory` where manifests aren't at the root.
+Dependabot labels its PRs `major`, `minor` or `patch` only if those labels exist:
+
+```bash
+gh label create major --color B60205 --description "Major version update" --force
+gh label create minor --color FBCA04 --description "Minor version update" --force
+gh label create patch --color 0E8A16 --description "Patch version update" --force
+```
+
+## Docs site
+
+- `conf.py`: set `project`, `author` and `project_copyright`.
+- `index.md`: write the landing page, replacing `# Project Docs` and its `TODO(/onboard)`.
+- `getting-started.md`: update the `pip install app` line.
+- `reference.md`: after the package rename, update the `automodule` names. The docs build
+  fails while they point at `app`.
+
+## Claude settings
+
+In `.claude/settings.json`, add `skillOverrides` to switch off installed plugin skills that
+don't fit your stack, for example `{"go-review": "off"}`. Where two plugins cover one
+domain, keep the more specific; keep universal skills on. Update any agent's `skills:` frontmatter that names a
+skill you switched off.
+
+## Publishing
+
+Nothing publishes until you push a `v*` tag. Delete the workflows you won't use, with their
+stubs.
+
+| Workflow | Needs |
+|---|---|
+| `release.yml` | nothing; creates a GitHub Release with generated notes |
+| `publish-pypi.yml` | the package rename; a `pypi` environment (`gh api -X PUT repos/{owner}/{repo}/environments/pypi`) with [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) configured for it; optionally uncomment its tag-vs-version check |
+| `publish-docker.yml` | a real `Dockerfile` entrypoint; a `ghcr` environment (`gh api -X PUT repos/{owner}/{repo}/environments/ghcr`), with required reviewers to gate publishing |
+
+Docker images are tagged `X.Y.Z` and `X.Y`; `latest` moves only when the tag is the highest
+release.
+
+To publish the docs, pick one: GitHub Pages (Settings > Pages > Source = "GitHub Actions",
+then rename `.github/workflows/pages.yml.example` to `pages.yml`), or Read the Docs (rename
+`.readthedocs.yaml.example` to `.readthedocs.yaml` and import the repo there).
