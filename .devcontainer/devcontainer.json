@@ -2,7 +2,8 @@
   "build": { "dockerfile": "Dockerfile" },
   "mounts": [
     "source=claude-data,target=/home/vscode/.claude,type=volume",
-    "source=liza-${devcontainerId},target=/home/vscode/.liza,type=volume"
+    "source=liza-${devcontainerId},target=/home/vscode/.liza,type=volume",
+    "source=gh-config,target=/home/vscode/.config/gh,type=volume"
   ],
   "features": {
     "ghcr.io/devcontainers/features/python:1": {

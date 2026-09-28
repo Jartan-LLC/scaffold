@@ -26,5 +26,8 @@ if [ "${INSTALL_LIZA_TOOLS:-false}" = true ]; then
 else
     check "codebase-memory-mcp registered" claude mcp get codebase-memory-mcp
 fi
+check "gh config is a mount" mountpoint -q "$HOME/.config/gh"
+check "gh config owned by vscode" test "$(stat -c %U "$HOME/.config/gh")" = vscode
+check "gh config parent owned by vscode" test "$(stat -c %U "$HOME/.config")" = vscode
 check "git status clean" test -z "$(git status --porcelain)"
 exit $((failures > 0))
