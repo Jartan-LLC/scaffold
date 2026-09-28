@@ -10,7 +10,8 @@
       "version": "3.12"
     },
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "lts"
+      "version": "lts",
+      "pnpmVersion": "12"
     },
     "ghcr.io/devcontainers/features/go:1": {
       "version": "1.27.1"
