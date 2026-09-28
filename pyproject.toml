@@ -19,14 +19,14 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-# The toolchain CI runs. Delete this whole file if the project isn't Python.
+# The test and typecheck toolchain CI runs. ruff and codespell are configured in
+# this file but versioned by their hook revs in .pre-commit-config.yaml.
+# Delete this whole file if the project isn't Python.
 # Upper bounds stop at each tool's next breaking release, so Dependabot proposes
 # that bump as a PR rather than CI picking it up unannounced.
 dev = [
-    "ruff>=0.16.8,<0.17",  # linter + formatter; 0.x minors break
     "pytest>=9.1,<10",     # test runner
     "pyright==1.1.414",    # static type checker; every release is 1.1.x
-    "codespell>=2.4,<3",   # spell checker (code, comments, docs)
 ]
 # Docs site toolchain (Sphinx + MyST + furo). Install with `uv pip install -e '.[docs]'`.
 # Pinned deliberately: chose Sphinx over MkDocs because the MkDocs ecosystem is
