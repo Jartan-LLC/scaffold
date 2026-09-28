@@ -8,9 +8,9 @@ line. Delete this page (and its entry in `index.md`) once the checklist is done;
 
 - `CLAUDE.md`: replace the `# Project Name` heading and the `<!-- ONE LINE: … -->` comment
   under it; add version-specific overrides for your stack under Corrections; add skills and
-  conventions under Skills as they emerge.
-- `GUARDRAILS.md`: add project rules as they emerge, at the tier each must hold. If your
-  verify command is not `make check`, update the Tier 1 rule.
+  conventions under Skills as they emerge. If your verify command is not `make check`,
+  update the Verify section.
+- `GUARDRAILS.md`: add project rules as they emerge, at the tier each must hold.
 
 ## Devcontainer
 
@@ -31,8 +31,8 @@ Rename the `app` stub to your import name:
 2. Rename `src/app/`.
 3. Update the imports: `from app.log import …` in `src/app/__main__.py` and
    `tests/test_log.py`, `from app.__main__ import …` in `tests/test_smoke.py`.
-4. Update the `python -m app` references: `prog=` and the module docstring in `__main__.py`,
-   and the `Dockerfile` `CMD` hint.
+4. Update the `python -m app` references: `prog=` and the module docstring in `__main__.py`
+   (or replace that stub), and the `Dockerfile` `CMD` hint.
 5. Update the docs (Docs site, below).
 
 ## Not a Python project
@@ -49,9 +49,13 @@ reads fine on GitHub without Sphinx.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `typecheck`, `test`, `build`, `audit` and
    `docs` jobs and their `check` entries (`docs/scaffold.md`, CI). `lint` stays.
-5. Point the `Makefile`'s `lint`, `typecheck`, `test` and `build` targets at your stack's
-   commands, so `make check` stays the one verify gate.
-6. Rewrite `CONTRIBUTING.md`'s setup for your stack.
+5. Keep the `Makefile`: it is the verify entry point in every stack. Point its `lint`, `fix`,
+   `typecheck`, `test` and `docs` targets at your stack's commands, and replace the Python
+   lines in `check` (the `.[dev,docs]` install, `uv build`, `twine check`, `pip-audit`), so
+   `make check` stays the one verify gate.
+6. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
+   uv" line for your stack.
+7. Trim the Python parts of `docs/scaffold.md`.
 
 ## Security and conduct contacts
 
@@ -59,7 +63,9 @@ reads fine on GitHub without Sphinx.
   reporter's only channel when the advisory form is unavailable. Write it in angle
   brackets (`<security@example.org>`); a bare address fails markdownlint. Then delete the
   `unconfigured-contact` block: both markers, the paragraph between them and the blank
-  line after the closing marker. Set the supported versions and response targets.
+  line after the closing marker; keep the paragraph that follows, which stays true once a
+  contact is set. Set the supported versions (replacing the commented table hint) and the
+  response targets.
 - Enable private vulnerability reporting (Settings > Security). Until it is on, the advisory
   form `SECURITY.md` links to does not exist.
 - `.github/CODE_OF_CONDUCT.md`: replace `[INSERT CONTACT METHOD]`.
@@ -84,5 +90,16 @@ reads fine on GitHub without Sphinx.
 
 In `.claude/settings.json`, add `skillOverrides` to switch off installed plugin skills that
 don't fit your stack, for example `{"go-review": "off"}`. Where two plugins cover one
-domain, keep the more specific; keep universal skills on. Update any agent's `skills:` frontmatter that names a
-skill you switched off.
+domain, keep the more specific; keep universal skills on. Update any agent's `skills:`
+frontmatter that names a skill you switched off.
+
+## Dependabot labels
+
+Dependabot creates its own `dependencies` and ecosystem labels, but adds `major`, `minor` or
+`patch` to its PRs only if those labels exist. Create them:
+
+```bash
+gh label create major --color B60205 --description "Major version update" --force
+gh label create minor --color FBCA04 --description "Minor version update" --force
+gh label create patch --color 0E8A16 --description "Patch version update" --force
+```

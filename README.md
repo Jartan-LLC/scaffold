@@ -40,7 +40,7 @@ Details for each item: [docs/onboard.md](docs/onboard.md).
 - [ ] Add your stack's patterns to `.gitignore` and rules to `.editorconfig`
 - [ ] Set owners in `.github/CODEOWNERS`
 - [ ] Set the security and conduct contacts, and enable private vulnerability reporting ([details](docs/onboard.md#security-and-conduct-contacts))
-- [ ] Replace the `ORG/REPO` placeholders ([details](docs/onboard.md#orgrepo-placeholders))
+- [ ] Replace the `ORG/REPO` placeholders, except in `.lycheeignore`, where you delete the line ([details](docs/onboard.md#orgrepo-placeholders))
 - [ ] Rename the Python package ([details](docs/onboard.md#python-package)), or tear down Python ([details](docs/onboard.md#not-a-python-project))
 - [ ] Replace `tests/test_smoke.py` with real tests
 - [ ] Prune `.github/workflows/ci.yml` and `.github/dependabot.yml` to your stack ([details](docs/scaffold.md#ci))
@@ -51,6 +51,7 @@ Details for each item: [docs/onboard.md](docs/onboard.md).
 ### Recommended
 
 - [ ] Set up publishing: package, image, docs site ([details](docs/scaffold.md#publishing))
+- [ ] Create the `major`/`minor`/`patch` labels Dependabot adds to its PRs ([details](docs/onboard.md#dependabot-labels))
 - [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
 - [ ] Enable CodeQL default setup (Settings > Security > Code scanning)
 - [ ] Delete `.github/workflows/scorecard.yml` if you don't want an OpenSSF score (it skips on private repos)
