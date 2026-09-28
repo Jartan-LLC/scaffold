@@ -38,8 +38,8 @@ extras = $(if $(filter .,$(1)),dev$(comma)docs,dev)
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
 
-# pre-commit install refuses a checkout without git or with core.hooksPath set (Liza sets it
-# in task worktrees), so the hook step skips those.
+# pre-commit install refuses a checkout without git or with core.hooksPath set, which Liza
+# sets in task worktrees.
 install:  ## Install every tracked Python and Node manifest, then wire the pre-commit hook
 	$(UV_INSTALL) $(foreach p,$(PY_PROJECTS),-e '$(p)[$(call extras,$(p))]') $(foreach r,$(call manifests,requirements.txt),-r $(r))
 	$(if $(NODE_DIRS),@command -v pnpm >/dev/null || { echo "pnpm not found; it installs: $(NODE_DIRS)" >&2; exit 1; })
@@ -68,8 +68,6 @@ test-integration:  ## Run only integration-marked tests
 docs:  ## Build the docs site, warnings-as-errors
 	sphinx-build -W -b html docs docs/_build/html
 
-# The one gate: every CI check, run on what `make install` installed (CI additionally
-# sweeps the 3.12/3.13 matrix — see ci.yml).
 check:  ## Run every CI check (lint, typecheck, test, build, audit, docs)
 	$(MAKE) lint typecheck test
 	uv build
