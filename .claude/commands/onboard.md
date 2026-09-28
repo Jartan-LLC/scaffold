@@ -14,7 +14,7 @@ Check `gh auth status`. If not authenticated, tell the user to run `gh auth logi
 
 ### 2. Read `README.md`
 
-Read its post-fork checklist and `docs/scaffold.md`, which details each item. They are the source of truth for what needs to change.
+Read its post-fork checklist and `docs/onboard.md`, which details each item (`docs/scaffold.md` covers the parts that stay, such as Liza, CI and publishing). They are the source of truth for what needs to change.
 
 ### 3. Interview
 
@@ -26,14 +26,14 @@ Summarize what you understood and what changes you'll make. Wait for the user to
 
 ### 5. Apply
 
-Work through every Required checklist item that can be automated, following `docs/scaffold.md` for how and the interview for the values. Also:
+Work through every Required checklist item that can be automated, following `docs/onboard.md` and `docs/scaffold.md` for how and the interview for the values. Also:
 
 - Replace the template README with a project README
 - License: keep the chosen `LICENSE.<type>` as `LICENSE`; for a license not among the templates, create it and delete all of them
 - Point the `Makefile`'s `lint`/`typecheck`/`test`/`build` targets at the interview's commands, keeping `make check` as the gate (a Python project's shipped targets already match). If the verify command changes, update the Tier 1 rule in `GUARDRAILS.md`
 - `SECURITY.md`: always set the contact. Set supported versions and response targets only if the user gave them, and leave any other `TODO(/onboard)` unanswered: a timing commitment the user never chose is worse than an unset field with a stated default
-- Liza: this container already ran activation and the toolchain, so for each the user declines, flip its default and undo it in this clone (`docs/scaffold.md`, Liza)
-- Once every item is done, delete `docs/scaffold.md` and its entry in `docs/index.md`
+- Liza: activation and the toolchain each ran at container creation unless the host set its switch to `false`. For each the user declines, set its default to `false` in `.devcontainer/devcontainer.json` and run its undo in this clone, a no-op if it never ran (`docs/scaffold.md`, Liza)
+- Once every item is done, delete `docs/onboard.md` and its entry in `docs/index.md`
 
 For questions the user didn't have answers to (e.g., version corrections, verify commands), leave the placeholder comments in place — they are written so that Claude will fill them in naturally when the information is discovered during normal development. Only replace placeholders that have actual answers.
 
