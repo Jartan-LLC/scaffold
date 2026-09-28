@@ -19,7 +19,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 - [ ] Replace `tests/test_smoke.py` with real tests
 - [ ] Prune `.github/workflows/ci.yml` and `.github/dependabot.yml` to your stack ([details](scaffold.md#ci))
 - [ ] Update the docs site ([details](#docs-site))
-- [ ] Create `LICENSE` from one of the `LICENSE.*` templates (fill in `[year]` and `[fullname]`), and delete the rest
+- [ ] Set your license: keep `LICENSE` (MIT) with your own year and name, or replace it with one of the `LICENSE.*` templates (filling in `[year]` and `[fullname]`), then delete the `LICENSE.*` files
 - [ ] Switch off plugin skills that don't fit your stack ([details](#claude-settings))
 
 ### Recommended

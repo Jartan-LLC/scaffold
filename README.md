@@ -1,27 +1,36 @@
-# Project Template
+# scaffold
 
-Production-ready project scaffold with a containerized dev environment, GitHub automation, and Claude Code as a development workflow agent.
+[![CI](https://github.com/Jartan-LLC/scaffold/actions/workflows/ci.yml/badge.svg)](https://github.com/Jartan-LLC/scaffold/actions/workflows/ci.yml)
 
-**Python-first:** linting, typing, tests, packaging, Docker, and docs are wired up and active out of the box (Node/JS is a supported second). Using another stack? Everything Python is stubbed and clearly deletable — see [docs/onboard.md](docs/onboard.md#not-a-python-project).
+A production-grade Python repo, already wired: dev container, quality gate, hardened CI,
+releases and auto-updates, green on the first push.
 
-## Getting Started
+Python-first, with Node/JS supported second. For another stack, the Python parts delete
+cleanly ([how](docs/onboard.md#not-a-python-project)).
 
-Run `/onboard` in Claude Code to set up this template for your project. It will interview you, configure all the files, and tell you which manual steps remain. To set up by hand instead, follow the checklist in [docs/onboard.md](docs/onboard.md).
+## Quick start
 
-## What's Included
+1. [Use this template](https://github.com/new?template_name=scaffold&template_owner=Jartan-LLC),
+   then open your new repository in its dev container.
+2. Run `/onboard` in Claude Code. It interviews you, configures the project and lists the
+   manual steps left. To set up by hand instead, follow the
+   [setup checklist](docs/onboard.md).
+3. Run `make check`: the lint, type checks, tests, build, audit and docs CI runs.
 
-| Area | Contents |
-|------|----------|
-| `.devcontainer/` | Reproducible dev environment: Python, Node.js, Go, Docker, GitHub CLI, Claude Code and [Liza](.devcontainer/liza/README.md) |
-| `.claude/` | Claude Code plugins and the `/onboard` setup command |
-| `.github/` | CI, Dependabot auto-updates, release and publish workflows, security scanning, issue/PR templates |
-| `pyproject.toml`, `src/app/`, `tests/` | A minimal typed Python package with tests, so CI is green on first fork |
-| `Makefile`, `.pre-commit-config.yaml` | `make install`, `make check` and friends; the lint hooks CI also runs |
-| `docs/` | Sphinx docs site in Markdown |
-| `Dockerfile` | Minimal image stub for `publish-docker.yml` |
-| `CLAUDE.md`, `GUARDRAILS.md`, `AGENTS.md` | Agent instructions and the project rules, by tier |
-| `LICENSE.*`, `CHANGELOG.md`, `CONTRIBUTING.md` | License templates and project skeletons |
-| Editor and git config | `.editorconfig`, `.gitattributes`, `.gitignore`, `.prettierrc`, `.env.example` |
+## What you get
+
+| | On day one |
+|---|---|
+| [Dev container](.devcontainer/) | Python, Node/pnpm and the project tools preinstalled; CI rebuilds and checks it whenever it changes |
+| [Quality gate](Makefile) | `make check` runs lint, type checks, tests, build, dependency audit and docs: the same checks CI runs |
+| [Security-first](.github/workflows/) | Actions pinned to exact commits, a security linter for the workflows themselves, token-free PyPI publishing, and an OpenSSF Scorecard security rating |
+| [CI & releases](.github/workflows/ci.yml) | CI on every pull request; pushing a version tag publishes a GitHub Release, the PyPI package and multi-arch container images |
+| [Auto-updates](.github/dependabot.yml) | Dependabot updates after a 7-day cooldown, minor and patch ones merged automatically; weekly broken-link and vulnerability checks that open, update and close their own issue |
+| [AI-ready](CLAUDE.md) | Claude Code working under tiered project rules, and optional [Liza](.devcontainer/liza/README.md) multi-agent runs |
+
+Not for you if you want a minimal template: this one is deliberately complete.
 
 Every file, and how the parts work: [docs/scaffold.md](docs/scaffold.md). To pull in later
 template improvements, see [Syncing template updates](docs/scaffold.md#syncing-template-updates).
+
+Scaffold is [MIT-licensed](LICENSE); your project picks its own license during setup.
