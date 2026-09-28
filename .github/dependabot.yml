@@ -1,10 +1,10 @@
 version: 2
 updates:
-  # directory "/" does not reach composite actions: a fork that adds one under
-  # .github/actions/ lists it with `directories: ["/", "/.github/actions/*"]`, or its pins
-  # are never updated and nothing reports it.
   - package-ecosystem: "github-actions"
-    directory: "/"
+    # "/" does not reach composite actions; the glob covers any a fork adds.
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -118,9 +118,8 @@ updates:
     cooldown:
       default-days: 7
 
-  # Grouped by name, not update-types: with frozen SHA pins an update-types group falls back
-  # to one PR per hook (dependabot/dependabot-core#15266). Only default-days: this ecosystem
-  # does not support the semver-*-days cooldowns.
+  # Grouped by name, not update-types: with SHA-frozen revs an update-types group splits into
+  # one PR per hook (dependabot/dependabot-core#15266, open as of 2026-09-28).
   - package-ecosystem: "pre-commit"
     directory: "/"
     schedule:
