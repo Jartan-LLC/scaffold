@@ -1,4 +1,7 @@
 #!/bin/bash
+# An unset variable is a typo, so it stops the script. No set -e or pipefail: each
+# install step is best-effort and reports its own failure, and the rest still runs.
+set -u
 
 echo "Setting up development environment..."
 
