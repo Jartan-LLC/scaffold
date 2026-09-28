@@ -31,19 +31,19 @@ MANIFEST_EXCLUDES := $(foreach d,.worktrees .adversarial .liza .devcontainer nod
 manifests = $(if $(CHECKOUT_GIT_DIR),$(shell git ls-files -- ':(glob)**/$(1)' $(MANIFEST_EXCLUDES)),$(wildcard $(1)))
 PY_PROJECTS = $(patsubst %/pyproject.toml,./%,$(patsubst pyproject.toml,.,$(call manifests,pyproject.toml)))
 NODE_DIRS = $(patsubst %/,%,$(dir $(call manifests,package.json)))
-# The root project also brings its docs toolchain; nested projects have no docs extra.
+# Only the root project has a docs extra.
 comma := ,
 extras = $(if $(filter .,$(1)),dev$(comma)docs,dev)
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
 
+# pre-commit install refuses a checkout without git or with core.hooksPath set (Liza sets it
+# in task worktrees), so the hook step skips those.
 install:  ## Install every tracked Python and Node manifest, then wire the pre-commit hook
 	$(UV_INSTALL) $(foreach p,$(PY_PROJECTS),-e '$(p)[$(call extras,$(p))]') $(foreach r,$(call manifests,requirements.txt),-r $(r))
 	$(if $(NODE_DIRS),@command -v pnpm >/dev/null || { echo "pnpm not found; it installs: $(NODE_DIRS)" >&2; exit 1; })
 	$(if $(NODE_DIRS),$(foreach d,$(NODE_DIRS),CI=true pnpm --dir $(d) install &&) true)
-	# No hook outside a git checkout (an unpacked sdist), nor where core.hooksPath is set:
-	# pre-commit refuses to install there, and Liza sets it in task worktrees.
 	@if ! git rev-parse --git-dir >/dev/null 2>&1; then :; \
 	elif [ -n "$$(git config core.hooksPath)" ]; then echo "core.hooksPath is set; skipping pre-commit install"; \
 	else pre-commit install; fi
@@ -68,8 +68,8 @@ test-integration:  ## Run only integration-marked tests
 docs:  ## Build the docs site, warnings-as-errors
 	sphinx-build -W -b html docs docs/_build/html
 
-# The one gate: reproduces every CI check locally, in what `make install` installed
-# (CI additionally sweeps the 3.12/3.13 matrix — see ci.yml).
+# The one gate: every CI check, run on what `make install` installed (CI additionally
+# sweeps the 3.12/3.13 matrix — see ci.yml).
 check:  ## Run every CI check (lint, typecheck, test, build, audit, docs)
 	$(MAKE) lint typecheck test
 	uv build
