@@ -3,9 +3,10 @@ node_modules/
 __pycache__/
 *.py[cod]
 *.egg-info/
-.eggs/
-dist/
-build/
+# Leading / matches the root only, so same-named source dirs (src/app/data/) are tracked and packaged
+/.eggs/
+/dist/
+/build/
 
 # Environment
 .env
@@ -38,11 +39,11 @@ htmlcov/
 docs/_build/
 
 # Docker
-data/
+/data/
 
 # Logs
 *.log
-logs/
+/logs/
 
 # Claude workspace (plans, scratch files)
 .claude/workspace/*
