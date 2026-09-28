@@ -1,7 +1,7 @@
 # Task runner for the local dev loop. Run `make` or `make help` to list targets.
 .PHONY: help deps install lint fix typecheck test test-integration docs check all
 
-# Every target uses one Python environment, chosen here (CONTRIBUTING.md, Setup): this
+# Every target uses one Python environment, chosen here: this
 # checkout's .venv, else the active one, else, in the main checkout only, the system
 # Python under UV_SYSTEM_PYTHON. Each uv install names it: uv skips .venv under
 # UV_SYSTEM_PYTHON and, with both variables set, picks the system Python over VIRTUAL_ENV.

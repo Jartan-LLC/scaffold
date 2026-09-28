@@ -28,7 +28,7 @@ else
     echo "Warning: no pinned uv in ci/requirements.txt; Python installs below will fail" >&2
 fi
 
-# Into the system Python: containerEnv sets UV_SYSTEM_PYTHON (CONTRIBUTING.md, Setup).
+# Into the system Python: containerEnv sets UV_SYSTEM_PYTHON (Makefile, environment selection).
 echo "Installing project dependencies (make install)..."
 make_install_failed=false
 make install || make_install_failed=true
