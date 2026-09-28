@@ -29,7 +29,7 @@ Summarize what you understood and what changes you'll make. Wait for the user to
 Work through every Required checklist item that can be automated, following `docs/onboard.md` and `docs/scaffold.md` for how and the interview for the values. Also:
 
 - Replace the template README with a project README
-- License: keep the chosen `LICENSE.<type>` as `LICENSE` (`LICENSE.proprietary` is all rights reserved, for private or closed-source work); for a license not among the templates, create it and delete all of them
+- License: `LICENSE` is MIT with the template's copyright line. For MIT, set the user's year and name in it; otherwise replace it with the chosen `LICENSE.<type>` (`LICENSE.proprietary` is all rights reserved, for private or closed-source work), or with a license not among the templates. Delete the `LICENSE.*` templates either way
 - Point the `Makefile` at the interview's commands, keeping `make check` as the gate (a Python project's shipped targets already match; for another stack, `docs/onboard.md`, Not a Python project). If the verify command changes, update the Verify section of `CLAUDE.md`
 - `SECURITY.md`: always set the contact. Set supported versions and response targets only if the user gave them, and leave any other `TODO(/onboard)` unanswered: a timing commitment the user never chose is worse than an unset field with a stated default
 - Liza: activation and the toolchain each ran at container creation unless the host set its switch to `false`. For each the user declines, set its default to `false` in `.devcontainer/devcontainer.json` and run its undo in this clone, a no-op if it never ran (`docs/scaffold.md`, Liza)
