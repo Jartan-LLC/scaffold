@@ -85,8 +85,9 @@ CBM_BASE_URL="https://github.com/DeusData/codebase-memory-mcp/releases/download/
 # Skipped when INSTALL_LIZA_TOOLS is on: Liza's toolchain replaces it (liza/tools.sh).
 if [ "${INSTALL_LIZA_TOOLS:-false}" != true ] && ! command -v codebase-memory-mcp &>/dev/null; then
     echo "Installing codebase-memory-mcp ${CBM_RELEASE}..."
-    cbm_tmp=$(mktemp -d)
-    if fetch_verified \
+    if ! cbm_tmp=$(mktemp -d); then
+        echo "Warning: codebase-memory-mcp install skipped: no temporary directory" >&2
+    elif fetch_verified \
             "https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/${CBM_INSTALLER_COMMIT}/install.sh" \
             "$CBM_INSTALLER_SHA256" "$cbm_tmp/install.sh" \
         && fetch_verified \
@@ -103,7 +104,7 @@ if [ "${INSTALL_LIZA_TOOLS:-false}" != true ] && ! command -v codebase-memory-mc
     else
         echo "Warning: codebase-memory-mcp installer or checksums.txt did not match its pinned digest; install skipped" >&2
     fi
-    rm -rf "$cbm_tmp"
+    [ -z "$cbm_tmp" ] || rm -rf "$cbm_tmp"
 fi
 
 # Enable codebase-memory-mcp auto-indexing (indexes each project on first MCP

@@ -41,7 +41,7 @@ mkdir -p "$liza_home/libexec" "$liza_home/bin" "$path_dir"
 
 install_liza() {
     local tmp archive base
-    tmp=$(mktemp -d)
+    tmp=$(mktemp -d) || return 1
     archive="liza-${LIZA_RELEASE#v}-linux-${goarch}.tar.gz"
     base="https://github.com/liza-mas/liza/releases/download/${LIZA_RELEASE}"
     fetch_verified "$base/checksums.txt" "$LIZA_CHECKSUMS_SHA256" "$tmp/checksums.txt" \
@@ -56,7 +56,7 @@ install_liza() {
 
 install_ripgrep() {
     local tmp name="ripgrep-${RG_VERSION}-${arch}-unknown-linux-musl"
-    tmp=$(mktemp -d)
+    tmp=$(mktemp -d) || return 1
     fetch_verified "https://github.com/BurntSushi/ripgrep/releases/download/${RG_VERSION}/${name}.tar.gz" \
             "${RG_SHA256[$arch]}" "$tmp/rg.tar.gz" \
         && tar -xzf "$tmp/rg.tar.gz" -C "$tmp" "$name/rg" \
