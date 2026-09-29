@@ -1,24 +1,16 @@
 #!/bin/bash
 #
 # postAttachCommand — runs each time a client attaches to the container.
-# Refreshes Claude Code marketplaces AND installed plugins so the newest
-# versions are picked up on the next session. Best-effort: every step swallows
-# errors so a network hiccup never blocks attaching.
+# Refreshes this project's Claude Code plugins, and the marketplaces they come from, so
+# the newest versions load on the next session. Best-effort: every step swallows errors so
+# a network hiccup never blocks attaching.
 
-if command -v claude &>/dev/null; then
-    # Refresh marketplace metadata first so plugin updates resolve to the latest
-    # available versions.
-    claude plugins marketplace update 2>/dev/null || true
+command -v claude &>/dev/null && command -v node &>/dev/null || exit 0
+project=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 
-    # `claude plugins update` acts on one plugin at a time and has no bulk form,
-    # so enumerate installed plugins (id + scope) and update each within its own
-    # scope. node ships with the claude CLI, so use it to parse the JSON listing.
-    # Each update acts on a single record per (id, scope) — this project's if it
-    # has one, otherwise the first found — so ids listed for several projects
-    # resolve to the same record more than once. Harmless, and cheaper than
-    # de-duplicating.
-    if command -v node &>/dev/null; then
-        claude plugins list --json 2>/dev/null | node -e '
+# The claude-data volume holds every project's installs; update only user-scope plugins and
+# this project's. One "id scope" line per plugin.
+plugins=$(claude plugins list --json 2>/dev/null | PROJECT="$project" node -e '
 let input = "";
 process.stdin.on("data", (d) => (input += d));
 process.stdin.on("end", () => {
@@ -26,12 +18,17 @@ process.stdin.on("end", () => {
   try { plugins = JSON.parse(input); } catch (e) {}
   if (!Array.isArray(plugins)) plugins = [];
   for (const p of plugins) {
-    if (p && p.id) console.log(p.id, p.scope || "user");
+    if (p && p.id && (p.scope === "user" || p.projectPath === process.env.PROJECT)) {
+      console.log(p.id, p.scope);
+    }
   }
 });
-' | while read -r plugin_id scope; do
-            [ -n "$plugin_id" ] || continue
-            claude plugins update "$plugin_id" --scope "$scope" 2>/dev/null || true
-        done
-    fi
-fi
+')
+
+for marketplace in $(printf '%s\n' "$plugins" | sed -n 's/^[^@ ]*@\([^ ]*\) .*/\1/p' | sort -u); do
+    claude plugins marketplace update "$marketplace" 2>/dev/null || true
+done
+while read -r plugin_id scope; do
+    [ -n "$plugin_id" ] || continue
+    claude plugins update "$plugin_id" --scope "$scope" 2>/dev/null || true
+done <<<"$plugins"
