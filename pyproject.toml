@@ -26,7 +26,7 @@ dependencies = []
 # Upper bounds stop at each tool's next breaking release, so Dependabot proposes
 # that bump as a PR rather than CI picking it up unannounced.
 dev = [
-    "pytest>=9.1,<10",     # test runner
+    "pytest>=9.1.1,<10",     # test runner
     "pyright==1.1.414",    # static type checker; every release is 1.1.x
 ]
 # Docs site toolchain (Sphinx + MyST + furo). Install with `uv pip install -e '.[docs]'`.
