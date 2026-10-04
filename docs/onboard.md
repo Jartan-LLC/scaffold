@@ -53,16 +53,17 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
   extensions for your stack.
 - For each [enchantments](https://github.com/Jartan-LLC/enchantments) Feature you decline, follow
   its removal steps ([Using Features](https://github.com/Jartan-LLC/enchantments/blob/main/docs/using.md))
-  in this clone while it's still declared, then remove its entry and rebuild. Declining
-  `claude-code` also means removing `grimoire` and `codebase-memory-mcp`, and declining
-  `liza` also means removing `liza-toolchain`
-  ([Choosing Features](https://github.com/Jartan-LLC/enchantments/blob/main/docs/choosing.md)).
-  Keep `node` while `grimoire` is declared, or drop both. Declining `liza-toolchain` can
-  swap it for `codebase-memory-mcp`, to keep a code graph. A Feature in your VS Code
-  `dev.containers.defaultFeatures` comes back on rebuild, so declining it here applies
-  only to contributors who don't set it. Declare `liza` and `liza-toolchain` both in
-  `devcontainer.json` or both only in `defaultFeatures`
-  ([liza-toolchain](https://github.com/Jartan-LLC/enchantments/blob/main/src/liza-toolchain/README.md)).
+  in this clone while it's still declared. Then remove its entry from `devcontainer.json`
+  and its key from `devcontainer-lock.json`, and rebuild. Also:
+  - Declining `claude-code` means declining `grimoire` too (and `codebase-memory-mcp`, if
+    you added it), and declining `liza` means declining `liza-toolchain`
+    ([Choosing Features](https://github.com/Jartan-LLC/enchantments/blob/main/docs/choosing.md)).
+  - Keep `node` while `grimoire` is declared.
+  - Declining `liza-toolchain` can swap it for `codebase-memory-mcp`, to keep a code graph.
+  - A Feature in your VS Code `dev.containers.defaultFeatures` comes back on rebuild, so
+    declining it here applies only to contributors who don't set it. Declare `liza` and
+    `liza-toolchain` both in `devcontainer.json` or both only in `defaultFeatures`
+    ([liza-toolchain](https://github.com/Jartan-LLC/enchantments/blob/main/src/liza-toolchain/README.md)).
 - `post-start.sh`: add commands to run on each container start. The Docker socket fix and
   Codespaces environment overrides are already there.
 - Dependencies: add your stack's install (for example `go mod download`) to the `Makefile`'s
