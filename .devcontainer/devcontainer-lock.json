@@ -26,9 +26,9 @@
       "integrity": "sha256:fbcad6955caeecc5ad3f7886baf652e25cba5225a6c4c2287c536de2e5607511"
     },
     "ghcr.io/jartan-llc/enchantments/claude-code:1": {
-      "version": "1.0.0",
-      "resolved": "ghcr.io/jartan-llc/enchantments/claude-code@sha256:dbd4e6ea3ef0208007a10072682c2240dc679319bc56939be3fbfea397d32aaf",
-      "integrity": "sha256:dbd4e6ea3ef0208007a10072682c2240dc679319bc56939be3fbfea397d32aaf"
+      "version": "1.0.1",
+      "resolved": "ghcr.io/jartan-llc/enchantments/claude-code@sha256:b5d88fabfb244ee83b6d7f82c8c81b39e193acc1fd3d9db57fdb084c434b9640",
+      "integrity": "sha256:b5d88fabfb244ee83b6d7f82c8c81b39e193acc1fd3d9db57fdb084c434b9640"
     },
     "ghcr.io/jartan-llc/enchantments/gh-config:1": {
       "version": "1.0.0",
@@ -36,9 +36,9 @@
       "integrity": "sha256:f18c0d5edf90a28050729baf2d9bfb8e32a47fb38eeaf812728c622a5aada248"
     },
     "ghcr.io/jartan-llc/enchantments/grimoire:1": {
-      "version": "1.0.0",
-      "resolved": "ghcr.io/jartan-llc/enchantments/grimoire@sha256:d8bc5495acdb83663d12f63f8a50287474696e551dd68860d17c2eee2c965d42",
-      "integrity": "sha256:d8bc5495acdb83663d12f63f8a50287474696e551dd68860d17c2eee2c965d42"
+      "version": "1.0.1",
+      "resolved": "ghcr.io/jartan-llc/enchantments/grimoire@sha256:8425b5ced4c15a0e30075d61a1cd152e2d7c5491a8771a839da9e896afd4c2b0",
+      "integrity": "sha256:8425b5ced4c15a0e30075d61a1cd152e2d7c5491a8771a839da9e896afd4c2b0"
     },
     "ghcr.io/jartan-llc/enchantments/liza-toolchain:1": {
       "version": "1.1.1",
@@ -46,9 +46,9 @@
       "integrity": "sha256:bb484959db9e538314bd2564b2e246cadfa799dd43d40bc40076a1cab4cdb5df"
     },
     "ghcr.io/jartan-llc/enchantments/liza:1": {
-      "version": "1.0.1",
-      "resolved": "ghcr.io/jartan-llc/enchantments/liza@sha256:7047f1d689408b45c3113a0e0736a908263a7ada226ee7ecbb6f61177fe838f0",
-      "integrity": "sha256:7047f1d689408b45c3113a0e0736a908263a7ada226ee7ecbb6f61177fe838f0"
+      "version": "1.0.2",
+      "resolved": "ghcr.io/jartan-llc/enchantments/liza@sha256:1e409bffdb1faa5ca43091b6277ff0ab242bf760d4bd06f3b9e05a76714de511",
+      "integrity": "sha256:1e409bffdb1faa5ca43091b6277ff0ab242bf760d4bd06f3b9e05a76714de511"
     }
   }
 }
