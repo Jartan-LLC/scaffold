@@ -51,16 +51,18 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 
 - `devcontainer.json`: change the `desktop-lite` password; add or remove features and
   extensions for your stack.
-- For each [enchantments](https://github.com/Jartan-LLC/enchantments)
-  Feature you decline, follow its removal steps in this clone while it's still declared,
-  then remove its entry and rebuild. Remove the Features that need it along with
-  `claude-code` or `liza`
-  ([Choosing Features](https://github.com/Jartan-LLC/enchantments/blob/main/docs/choosing.md)),
-  and keep `node` while `grimoire` is declared. Declining `liza-toolchain` can swap it for
-  `codebase-memory-mcp`, to keep a code graph. A Feature in your VS Code
+- For each [enchantments](https://github.com/Jartan-LLC/enchantments) Feature you decline, follow
+  its removal steps ([Using Features](https://github.com/Jartan-LLC/enchantments/blob/main/docs/using.md))
+  in this clone while it's still declared, then remove its entry and rebuild. Declining
+  `claude-code` also means removing `grimoire` and `codebase-memory-mcp`, and declining
+  `liza` also means removing `liza-toolchain`
+  ([Choosing Features](https://github.com/Jartan-LLC/enchantments/blob/main/docs/choosing.md)).
+  Keep `node` while `grimoire` is declared, or drop both. Declining `liza-toolchain` can
+  swap it for `codebase-memory-mcp`, to keep a code graph. A Feature in your VS Code
   `dev.containers.defaultFeatures` comes back on rebuild, so declining it here applies
-  only to contributors who don't set it. Declare `liza` and `liza-toolchain` the same way
-  (liza-toolchain's page).
+  only to contributors who don't set it. Declare `liza` and `liza-toolchain` both in
+  `devcontainer.json` or both only in `defaultFeatures`
+  ([liza-toolchain](https://github.com/Jartan-LLC/enchantments/blob/main/src/liza-toolchain/README.md)).
 - `post-start.sh`: add commands to run on each container start. The Docker socket fix and
   Codespaces environment overrides are already there.
 - Dependencies: add your stack's install (for example `go mod download`) to the `Makefile`'s

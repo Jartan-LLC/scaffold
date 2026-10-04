@@ -1,7 +1,8 @@
 #!/bin/bash
 # Checks that the Features and post-create.sh set this container up; both only report
 # their failures. CI runs it in a fresh container. A Feature's checks run only when its
-# image marker exists, so removing its entry keeps this passing.
+# image marker exists, so removing its entry, with those of the Features that need it,
+# keeps this passing.
 
 set -uo pipefail
 failures=0
