@@ -7,7 +7,7 @@ setup.
 
 | Area | Contents |
 |------|----------|
-| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Go, Docker, GitHub CLI, desktop-lite; plus Claude Code CLI and codebase-memory-mcp (structural code graph, best-effort), both installed via `post-create.sh`, and Liza (`.devcontainer/liza/README.md`; pinned; activation and its agent toolchain are on by default, each with an opt-out switch). `post-create.sh` also runs `make install`, which installs the project's dependencies into the system Python, as CI does: `containerEnv` sets `UV_SYSTEM_PYTHON`, so the container has no project `.venv` |
+| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite, and the [enchantments](https://github.com/Jartan-LLC/enchantments) Features: Claude Code, the GitHub CLI login, grimoire's plugins, Liza and its agent toolchain. The grimoire Feature installs its plugins at local scope in each clone, skipping any that the repo's `.claude/settings.json` or the clone's `settings.local.json` sets to `false`; `claude plugins disable <id>@grimoire --scope local` sets it for one clone. To drop a Feature, follow the Removal section on its page, where it has one ([the Features list](https://github.com/Jartan-LLC/enchantments#features) links each page), then remove its entry and its `devcontainer-lock.json` key. `post-create.sh` runs `make install`, which installs the project's dependencies into the system Python, as CI does: `containerEnv` sets `UV_SYSTEM_PYTHON`, so the container has no project `.venv` |
 | `.claude/` | Claude Code configuration — enabled plugins (skills & agents from the grimoire marketplace) |
 | `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates |
 | `pyproject.toml`, `ci/requirements.txt`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
@@ -61,12 +61,45 @@ Open a PR either way, so CI runs before the changes land.
 
 ## Liza
 
-On by default. To opt out, set the `ACTIVATE_LIZA` and/or `INSTALL_LIZA_TOOLS` default in
-`devcontainer.json` to `false`. A container built before the change keeps what already ran;
-undo it with `bash .devcontainer/liza/deactivate.sh` (activation) or
-`bash .devcontainer/liza/deactivate.sh --tools` (toolchain; codebase-memory-mcp then installs
-on the next rebuild). To remove Liza entirely, follow
-"Removing Liza" in `.devcontainer/liza/README.md`.
+The `liza` Feature activates Liza in each clone when the container is created, and
+`liza-toolchain` adds its agent tools. To undo activation in a clone, run `liza-deactivate`;
+the next container create activates it again. To opt out of either Feature, follow the
+Removal steps on its page ([liza](https://github.com/Jartan-LLC/enchantments/blob/main/src/liza/README.md),
+[liza-toolchain](https://github.com/Jartan-LLC/enchantments/blob/main/src/liza-toolchain/README.md)).
+
+Each Claude session selects its mode at start; start a new session to switch.
+
+| Mode | For | Start it |
+|---|---|---|
+| Pairing | everyday work; you approve each step | open Claude in an activated clone |
+| Adversarial Pairing | one high-stakes change, reviewed by separate sessions | see below |
+| Multi-agent | a goal large enough to decompose and run unattended | see below |
+
+**Adversarial Pairing.** Open one Claude session per role and keep the pairing's
+blackboard and worktree in `.adversarial/`, because a multi-agent init deletes `.liza/` and `.worktrees/`:
+
+```text
+/adversarial-pairing doer .adversarial/<name>.md
+/adversarial-pairing reviewer-1 .adversarial/<name>.md
+```
+
+When the doer asks where to create its worktree, answer `.adversarial/worktrees/<name>`.
+In that worktree, the doer runs `uv venv` and `make install` before its first `make check`,
+so the checks run against the worktree's own code rather than the main checkout's install.
+
+**Multi-agent.** Commit a goal document first, then:
+
+```bash
+liza init "<goal>" --spec specs/<goal>.md --post-worktree-cmd "uv venv -q --allow-existing && make install"
+liza tui
+```
+
+`--post-worktree-cmd` gives each task worktree its own `.venv`, which every `make` target
+there uses, and runs `make install` in it. That install skips the git hook: Liza sets the
+worktree's `core.hooksPath`, and `pre-commit install` refuses to run with it set. Fill in
+`GUARDRAILS.md` before a first run. Liza's
+[Getting Started](https://github.com/liza-mas/liza/blob/main/GETTING_STARTED.md) covers
+the rest of the run: checkpoints, the operator session, logs.
 
 ## CI
 

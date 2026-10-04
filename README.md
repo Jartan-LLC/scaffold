@@ -21,12 +21,12 @@ cleanly ([how](docs/onboard.md#not-a-python-project)).
 
 | | On day one |
 |---|---|
-| [Dev container](.devcontainer/) | Python, Node/pnpm and the project tools preinstalled; CI rebuilds and checks it whenever it changes |
+| [Dev container](.devcontainer/) | Python, Node/pnpm and the project tools preinstalled; CI rebuilds and checks it whenever it changes, and weekly |
 | [Quality gate](Makefile) | `make check` runs lint, type checks, tests, build, dependency audit and docs: the same checks CI runs |
 | [Security-first](.github/workflows/) | Actions pinned to exact commits, a security linter for the workflows themselves, token-free PyPI publishing, and an OpenSSF Scorecard security rating |
 | [CI & releases](.github/workflows/ci.yml) | CI on every pull request; pushing a version tag publishes a GitHub Release, the PyPI package and multi-arch container images |
 | [Auto-updates](.github/dependabot.yml) | Dependabot updates after a 7-day cooldown, minor and patch ones merged automatically; weekly broken-link and vulnerability checks that open, update and close their own issue |
-| [AI-ready](CLAUDE.md) | Claude Code working under tiered project rules, and optional [Liza](.devcontainer/liza/README.md) multi-agent runs |
+| [AI-ready](CLAUDE.md) | Claude Code working under tiered project rules, and optional [Liza](docs/scaffold.md#liza) multi-agent runs |
 
 Not for you if you want a minimal template: this one is deliberately complete.
 
