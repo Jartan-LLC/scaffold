@@ -53,7 +53,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
   extensions for your stack.
 - For each [enchantments](https://github.com/Jartan-LLC/enchantments) Feature you decline, follow
   the Removal section on its page, where it has one, in this clone while it's still
-  declared ([Choosing Features](https://github.com/Jartan-LLC/enchantments/blob/main/docs/choosing.md)
+  declared ([the Features list](https://github.com/Jartan-LLC/enchantments#features)
   links each page). Then remove its entry from `devcontainer.json`
   and its key from `devcontainer-lock.json`, and rebuild. Also:
   - Declining `claude-code` means declining `grimoire` too (and `codebase-memory-mcp`, if
