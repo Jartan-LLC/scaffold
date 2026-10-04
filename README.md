@@ -21,7 +21,7 @@ cleanly ([how](docs/onboard.md#not-a-python-project)).
 
 | | On day one |
 |---|---|
-| [Dev container](.devcontainer/) | Python, Node/pnpm and the project tools preinstalled; CI rebuilds and checks it whenever it changes |
+| [Dev container](.devcontainer/) | Python, Node/pnpm and the project tools preinstalled; CI rebuilds and checks it whenever it changes, and weekly |
 | [Quality gate](Makefile) | `make check` runs lint, type checks, tests, build, dependency audit and docs: the same checks CI runs |
 | [Security-first](.github/workflows/) | Actions pinned to exact commits, a security linter for the workflows themselves, token-free PyPI publishing, and an OpenSSF Scorecard security rating |
 | [CI & releases](.github/workflows/ci.yml) | CI on every pull request; pushing a version tag publishes a GitHub Release, the PyPI package and multi-arch container images |
