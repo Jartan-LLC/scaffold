@@ -10,7 +10,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 
 - [ ] Fill in `CLAUDE.md` and `GUARDRAILS.md` ([details](#project-instructions))
 - [ ] Adapt the devcontainer and the `Makefile`'s `install` target to your stack ([details](#devcontainer))
-- [ ] Keep, turn off or remove Liza ([details](scaffold.md#liza))
+- [ ] Keep or decline each enchantments Feature ([details](#devcontainer))
 - [ ] Add your stack's patterns to `.gitignore` and rules to `.editorconfig`
 - [ ] Set owners in `.github/CODEOWNERS`
 - [ ] Set the security and conduct contacts, and enable private vulnerability reporting ([details](#security-and-conduct-contacts))
@@ -51,6 +51,16 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 
 - `devcontainer.json`: change the `desktop-lite` password; add or remove features and
   extensions for your stack.
+- For each [enchantments](https://github.com/Jartan-LLC/enchantments)
+  Feature you decline, follow its removal steps in this clone while it's still declared,
+  then remove its entry and rebuild. Remove the Features that need it along with
+  `claude-code` or `liza`
+  ([Choosing Features](https://github.com/Jartan-LLC/enchantments/blob/main/docs/choosing.md)),
+  and keep `node` while `grimoire` is declared. Declining `liza-toolchain` can swap it for
+  `codebase-memory-mcp`, to keep a code graph. A Feature in your VS Code
+  `dev.containers.defaultFeatures` comes back on rebuild, so declining it here applies
+  only to contributors who don't set it. Declare `liza` and `liza-toolchain` the same way
+  (liza-toolchain's page).
 - `post-start.sh`: add commands to run on each container start. The Docker socket fix and
   Codespaces environment overrides are already there.
 - Dependencies: add your stack's install (for example `go mod download`) to the `Makefile`'s

@@ -26,8 +26,7 @@ NO_ENV := No Python environment for this checkout: create one with `uv venv` or 
 UV_INSTALL = uv pip install $(or $(UV_TARGET),$(error $(NO_ENV)))
 
 # Manifests: git-tracked only, so task worktrees and scratch copies never leak in.
-# .devcontainer's are Liza's tools, which liza/tools.sh installs, only when enabled.
-MANIFEST_EXCLUDES := $(foreach d,.worktrees .adversarial .liza .devcontainer node_modules .venv venv .tox,':(exclude,glob)**/$(d)/**')
+MANIFEST_EXCLUDES := $(foreach d,.worktrees .adversarial .liza node_modules .venv venv .tox,':(exclude,glob)**/$(d)/**')
 manifests = $(if $(CHECKOUT_GIT_DIR),$(shell git ls-files -- ':(glob)**/$(1)' $(MANIFEST_EXCLUDES)),$(wildcard $(1)))
 PY_PROJECTS = $(patsubst %/pyproject.toml,./%,$(patsubst pyproject.toml,.,$(call manifests,pyproject.toml)))
 NODE_DIRS = $(patsubst %/,%,$(dir $(call manifests,package.json)))

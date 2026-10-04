@@ -18,7 +18,7 @@ Its checklist is the source of truth for what needs to change, and its sections 
 
 ### 3. Interview
 
-Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, author/full name (for `LICENSE` + `docs/conf.py`), the Python package/import name if Python (for the `src/app` rename), contacts for conduct and security reports (one address, or two if they differ), noting that both are published publicly, so they should give addresses they are willing to publish, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), any version corrections for training data, and whether to keep Liza (activated with its agent toolchain by default; they can turn off either, or remove it — see `.devcontainer/liza/README.md`). List the installed plugin skills/agents (from `enabledPlugins` in `.claude/settings.json`) so the user can choose which to disable via `skillOverrides`.
+Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, author/full name (for `LICENSE` + `docs/conf.py`), the Python package/import name if Python (for the `src/app` rename), contacts for conduct and security reports (one address, or two if they differ), noting that both are published publicly, so they should give addresses they are willing to publish, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), any version corrections for training data, and which of the enchantments Features in `.devcontainer/devcontainer.json` to keep (`docs/onboard.md`, Devcontainer). List the installed plugin skills/agents (from `enabledPlugins` in `.claude/settings.json`) so the user can choose which to disable via `skillOverrides`.
 
 ### 4. Confirm
 
@@ -32,7 +32,7 @@ Work through every Required checklist item that can be automated, following `doc
 - License: `LICENSE` is MIT with the template's copyright line. For MIT, set the user's year and name in it; otherwise replace it with the chosen `LICENSE.<type>` (`LICENSE.proprietary` is all rights reserved, for private or closed-source work), or with a license not among the templates. Delete the `LICENSE.*` templates either way
 - Point the `Makefile` at the interview's commands, keeping `make check` as the gate (a Python project's shipped targets already match; for another stack, `docs/onboard.md`, Not a Python project). If the verify command changes, update the Verify section of `CLAUDE.md`
 - `SECURITY.md`: always set the contact. Set supported versions and response targets only if the user gave them, and leave any other `TODO(/onboard)` unanswered: a timing commitment the user never chose is worse than an unset field with a stated default
-- Liza: activation and the toolchain each ran at container creation unless the host set its switch to `false`. For each the user declines, set its default to `false` in `.devcontainer/devcontainer.json` and run its undo in this clone, a no-op if it never ran (`docs/scaffold.md`, Liza)
+- Features: for each enchantments Feature the user declines, follow `docs/onboard.md`, Devcontainer: run its removal steps in this clone while it's still declared, remove its entry, then tell the user to rebuild
 - Create the Dependabot `major`/`minor`/`patch` labels (`docs/onboard.md`, Dependabot labels)
 - Once every item is done, delete `docs/onboard.md` and, unless the non-Python teardown removed `docs/index.md`, its entry there
 

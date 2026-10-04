@@ -110,6 +110,11 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
+    # A major changes the ":1" key, which a VS Code defaultFeatures entry for the same
+    # Feature must share; move both by hand.
+    ignore:
+      - dependency-name: "ghcr.io/jartan-llc/enchantments/*"
+        update-types: ["version-update:semver-major"]
     groups:
       minor-and-patch:
         update-types:
