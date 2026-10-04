@@ -3,9 +3,9 @@ name: CI
 on:
   pull_request:
     branches: [main]
-  # Dev extras, hook envs and what the dev container's Features fetch resolve at run
-  # time, so `main` can go red with no commit touching it; these catch that before the
-  # next PR does.
+  # Dev extras, hook envs and the dev container Features' create-time downloads resolve
+  # at run time, so `main` can go red with no commit touching it; these catch that
+  # before the next PR does.
   push:
     branches: [main]
   schedule:
@@ -251,7 +251,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 2
       # A PR's merge commit has its base as first parent. With no base (a scheduled or
-      # manual run, a failed fetch) the jobs run, rather than risk skipping a change.
+      # manual run, a failed fetch) the dev container job runs, rather than risk skipping a change.
       - id: diff
         env:
           EVENT: ${{ github.event_name }}
