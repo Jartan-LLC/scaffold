@@ -52,12 +52,12 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 - `devcontainer.json`: change the `desktop-lite` password; add or remove features and
   extensions for your stack.
 - For each [enchantments](https://github.com/Jartan-LLC/enchantments) Feature you decline, follow
-  its removal steps ([Using Features](https://github.com/Jartan-LLC/enchantments/blob/main/docs/using.md))
-  in this clone while it's still declared. Then remove its entry from `devcontainer.json`
+  the Removal section on its page, where it has one, in this clone while it's still
+  declared ([Choosing Features](https://github.com/Jartan-LLC/enchantments/blob/main/docs/choosing.md)
+  links each page). Then remove its entry from `devcontainer.json`
   and its key from `devcontainer-lock.json`, and rebuild. Also:
   - Declining `claude-code` means declining `grimoire` too (and `codebase-memory-mcp`, if
-    you added it), and declining `liza` means declining `liza-toolchain`
-    ([Choosing Features](https://github.com/Jartan-LLC/enchantments/blob/main/docs/choosing.md)).
+    you added it), and declining `liza` means declining `liza-toolchain`.
   - Keep `node` while `grimoire` is declared.
   - Declining `liza-toolchain` can swap it for `codebase-memory-mcp`, to keep a code graph.
   - A Feature in your VS Code `dev.containers.defaultFeatures` comes back on rebuild, so

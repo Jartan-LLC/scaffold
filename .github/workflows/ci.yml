@@ -263,7 +263,7 @@ jobs:
           # Everything the dev container build reads, make install's manifests included.
           if [ -z "${base:-}" ] \
               || grep -qE -e '^\.devcontainer/' -e '^\.github/workflows/ci\.yml$' -e '^Makefile$' -e '^\.claude/settings\.json$' \
-                -e '(^|/)(pyproject\.toml|requirements\.txt|package\.json|pnpm-lock\.yaml)$' <<<"$changed"; then
+                -e '(^|/)(pyproject\.toml|requirements\.txt|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|\.npmrc)$' <<<"$changed"; then
             echo devcontainer=true >>"$GITHUB_OUTPUT"
           fi
 
