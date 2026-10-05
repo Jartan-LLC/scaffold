@@ -1,7 +1,7 @@
 # scaffold
 
 [![CI](https://github.com/Jartan-LLC/scaffold/actions/workflows/ci.yml/badge.svg)](https://github.com/Jartan-LLC/scaffold/actions/workflows/ci.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Jartan-LLC/scaffold/badge)](https://scorecard.dev/viewer/?uri=github.com/Jartan-LLC/scaffold)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Jartan-LLC/scaffold/badge)](https://scorecard.dev/viewer/?uri=github.com/Jartan-LLC/scaffold)
 
 A production-grade Python repo, already wired: dev container, quality gate, hardened CI,
 releases and auto-updates, green on the first push.
