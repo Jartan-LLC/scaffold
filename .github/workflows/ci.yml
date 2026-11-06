@@ -248,7 +248,8 @@ jobs:
         with:
           persist-credentials: false
           # A push diffs against the previous tip, which a credential-less fetch can't
-          # reach in a private repo, so push runs check out the whole history.
+          # reach in a private repo, so push runs check out the whole history. '0' is
+          # quoted because a bare 0 is falsy and would give push runs depth 2.
           fetch-depth: ${{ github.event_name == 'push' && '0' || '2' }}
       # A PR's merge commit has its base as first parent. With no base (a scheduled or
       # manual run, a new branch, a force push) the dev container job runs, rather than
