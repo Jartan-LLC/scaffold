@@ -22,7 +22,8 @@ make install || make_install_failed=true
 
 # The ruff extension formats on save with the ruff in the selected Python, else its own
 # bundled one. Pinned from the ruff hook's rev, so the editor runs make lint's ruff.
-# The patterns read only the ruff entry, so no other hook's rev is taken for ruff's.
+# The patterns stop at the next repo: key and skip '- rev:' lines, so a ruff entry with
+# rev: above repo: finds no version instead of taking the next hook's.
 ruff_hook='astral-sh/ruff-pre-commit'
 ruff_rev=$(sed -n "\|$ruff_hook|,/^[[:space:]-]*repo:/{/^[[:space:]]*rev:/{p;q}}" .pre-commit-config.yaml 2>/dev/null)
 ruff_version=$(sed -n 's/.*# frozen: v\([^[:space:]]*\).*/\1/p' <<<"$ruff_rev")
