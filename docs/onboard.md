@@ -49,8 +49,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 
 ## Devcontainer
 
-- `devcontainer.json`: change the `desktop-lite` password; add or remove Features and
-  extensions for your stack.
+- `devcontainer.json`: add or remove Features and extensions for your stack.
 - For each [enchantments](https://github.com/Jartan-LLC/enchantments) Feature you decline, follow
   the Removal section on its page, if it has one
   ([the Features list](https://github.com/Jartan-LLC/enchantments#features) links each page);

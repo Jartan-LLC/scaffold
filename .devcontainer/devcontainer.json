@@ -12,10 +12,6 @@
       "moby": false
     },
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/desktop-lite:1": {
-      "password": "changeme",
-      "webPort": "6080"
-    },
     "ghcr.io/jartan-llc/enchantments/claude-code:1": {},
     "ghcr.io/jartan-llc/enchantments/grimoire:1": {},
     "ghcr.io/jartan-llc/enchantments/liza:1": {},
@@ -26,12 +22,6 @@
     "HOST_PROJECT_PATH": "${localWorkspaceFolder}",
     "CONTAINER_WORKSPACE_FOLDER": "${containerWorkspaceFolder}",
     "UV_SYSTEM_PYTHON": "1"
-  },
-  "forwardPorts": [6080],
-  "portsAttributes": {
-    "6080": {
-      "label": "Desktop"
-    }
   },
   "customizations": {
     "vscode": {
