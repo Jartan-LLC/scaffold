@@ -20,7 +20,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 - [ ] Prune `.github/workflows/ci.yml` and `.github/dependabot.yml` to your stack ([details](scaffold.md#ci))
 - [ ] Update the docs site ([details](#docs-site))
 - [ ] Set your license: keep `LICENSE` (MIT) with your own year and name, or replace it with one of the `LICENSE.*` templates (filling in `[year]` and `[fullname]`), then delete the `LICENSE.*` files
-- [ ] Switch off plugin skills that don't fit your stack ([details](#claude-settings))
+- [ ] Decline the grimoire plugins that don't fit your stack ([details](#claude-settings))
 
 ### Recommended
 
@@ -136,10 +136,28 @@ which reads fine on GitHub without Sphinx, and this page, which Cleanup deletes.
 
 ## Claude settings
 
-In `.claude/settings.json`, add `skillOverrides` to switch off installed plugin skills that
-don't fit your stack, for example `{"go-review": "off"}`. Where two plugins cover one
-domain, keep the more specific; keep universal skills on. Update any agent's `skills:`
-frontmatter that names a skill you switched off.
+A plugin's skills go on or off with the plugin: settings can't switch off one of them
+(`skillOverrides` doesn't apply to plugin skills). `claude plugins list` shows the plugins this
+clone has. To decline one, for example `pythonica` in a project that isn't Python:
+
+1. Set it to `false` under `enabledPlugins` in `.claude/settings.json`, creating the file if
+   it doesn't exist, and commit it. The grimoire Feature then skips the plugin in new clones.
+
+   ```json
+   {
+     "enabledPlugins": {
+       "pythonica@grimoire": false
+     }
+   }
+   ```
+
+2. In each clone that already has it, run
+   `claude plugins disable pythonica@grimoire --scope local`, then `/reload-plugins` in a
+   running session. The Feature enables its plugins in each clone's
+   `.claude/settings.local.json`, which overrides `.claude/settings.json`.
+
+Declining `gitwise` means declining `praxis` too, which requires it. Update any agent's
+`skills:` frontmatter that names a skill from a plugin you declined.
 
 ## Dependabot labels
 

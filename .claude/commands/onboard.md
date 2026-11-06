@@ -18,7 +18,7 @@ Its checklist is the source of truth for what needs to change, and its sections 
 
 ### 3. Interview
 
-Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, author/full name (for `LICENSE` + `docs/conf.py`), the Python package/import name if Python (for the `src/app` rename), contacts for conduct and security reports (one address, or two if they differ), noting that both are published publicly, so they should give addresses they are willing to publish, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), any version corrections for training data, and which of the enchantments Features in `.devcontainer/devcontainer.json` to keep (`docs/onboard.md`, Devcontainer). List the installed plugin skills/agents (from `enabledPlugins` in `.claude/settings.json`) so the user can choose which to disable via `skillOverrides`.
+Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, author/full name (for `LICENSE` + `docs/conf.py`), the Python package/import name if Python (for the `src/app` rename), contacts for conduct and security reports (one address, or two if they differ), noting that both are published publicly, so they should give addresses they are willing to publish, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), any version corrections for training data, and which of the enchantments Features in `.devcontainer/devcontainer.json` to keep (`docs/onboard.md`, Devcontainer). List the grimoire plugins this clone has (`claude plugins list`) with what each covers, so the user can choose which to decline (`docs/onboard.md`, Claude settings).
 
 ### 4. Confirm
 
@@ -33,6 +33,7 @@ Work through every Required checklist item that can be automated, following `doc
 - Point the `Makefile` at the interview's commands, keeping `make check` as the gate (a Python project's shipped targets already match; for another stack, `docs/onboard.md`, Not a Python project). If the verify command changes, update the Verify section of `CLAUDE.md`
 - `SECURITY.md`: always set the contact. Set supported versions and response targets only if the user gave them, and leave any other `TODO(/onboard)` unanswered: a timing commitment the user never chose is worse than an unset field with a stated default
 - Features: for each enchantments Feature the user declines, follow `docs/onboard.md`, Devcontainer: run the in-clone steps of its Removal section while it's still declared, remove its entry and its lockfile key, then give the user the rest of its Removal steps in their order (removing the container, then a volume), ending with the rebuild
+- Plugins: for each grimoire plugin the user declines, follow `docs/onboard.md`, Claude settings: set it to `false` in `.claude/settings.json`, creating the file if it doesn't exist, and disable it in this clone. Tell the user to run `/reload-plugins`, and that each teammate's existing clone needs the same disable command
 - Create the Dependabot `major`/`minor`/`patch` labels (`docs/onboard.md`, Dependabot labels)
 - Once every item is done, delete `docs/onboard.md` and, unless the non-Python teardown removed `docs/index.md`, its entry there
 
