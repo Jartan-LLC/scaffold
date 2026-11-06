@@ -20,6 +20,17 @@ echo "Installing project dependencies (make install)..."
 make_install_failed=false
 make install || make_install_failed=true
 
+# The ruff extension formats on save with the ruff in the selected Python, else its own
+# bundled one. Pinned from the ruff hook's rev, so the editor runs make lint's ruff.
+ruff_rev=$(sed -n '/astral-sh\/ruff-pre-commit/,/rev:/{/rev:/p}' .pre-commit-config.yaml 2>/dev/null)
+ruff_version=$(sed -n 's/.*# frozen: v\([^[:space:]]*\).*/\1/p' <<<"$ruff_rev")
+if [ -n "$ruff_version" ]; then
+    echo "Installing ruff $ruff_version..."
+    uv pip install "ruff==$ruff_version" || echo "Warning: ruff install failed (ruff==$ruff_version)" >&2
+elif [ -n "$ruff_rev" ]; then
+    echo "Warning: the ruff hook's rev has no '# frozen: vX.Y.Z' comment; format on save uses the ruff extension's bundled ruff" >&2
+fi
+
 # Reported here, at the end, so it survives the dependency-install output above
 # rather than scrolling away. Not fatal: a non-zero postCreateCommand makes the
 # spec skip postStart and postAttach, losing the Docker socket fix and the
