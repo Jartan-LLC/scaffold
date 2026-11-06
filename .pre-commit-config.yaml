@@ -33,7 +33,7 @@ repos:
       # caught by external-link-check.yml, not this blocking gate.
       - id: lychee-docker # docker: no Rust toolchain needed locally
         # The hook's manifest hardcodes its image tag, which can lag the rev, so set it
-        # here; the lychee-image-tag hook below fails when it differs from the rev.
+        # here; the lychee-image-tag hook below fails unless it matches the rev.
         entry: lycheeverse/lychee:0.24.2
         args: [--offline, --no-progress] # args replace the default, so restate --no-progress
         types: [markdown]
@@ -62,6 +62,6 @@ repos:
       - id: lychee-image-tag
         name: lychee-docker image tag matches the lychee rev
         language: pygrep
-        entry: 'frozen: lychee-v(\S+)$.*?^ *entry: lycheeverse/lychee:(?!\1$)'
-        args: [--multiline]
+        entry: 'frozen: lychee-v(\S+)$.*?^ *entry: lycheeverse/lychee:\1$'
+        args: [--multiline, --negate] # also fails if the entry line is gone
         files: ^\.pre-commit-config\.yaml$
