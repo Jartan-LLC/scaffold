@@ -50,7 +50,7 @@ docs/_build/
 .claude/workspace/*
 !.claude/workspace/.gitkeep
 
-# Claude git worktrees (one checkout per branch)
+# Claude git worktrees
 .claude/worktrees/
 
 # Claude local settings (user-specific)
