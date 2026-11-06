@@ -14,7 +14,7 @@ If that line still shows a `TODO` placeholder, this project has no private chann
 
 <!-- END unconfigured-contact -->
 
-Do not post the details publicly — issue, discussion, or pull request — and do not send them to addresses from this repository's commit history: in a fork those belong to the template's authors, not this project's maintainers, and GitHub `noreply` addresses accept no mail.
+Do not post the details publicly — issue, discussion, or pull request — and do not send them to an address not named above, such as one from this repository's commit history: in a fork those can belong to the template's authors rather than this project's maintainers, and GitHub `noreply` addresses accept no mail.
 
 Include:
 
