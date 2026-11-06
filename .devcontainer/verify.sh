@@ -1,7 +1,7 @@
 #!/bin/bash
-# Checks that this repo's dev container setup worked: pnpm from devcontainer.json and what
-# post-create.sh installs, which only reports its failures. CI runs it in a fresh
-# container. The enchantments Features check their own setup.
+# Checks pnpm and what post-create.sh installs in the dev container. post-create.sh only
+# reports its failures, so these checks are what fails on them. Run it in a fresh
+# container: the last check expects a clean git status.
 
 set -uo pipefail
 failures=0
