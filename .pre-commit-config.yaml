@@ -32,6 +32,9 @@ repos:
       # Offline: relative links only. External-link rot is non-deterministic, so it's
       # caught by external-link-check.yml, not this blocking gate.
       - id: lychee-docker # docker: no Rust toolchain needed locally
+        # The hook's manifest hardcodes its image tag, which can lag the rev, so set it
+        # here; the lychee-image-tag hook below fails when it differs from the rev.
+        entry: lycheeverse/lychee:0.24.2
         args: [--offline, --no-progress] # args replace the default, so restate --no-progress
         types: [markdown]
   - repo: https://github.com/rhysd/actionlint
@@ -53,3 +56,12 @@ repos:
       - id: check-added-large-files
       - id: check-merge-conflict
         args: [--assume-in-merge] # else it checks nothing outside a live merge, as in CI
+  - repo: local
+    hooks:
+      # Dependabot bumps the lychee rev but not the lychee-docker entry.
+      - id: lychee-image-tag
+        name: lychee-docker image tag matches the lychee rev
+        language: pygrep
+        entry: 'frozen: lychee-v(\S+)$.*?^ *entry: lycheeverse/lychee:(?!\1$)'
+        args: [--multiline]
+        files: ^\.pre-commit-config\.yaml$
