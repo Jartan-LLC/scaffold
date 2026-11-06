@@ -4,7 +4,7 @@
 
 **Do not open a public issue for security vulnerabilities.**
 
-Please report security issues privately using [GitHub's security advisory feature](../../security/advisories/new).
+Please report security issues privately using [GitHub's security advisory feature](https://github.com/ORG/REPO/security/advisories/new): on this repository's **Security** tab, choose **Report a vulnerability**.
 
 If that link does not open a form, write to the maintainers privately instead — TODO(/onboard): private security contact.
 
