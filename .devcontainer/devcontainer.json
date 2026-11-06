@@ -13,7 +13,6 @@
     },
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/jartan-llc/enchantments/claude-code:1": {},
-    "ghcr.io/jartan-llc/enchantments/grimoire:1": {},
     "ghcr.io/jartan-llc/enchantments/liza:1": {},
     "ghcr.io/jartan-llc/enchantments/liza-toolchain:1": {},
     "ghcr.io/jartan-llc/enchantments/gh-config:1": {}

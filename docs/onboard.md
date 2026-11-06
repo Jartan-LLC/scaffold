@@ -55,9 +55,8 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
   ([the Features list](https://github.com/Jartan-LLC/enchantments#features) links each page);
   otherwise remove its entry from `devcontainer.json`. Either way, also remove its key
   from `devcontainer-lock.json`, then rebuild. Also:
-  - Declining `claude-code` means declining `grimoire` too (and `codebase-memory-mcp`, if
-    you added it), and declining `liza` means declining `liza-toolchain`.
-  - Keep the `node` Feature while `grimoire` is declared.
+  - Declining `claude-code` means declining `codebase-memory-mcp` too, if you added it, and
+    declining `liza` means declining `liza-toolchain`.
   - To keep a code graph without `liza-toolchain`, declare `codebase-memory-mcp` in its place.
   - A Feature in your VS Code `dev.containers.defaultFeatures` comes back on rebuild, so
     declining it here applies only to contributors who don't set it. Declare `liza` and
