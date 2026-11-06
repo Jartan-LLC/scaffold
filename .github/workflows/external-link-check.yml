@@ -41,7 +41,8 @@ jobs:
           # dot-directories, so .github/ and .claude/ — the security policy among
           # them — would go unchecked. Link-scoped exemptions live in .lycheeignore,
           # which this action reads; there are no path exclusions.
-          args: "--no-progress --hidden './**/*.md'"
+          # --exclude-loopback: a runner can't reach the project's local dev servers.
+          args: "--no-progress --exclude-loopback --hidden './**/*.md'"
           fail: false # the classify step decides; a lychee error still goes red
           failIfEmpty: false # a 0-link tree shouldn't red the run
           output: ./lychee/out.md # pin the report path the create-issue step reads
