@@ -6,7 +6,7 @@
 
 Please report security issues privately using [GitHub's security advisory feature](https://github.com/ORG/REPO/security/advisories/new): on this repository's **Security** tab, choose **Report a vulnerability**.
 
-If that link does not open a form, write to the maintainers privately instead — TODO(/onboard): private security contact.
+If neither opens a form, write to the maintainers privately instead — TODO(/onboard): private security contact.
 
 <!-- BEGIN unconfigured-contact: delete this block once the contact above is set -->
 
