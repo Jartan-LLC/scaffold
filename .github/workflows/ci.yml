@@ -262,9 +262,11 @@ jobs:
             pull_request) base=HEAD^1 ;;
             push) git cat-file -e "$BEFORE^{commit}" 2>/dev/null && base=$BEFORE ;;
           esac
-          changed=$([ -z "${base:-}" ] || git diff --name-only "$base" HEAD)
-          # Everything the dev container build and verify.sh read, make install's manifests
-          # included.
+          # --no-renames lists a renamed file's old path too, so moving a matched file away
+          # still counts.
+          changed=$([ -z "${base:-}" ] || git diff --no-renames --name-only "$base" HEAD)
+          # Everything the dev container build reads, make install's manifests included, and
+          # the .gitignore that verify.sh's clean-status check depends on.
           if [ -z "${base:-}" ] \
               || grep -qE -e '^\.devcontainer/' -e '^\.github/workflows/ci\.yml$' -e '^Makefile$' -e '^\.gitignore$' \
                 -e '(^|/)(pyproject\.toml|requirements\.txt|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|\.npmrc)$' <<<"$changed"; then
