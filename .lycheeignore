@@ -3,5 +3,5 @@
 # Template placeholder: github.com/ORG/REPO links (e.g. CHANGELOG's [Unreleased]) 404.
 https://github.com/ORG/REPO
 
-# The private advisory form answers a link check with 404 on a private repository.
+# The advisory form answers a link check with 404 on a private repository.
 ^https://github\.com/[^/]+/[^/]+/security/advisories/new$
