@@ -3,9 +3,9 @@ name: CI
 on:
   pull_request:
     branches: [main]
-  # Dev extras, hook envs and the dev container Features' create-time downloads resolve
-  # at run time, so `main` can go red with no commit touching it; these catch that
-  # before the next PR does.
+  # Dev extras, hook envs and the dev container build's downloads resolve at run time,
+  # so `main` can go red with no commit touching it; these catch that before the next
+  # PR does.
   push:
     branches: [main]
   schedule:
@@ -268,7 +268,7 @@ jobs:
           # Everything the dev container build and verify.sh read, make install's manifests
           # included.
           if [ -z "${base:-}" ] \
-              || grep -qE -e '^\.devcontainer/' -e '^\.github/workflows/ci\.yml$' -e '^Makefile$' -e '^\.claude/settings\.json$' -e '^\.gitignore$' \
+              || grep -qE -e '^\.devcontainer/' -e '^\.github/workflows/ci\.yml$' -e '^Makefile$' -e '^\.gitignore$' \
                 -e '(^|/)(pyproject\.toml|requirements\.txt|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|\.npmrc)$' <<<"$changed"; then
             echo devcontainer=true >>"$GITHUB_OUTPUT"
           fi
