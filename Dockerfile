@@ -6,8 +6,9 @@
 # Build stage, not an inline COPY --from: Dependabot only parses FROM lines.
 FROM ghcr.io/astral-sh/uv:0.13.6@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 AS uv-bin
 
-# A full x.y.z tag, not 3.12-slim: Dependabot then bumps each patch release as a
-# version update, tag and digest together.
+# A full x.y.z tag, not 3.12-slim: under 3.12-slim a patch release changes only the
+# digest, which Dependabot can suppress (dependabot/dependabot-core#15103); a new
+# x.y.z tag is a version update, which that suppression does not cover.
 FROM python:3.12.16-slim@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54
 COPY --from=uv-bin /uv /uvx /bin/
 
