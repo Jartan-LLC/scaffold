@@ -20,12 +20,6 @@ echo "Installing project dependencies (make install)..."
 make_install_failed=false
 make install || make_install_failed=true
 
-# Optional: Headroom token compression proxy (https://github.com/chopratejas/headroom)
-# Reduces token usage 60-95% by compressing context sent to the LLM.
-# Uncomment to enable:
-# uv pip install --system "headroom-ai[proxy]"
-# headroom init claude
-
 # Reported here, at the end, so it survives the dependency-install output above
 # rather than scrolling away. Not fatal: a non-zero postCreateCommand makes the
 # spec skip postStart and postAttach, losing the Docker socket fix and the
