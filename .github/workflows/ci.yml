@@ -45,8 +45,8 @@ jobs:
           enable-cache: true
 
       # All file linters live in .pre-commit-config.yaml (the single source, shared
-      # with `make lint`). pre-commit manages its own hook envs, so no
-      # pyproject/dev-extras, which keeps this job language-agnostic.
+      # with `make lint`). pre-commit builds its own hook envs, so this job installs
+      # no project extras.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/pre-commit
@@ -100,8 +100,6 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    # Add `needs: lint` to skip tests when lint fails — saves runner time on slow
-    # suites, at the cost of not seeing lint and test failures in a single run.
     strategy:
       fail-fast: false
       matrix:
