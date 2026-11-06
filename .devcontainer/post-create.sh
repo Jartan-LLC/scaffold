@@ -29,7 +29,7 @@ ruff_rev=$(sed -n "\|$ruff_hook|,/^[[:space:]-]*repo:/{/^[[:space:]]*rev:/{p;q}}
 ruff_version=$(sed -n 's/.*# frozen: v\([^[:space:]]*\).*/\1/p' <<<"$ruff_rev")
 if [ -n "$ruff_version" ]; then
     echo "Installing ruff $ruff_version..."
-    uv pip install "ruff==$ruff_version" || echo "Warning: ruff install failed (ruff==$ruff_version)" >&2
+    uv pip install "ruff==$ruff_version" || echo "Warning: ruff install failed (ruff==$ruff_version); format on save uses the ruff extension's bundled ruff" >&2
 elif grep -qF "$ruff_hook" .pre-commit-config.yaml 2>/dev/null; then
     echo "Warning: found no 'rev: ... # frozen: vX.Y.Z' line below the ruff hook's repo: line; format on save uses the ruff extension's bundled ruff" >&2
 fi
