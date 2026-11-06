@@ -249,9 +249,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 2
+          # A push diffs against the previous tip, which a credential-less fetch can't
+          # reach in a private repo, so push runs check out the whole history.
+          fetch-depth: ${{ github.event_name == 'push' && '0' || '2' }}
       # A PR's merge commit has its base as first parent. With no base (a scheduled or
-      # manual run, a failed fetch) the dev container job runs, rather than risk skipping a change.
+      # manual run, a new branch, a force push) the dev container job runs, rather than
+      # risk skipping a change.
       - id: diff
         env:
           EVENT: ${{ github.event_name }}
@@ -259,7 +262,7 @@ jobs:
         run: |
           case "$EVENT" in
             pull_request) base=HEAD^1 ;;
-            push) git fetch -q --depth=1 origin "$BEFORE" && base=$BEFORE ;;
+            push) git cat-file -e "$BEFORE^{commit}" 2>/dev/null && base=$BEFORE ;;
           esac
           changed=$([ -z "${base:-}" ] || git diff --name-only "$base" HEAD)
           # Everything the dev container build reads, make install's manifests included.
