@@ -110,9 +110,8 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
-    # A major bump changes the Feature's ":1" tag,
-    # which must match any dev.containers.defaultFeatures entry for it in VS Code
-    # user settings; bump both by hand.
+    # A dev.containers.defaultFeatures entry for this Feature in VS Code user settings
+    # must carry the same ":1" tag, and a major bump changes it: bump both by hand.
     ignore:
       - dependency-name: "ghcr.io/jartan-llc/enchantments/*"
         update-types: ["version-update:semver-major"]
