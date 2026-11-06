@@ -24,7 +24,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 
 ### Recommended
 
-- [ ] Set up publishing: package, image, docs site ([details](scaffold.md#publishing))
+- [ ] Set up publishing: package, image, docs site, with required reviewers on the `pypi` and `ghcr` environments ([details](scaffold.md#publishing))
 - [ ] Create the `major`/`minor`/`patch` labels Dependabot adds to its PRs ([details](#dependabot-labels))
 - [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
 - [ ] Enable CodeQL default setup (Settings > Security > Code scanning)
