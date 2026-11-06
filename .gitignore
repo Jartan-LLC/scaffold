@@ -50,6 +50,9 @@ docs/_build/
 .claude/workspace/*
 !.claude/workspace/.gitkeep
 
+# Claude git worktrees
+.claude/worktrees/
+
 # Claude local settings (user-specific)
 .claude/settings.local.*
 
