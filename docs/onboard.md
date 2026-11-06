@@ -137,8 +137,9 @@ which reads fine on GitHub without Sphinx, and this page, which Cleanup deletes.
 ## Claude settings
 
 A plugin's skills go on or off with the plugin: settings can't switch off one of them
-(`skillOverrides` doesn't apply to plugin skills). `claude plugins list` shows the plugins this
-clone has. To decline one, for example `pythonica` in a project that isn't Python:
+(`skillOverrides` doesn't apply to plugin skills). `claude plugins list --json` lists every
+installed plugin; this clone's are the `@grimoire` entries whose `projectPath` is its root. To
+decline one, for example `pythonica` in a project that isn't Python:
 
 1. Set it to `false` under `enabledPlugins` in `.claude/settings.json`, creating the file if
    it doesn't exist, and commit it. The grimoire Feature then skips the plugin in new clones.
