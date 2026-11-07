@@ -179,8 +179,6 @@ jobs:
   # artifact. Uncomment once you add a docker-compose.test.yml (service `app`) and a
   # Dockerfile test target, and add `pytest-cov` to the dev extras. Then add
   # `integration-tests` to the `check` job's needs + results below.
-  # TODO(/onboard): set `--cov=app` below to the package's import name, or delete this
-  # commented job if the project isn't Python.
   # integration-tests:
   #   runs-on: ubuntu-24.04
   #   timeout-minutes: 20

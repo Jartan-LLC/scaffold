@@ -76,7 +76,8 @@ Rename the `app` stub to your import name:
 3. Update the imports: `from app.log import …` in `src/app/__main__.py` and
    `tests/test_log.py`, `from app.__main__ import …` in `tests/test_smoke.py`.
 4. Update the `python -m app` references: `prog=` and the module docstring in `__main__.py`
-   (or replace that stub), and the `Dockerfile` `CMD` hint.
+   (or replace that stub), and the `Dockerfile` `CMD` hint. Also update `--cov=app` in
+   `ci.yml`'s commented `integration-tests` job.
 5. Resolve the markers in `docs/getting-started.md` and `docs/reference.md`. The strict docs
    build fails while `reference.md` names `app`.
 
@@ -95,9 +96,9 @@ Sphinx, and this page, which Cleanup deletes.
    `.github/workflows/ci.yml`.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
-   `check` entries (`docs/scaffold.md`, CI). In the `changes` job, remove the `python:` line
-   under `outputs` and the `python=true` block, with its comment, in the `diff` step. `lint`
-   stays.
+   `check` entries (`docs/scaffold.md`, CI), and the commented `integration-tests` job. In
+   the `changes` job, remove the `python:` line under `outputs` and the `python=true` block,
+   with its comment, in the `diff` step. `lint` stays.
 5. Keep the `Makefile`: it is the verify entry point in every stack. Point its `lint`, `fix`,
    `typecheck`, `test` and `docs` targets at your stack's commands, and replace the Python
    lines in `check` (the `.[dev,docs]` install, `uv build`, `twine check`, `pip-audit`), so
