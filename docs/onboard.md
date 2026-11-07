@@ -150,5 +150,4 @@ Copy the badge lines from the top of the template README into yours, then:
 - Replace `Jartan-LLC/scaffold` with your org and repo in each badge.
 - License badge: replace `MIT` in `license-MIT-blue` with your license. shields.io splits the
   badge text on `-`, so write each `-` in the name as `--` (`license-Apache--2.0-blue`).
-- Delete the OpenSSF Scorecard badge if you deleted `scorecard.yml` or the repo is private;
-  Scorecard runs only on public repos.
+- Delete the OpenSSF Scorecard badge if you deleted `scorecard.yml` or the repo is private.
