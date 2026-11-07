@@ -1,17 +1,18 @@
 # Project Guardrails
 
-The project rules, ranked by how firmly each holds. `CLAUDE.md` imports this file, so
-every Claude Code session loads it; Liza agents also enforce the tiers (Liza's `CORE.md`).
+The project rules, ranked by how firmly each holds. `AGENTS.md` names this file as the
+rules for every agent, and imports it for Claude Code; Liza agents also enforce the tiers
+(Liza's `CORE.md`).
 
 ## Tier 0 (Inviolable)
-<!-- Constraints that must NEVER be violated. Triggers mandatory halt (RESET). -->
+<!-- A violation halts the work (Liza's RESET state). -->
 
 - Never put secrets or credentials in tracked files.
 
 ## Tier 1 (Hard Constraints)
 <!-- Suspended only with explicit waiver. -->
 
-- Run the Verify command in `CLAUDE.md` before declaring work done or submitting it for
+- Run the Verify command in `AGENTS.md` before declaring work done or submitting it for
   review.
 - Ask first before changing public API signatures or database schemas, deleting files, or
   removing features.
@@ -29,7 +30,7 @@ every Claude Code session loads it; Liza agents also enforce the tiers (Liza's `
   ruff `D`) and full type annotations (enforced by pyright `strict`).
 - Keep `>>>` examples in those docstrings runnable — `make test` executes every one under
   `src/`, so a published example can't drift from its code.
-  <!-- Not a Python project? Swap these two rules for your stack's docstring/typing conventions. -->
+  <!-- TODO(/onboard): Not a Python project? Swap these two rules for your stack's docstring/typing conventions. -->
 - Write plans to `.claude/workspace/` in the project root for non-trivial changes.
 - Don't wrap things the underlying library already expresses clearly.
 - Don't speculate about fixes — investigate first, then propose.
@@ -38,7 +39,8 @@ every Claude Code session loads it; Liza agents also enforce the tiers (Liza's `
   body carries only the gotchas.
 
 ## Tier 3 (Preferences)
-<!-- Degraded gracefully. -->
+<!-- Degraded gracefully. Kept when empty: the heading is what prompts adding a preference
+at this tier. -->
 
 ---
 

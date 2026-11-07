@@ -33,13 +33,13 @@ jobs:
 
       # `enable-cache: false` stated, not left to the action's default: zizmor's
       # cache-poisoning audit reads the literal value on a publish path.
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version-file: ci/requirements.txt
           enable-cache: false
 
-      # TODO: Fail the release if the git tag doesn't match your package version.
-      # The shipped pyproject.toml keeps `version` static; uncomment to enforce it
+      # Optional: fail the release if the git tag doesn't match the package version.
+      # pyproject.toml keeps `version` static; uncomment to enforce that it
       # matches the tag. Repoint `ver=` if you declare the version elsewhere.
       # - name: Verify tag matches package version
       #   run: |

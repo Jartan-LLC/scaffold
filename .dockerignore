@@ -16,7 +16,7 @@ ci
 .env
 .env.*
 
-# Python caches / build artifacts (**/ so nested dirs like src/app/__pycache__ match)
+# Python caches / build artifacts (**/ so nested dirs under src/ match too)
 **/__pycache__/
 **/*.py[cod]
 .pytest_cache/

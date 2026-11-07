@@ -5,11 +5,12 @@ on:
     branches: [main]
   # Dev extras, hook envs and the dev container build's downloads resolve at run time,
   # so `main` can go red with no commit touching it; these catch that before the next
-  # PR does.
+  # PR does. A push that the `changes` job gates out of a job leaves that job's check
+  # to the weekly run.
   push:
     branches: [main]
   schedule:
-    - cron: "10 7 * * 1" # weekly, Monday 07:10 UTC (offset from scorecard/link-check)
+    - cron: "10 7 * * 1" # weekly, Monday 07:10 UTC (offset from the other weekly runs)
   workflow_dispatch:
 
 permissions:
@@ -39,7 +40,7 @@ jobs:
 
       # `version-file` is required: without it this action installs uv `latest`,
       # not the ci/requirements.txt pin.
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version-file: ci/requirements.txt
           enable-cache: true
@@ -77,9 +78,13 @@ jobs:
       # - run: pnpm install --frozen-lockfile
       # - run: pnpm exec prettier --check .
 
-  typecheck:
+  # pyright, the package build and the audit share one job and one install: each job is
+  # billed as at least a minute, and on their own these finish well inside one.
+  python:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -89,15 +94,40 @@ jobs:
         with:
           python-version-file: .python-version
 
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version-file: ci/requirements.txt
           enable-cache: true
 
-      - run: uv pip install -e '.[dev]'
+      # The full environment `make check` audits: package deps plus the dev/docs/CI
+      # tools, not just the declared deps.
+      - id: install
+        run: uv pip install -e '.[dev,docs]' -r ci/requirements.txt
       - run: pyright
 
+      # These run whatever pyright found, so one run reports every failing check.
+      # `uv build` builds the project in its own isolated env.
+      - id: build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: uv build
+      - if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: python -m twine check dist/*
+
+      # Advisory: an unfixable transitive advisory must not fail every run.
+      # dependency-audit.yml tracks findings in an issue. The job stays green either
+      # way, so the step adds a warning naming pip-audit to flag a failure on the PR.
+      - name: Audit dependencies for known CVEs
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: |
+          pip-audit || {
+            echo "::warning title=pip-audit::pip-audit failed: a known vulnerability or an audit error. See this step's log."
+            exit 1
+          }
+
   test:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
@@ -113,7 +143,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version-file: ci/requirements.txt
           enable-cache: true
@@ -122,55 +152,6 @@ jobs:
 
       - run: uv pip install -e '.[dev]'
       - run: pytest -m "not integration"
-
-  build:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      # No dependency cache: this job only installs the pinned CI tools (nothing
-      # from pyproject), and `uv build` builds the project in its own isolated env.
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version-file: .python-version
-
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          version-file: ci/requirements.txt
-
-      - run: uv pip install -r ci/requirements.txt
-      - run: uv build
-      - run: python -m twine check dist/*
-
-  # Advisory: an unfixable transitive advisory must not fail every run, so the job may
-  # fail and `check` deliberately does not gate on it. dependency-audit.yml tracks
-  # findings in an issue.
-  audit:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version-file: .python-version
-
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          version-file: ci/requirements.txt
-          enable-cache: true
-
-      # Audit the full installed environment — package deps plus the dev/docs/CI
-      # tools — mirroring `make check`, not just the (currently empty) declared deps.
-      - run: uv pip install -e '.[dev,docs]' -r ci/requirements.txt
-      - name: Audit dependencies for known CVEs
-        run: pip-audit
 
   docs:
     runs-on: ubuntu-24.04
@@ -184,13 +165,13 @@ jobs:
         with:
           python-version-file: .python-version
 
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version-file: ci/requirements.txt
           enable-cache: true
 
       # Install so the docs toolchain and the package's runtime deps are importable
-      # by autodoc (the stub's are all stdlib).
+      # by autodoc.
       - run: uv pip install -e '.[docs]'
       - run: sphinx-build -W -b html docs docs/_build/html
 
@@ -198,7 +179,6 @@ jobs:
   # artifact. Uncomment once you add a docker-compose.test.yml (service `app`) and a
   # Dockerfile test target, and add `pytest-cov` to the dev extras. Then add
   # `integration-tests` to the `check` job's needs + results below.
-  # TODO(rename): `--cov=app` (and the `app` service/paths) track the package name.
   # integration-tests:
   #   runs-on: ubuntu-24.04
   #   timeout-minutes: 20
@@ -225,9 +205,9 @@ jobs:
   #       if: always()
   #       run: docker compose -f docker-compose.test.yml down -v
 
-  # Docker build + smoke test. The shipped Dockerfile builds as-is; give it a real
-  # entrypoint, then uncomment (pairs with publish-docker.yml). Swap `--help` for a
-  # /health curl if it's a server. Add `docker` to the `check` job below when enabling.
+  # Docker build + smoke test (pairs with publish-docker.yml). Uncomment once the
+  # Dockerfile has a start command. Swap `--help` for a /health curl if it's a server.
+  # Add `docker` to the `check` job below when enabling.
   # docker:
   #   runs-on: ubuntu-24.04
   #   timeout-minutes: 10
@@ -243,6 +223,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       devcontainer: ${{ steps.diff.outputs.devcontainer }}
+      python: ${{ steps.diff.outputs.python }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -252,8 +233,8 @@ jobs:
           # quoted because a bare 0 is falsy and would give push runs depth 2.
           fetch-depth: ${{ github.event_name == 'push' && '0' || '2' }}
       # A PR's merge commit has its base as first parent. With no base (a scheduled or
-      # manual run, a new branch, a force push) the dev container job runs, rather than
-      # risk skipping a change.
+      # manual run, a new branch, a force push) every gated job runs, rather than risk
+      # skipping a change.
       - id: diff
         env:
           EVENT: ${{ github.event_name }}
@@ -266,12 +247,24 @@ jobs:
           # --no-renames lists a renamed file's old path too, so moving a matched file away
           # still counts.
           changed=$([ -z "${base:-}" ] || git diff --no-renames --name-only "$base" HEAD)
-          # Everything the dev container build reads, make install's manifests included, and
-          # the .gitignore that verify.sh's clean-status check depends on.
+          # What the dev container build needs (post-create.sh reads uv's pin from
+          # ci/requirements.txt) and the .gitignore that verify.sh's clean-status check
+          # depends on. Other dependency manifests are left out on purpose
+          # (docs/scaffold.md, CI).
           if [ -z "${base:-}" ] \
               || grep -qE -e '^\.devcontainer/' -e '^\.github/workflows/ci\.yml$' -e '^Makefile$' -e '^\.gitignore$' \
-                -e '(^|/)(pyproject\.toml|requirements\.txt|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|\.npmrc)$' <<<"$changed"; then
+                -e '^ci/requirements\.txt$' <<<"$changed"; then
             echo devcontainer=true >>"$GITHUB_OUTPUT"
+          fi
+          # The -v grep lists the paths the Python jobs don't read, and the grep before it
+          # the exceptions inside them that they do: README.md (the package's readme),
+          # Markdown under src/ or tests/, and ci.yml, which defines them. A skipped file
+          # that a Python job comes to use, such as a local action under .github/actions/,
+          # joins the first grep.
+          if [ -z "${base:-}" ] \
+              || grep -qE -e '^README\.md$' -e '^(src|tests)/' -e '^\.github/workflows/ci\.yml$' <<<"$changed" \
+              || grep -qvE -e '\.md$' -e '^docs/' -e '^\.claude/' -e '^\.github/' -e '^\.pre-commit-config\.yaml$' <<<"$changed"; then
+            echo python=true >>"$GITHUB_OUTPUT"
           fi
 
   devcontainer:
@@ -303,12 +296,12 @@ jobs:
     if: always()
     # When you uncomment integration-tests / docker above, add them to BOTH the
     # needs list and the results array below.
-    needs: [lint, typecheck, test, build, docs, changes, devcontainer]
+    needs: [lint, python, test, docs, changes, devcontainer]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - run: |
-          results=("${{ needs.lint.result }}" "${{ needs.typecheck.result }}" "${{ needs.test.result }}" "${{ needs.build.result }}" "${{ needs.docs.result }}" "${{ needs.changes.result }}" "${{ needs.devcontainer.result }}")
+          results=("${{ needs.lint.result }}" "${{ needs.python.result }}" "${{ needs.test.result }}" "${{ needs.docs.result }}" "${{ needs.changes.result }}" "${{ needs.devcontainer.result }}")
           for r in "${results[@]}"; do
             if [[ "$r" != "success" && "$r" != "skipped" ]]; then
               echo "Check failed: $r"

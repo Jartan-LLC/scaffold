@@ -1,10 +1,10 @@
 # Minimal Python image. It BUILDS as-is (installs the package); give it a real
 # entrypoint before you run it. publish-docker.yml builds this on v* tags.
-# Delete this file (and publish-docker.yml / .dockerignore) if the project isn't
-# containerized.
+# TODO(/onboard): if the project isn't containerized, delete this file, .dockerignore,
+# publish-docker.yml and ci.yml's commented docker job.
 
 # Build stage, not an inline COPY --from: Dependabot only parses FROM lines.
-FROM ghcr.io/astral-sh/uv:0.13.6@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 AS uv-bin
+FROM ghcr.io/astral-sh/uv:0.13.7@sha256:96f40d3904aad8d0bd010539001d36c8e2188b981e1334471a90c4a1d93bb490 AS uv-bin
 
 # x.y.z, not 3.12-slim: Dependabot can suppress digest-only bumps (dependabot/dependabot-core#15103).
 FROM python:3.12.16-slim@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54
@@ -29,6 +29,6 @@ RUN uv pip install --system --no-cache .
 COPY --chown=appuser:appuser . .
 USER appuser
 
-# TODO: set your start command, e.g.
+# Set a start command before running the image, e.g.
 # ENTRYPOINT ["your-cli"]
 # CMD ["python", "-m", "app"]

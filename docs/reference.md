@@ -1,8 +1,8 @@
 # API reference
 
-Generated from source docstrings. When you rename the package, update the module
-names below (`/onboard` does this) — otherwise the strict docs build fails on the
-missing import.
+Generated from source docstrings.
+
+<!-- TODO(/onboard): once the package is renamed, replace app in the module names below; the strict docs build fails while they name a missing module. -->
 
 ```{eval-rst}
 .. automodule:: app.log

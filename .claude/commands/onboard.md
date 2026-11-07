@@ -18,7 +18,7 @@ Its checklist is the source of truth for what needs to change, and its sections 
 
 ### 3. Interview
 
-Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, author/full name (for `LICENSE` + `docs/conf.py`), the Python package/import name if Python (for the `src/app` rename), contacts for conduct and security reports (one address, or two if they differ), noting that both are published publicly, so they should give addresses they are willing to publish, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), any version corrections for training data, and which of the enchantments Features in `.devcontainer/devcontainer.json` to keep (`docs/onboard.md`, Devcontainer). List the installed plugin skills/agents (from `enabledPlugins` in `.claude/settings.json`) so the user can choose which to disable via `skillOverrides`.
+Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, author/full name (for `LICENSE` + `docs/conf.py`), the Python package/import name if Python (for the `src/app` rename), contacts for conduct and security reports (one address, or two if they differ), noting that both are published publicly, so they should give addresses they are willing to publish, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), any version corrections for training data, and which of the enchantments Features in `.devcontainer/devcontainer.json` to keep (`docs/onboard.md`, Devcontainer).
 
 ### 4. Confirm
 
@@ -28,13 +28,13 @@ Summarize what you understood and what changes you'll make. Wait for the user to
 
 Work through every Required checklist item that can be automated, following `docs/onboard.md` and `docs/scaffold.md` for how and the interview for the values. Also:
 
-- Replace the template README with a project README
+- Replace the template README with a project README, carrying over its badges adjusted for the project (`docs/onboard.md`, README badges)
 - License: `LICENSE` is MIT with the template's copyright line. For MIT, set the user's year and name in it; otherwise replace it with the chosen `LICENSE.<type>` (`LICENSE.proprietary` is all rights reserved, for private or closed-source work), or with a license not among the templates. Delete the `LICENSE.*` templates either way
-- Point the `Makefile` at the interview's commands, keeping `make check` as the gate (a Python project's shipped targets already match; for another stack, `docs/onboard.md`, Not a Python project). If the verify command changes, update the Verify section of `CLAUDE.md`
-- `SECURITY.md`: always set the contact. Set supported versions and response targets only if the user gave them, and leave any other `TODO(/onboard)` unanswered: a timing commitment the user never chose is worse than an unset field with a stated default
+- Point the `Makefile` at the interview's commands, keeping `make check` as the gate (a Python project's shipped targets already match; for another stack, `docs/onboard.md`, Not a Python project). If the verify command changes, update the Verify section of `AGENTS.md`
+- Markers: resolve the markers as `docs/onboard.md`, Markers, says, after the package rename or the non-Python teardown. In `SECURITY.md`, always set the contact; set supported versions and response targets only if the user gave them, and otherwise leave their markers: a timing commitment the user never chose is worse than an unset field with a stated default
 - Features: for each enchantments Feature the user declines, follow `docs/onboard.md`, Devcontainer: run the in-clone steps of its Removal section while it's still declared, remove its entry and its lockfile key, then give the user the rest of its Removal steps in their order (removing the container, then a volume), ending with the rebuild
 - Create the Dependabot `major`/`minor`/`patch` labels (`docs/onboard.md`, Dependabot labels)
-- Once every item is done, delete `docs/onboard.md` and, unless the non-Python teardown removed `docs/index.md`, its entry there
+- Once every item is done, delete `docs/onboard.md` and, unless the non-Python teardown removed `docs/index.md`, its entry there and the marker above it
 
 For questions the user didn't have answers to (e.g., version corrections, verify commands), leave the placeholder comments in place — they are written so that Claude will fill them in naturally when the information is discovered during normal development. Only replace placeholders that have actual answers.
 

@@ -3,9 +3,9 @@
 ## Install
 
 ```bash
-pip install app  # TODO(/onboard): replace with your renamed package name
+pip install app  # TODO(/onboard): the distribution name from pyproject.toml
 ```
 
 ## Usage
 
-TODO: a minimal example.
+TODO(/onboard): a minimal usage example, or delete this section until the project has one.

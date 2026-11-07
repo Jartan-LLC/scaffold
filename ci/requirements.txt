@@ -1,8 +1,45 @@
-# Tools that run the gate, exact-pinned; Dependabot's "/ci" entry bumps them.
-# pytest and pyright are versioned in pyproject.toml's dev extra; ruff, codespell and
-# the other lint tools by their hook revs in .pre-commit-config.yaml.
+# Tools that run the gate, exact-pinned with every release file's hash; Dependabot's "/ci"
+# entry bumps both. Their own dependencies are neither pinned nor hashed: `make install`
+# and the audit jobs install this file with the dev/docs extras, and a lock resolved
+# without those extras conflicts with their bounds.
+# The other gate tools are versioned in pyproject.toml's extras, and the lint tools by
+# their hook revs in .pre-commit-config.yaml.
+# A new entry's hashes:
+#   uv pip compile --no-deps --generate-hashes --no-header --no-annotate - <<<'name==X.Y.Z'
 
-uv==0.13.5         # installer, resolver, venv manager and build frontend
-pre-commit==4.7.0  # git hook runner; manages its own hook envs
-twine==7.0.0       # sdist/wheel metadata check before publish
-pip-audit==2.10.1  # CVE audit of the installed environment
+# installer, resolver, venv manager and build frontend
+uv==0.13.6 \
+    --hash=sha256:1cd4b0a35fa599b83da5437748150319ae0917c522da60898327645382942faa \
+    --hash=sha256:22759b8895e1103578de6fb4cd27e94b4399d021023378d29f01333717751fba \
+    --hash=sha256:29135609166960c74539abdaf4264f9819a0381be18b224125418356d67dd208 \
+    --hash=sha256:2e9a99100abe4f99605366974c4f9fe27f236615e05de8e78c0f357e38f09f97 \
+    --hash=sha256:46c2ef1f744f20007be0cdd66db3022bb1ddcac477c754efda875e401a48d810 \
+    --hash=sha256:4d20de8a3ed6c3d39b4e2f8f7d0411cd13a3959f5191b2b5d0209344034ed056 \
+    --hash=sha256:51361029b7cf91185d0092c4b356d110b4ad629e9cb11593f1e006ac72a72ca9 \
+    --hash=sha256:710c68ea4853aaf70ab2d0ccf2e147dee59449f035a1f8fe7759f087a31cdbf5 \
+    --hash=sha256:722c7f96803f115e53918b8ee8858d1680ea6077c614b6db750747d709ab8d9a \
+    --hash=sha256:7c9bc35ccb65932d8dc10a0669f9c805eaa3c9827ce18ecbecb1bd67944b2cdf \
+    --hash=sha256:7ec5486476d67a4214c460b5492393ee2300d84e1de17b293100a019b413568b \
+    --hash=sha256:8542dcf118ce8a7cf2e4ba1fea7f5cc1638bc02b5b30dab1ead7e9034dc62fd3 \
+    --hash=sha256:95f042b95e67ef8c3d3569bb6e9d895e592002c5e871cf3f1afe407c9d77a294 \
+    --hash=sha256:b2d25a49d135a441f688a6869d6d8062fb6f0a2e3e32e18b72c9de1d0eb9521e \
+    --hash=sha256:b9f57153fc98b7aa41dd6720e3de7578747f60b7bff22f50b76dcc47205bdde3 \
+    --hash=sha256:d1efed1d15102ffdbf5e0fd49a440643dda2d921a2ad856792ae42ccd43c253f \
+    --hash=sha256:d4d7026c7327dd11fc2c0d4bae4735ff6944293d370644f35d2e6e917cdcae04 \
+    --hash=sha256:d762215478854f6cf20c3faed8f1eb30c8101d568e7bc32a3abafc063929d5c5 \
+    --hash=sha256:feb0f1d555798f68f28719cab437ab1dfb5d918db86ab4554215cbf9d940f63b
+
+# git hook runner; manages its own hook envs
+pre-commit==4.7.0 \
+    --hash=sha256:1f3deee12b914c8fa184bd2b5953391c2e4f36763e403d4a23dc9983fa7c6e86 \
+    --hash=sha256:2e229038ad3656081b70c27913157e4b636ef306f643f024a8a8e3f0f7b2f877
+
+# sdist/wheel metadata check before publish
+twine==7.0.0 \
+    --hash=sha256:85cdb29c518efef867360ae4acd4b0dfd61c8654a22fca08e6f8539f05022177 \
+    --hash=sha256:b854164df26db268af05f49aa5c0344b10e27a494343ff05b1e0bad3b135f5a7
+
+# CVE audit of the installed environment
+pip-audit==2.10.1 \
+    --hash=sha256:1eb4565d19ebe5d48996f4b770b4d2b32887e12cb12cfa637f1a064011b55ffc \
+    --hash=sha256:99ef3f600a317c1945f1e89e227ef26e1c2d618429b8bd3fa6f4f7c440c4611a

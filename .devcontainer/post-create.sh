@@ -5,26 +5,32 @@ set -u
 
 echo "Setting up development environment..."
 
-# Pinned from ci/requirements.txt so the container matches CI, and bootstrapped
-# with pip because that is what the python devcontainer feature ships.
+# Pinned and hash-checked from ci/requirements.txt so the container matches CI, and
+# bootstrapped with pip because that is what the python devcontainer feature ships.
+# uv's entry runs from its `uv==` line to the first line with no trailing backslash, its
+# last hash. uv has no dependencies, so --no-deps loses nothing.
 echo "Installing uv..."
-uv_pin=$(sed -n 's/^\(uv==[^[:space:]]*\).*/\1/p' ci/requirements.txt 2>/dev/null | head -1)
-if [ -n "$uv_pin" ]; then
-    pip install "$uv_pin" || echo "Warning: uv install failed ($uv_pin)" >&2
+uv_req=$(sed -n '/^uv==/,/[^\\]$/p' ci/requirements.txt 2>/dev/null)
+if [ -n "$uv_req" ]; then
+    pip install --require-hashes --no-deps -r <(printf '%s\n' "$uv_req") || echo "Warning: uv install failed (${uv_req%% *})" >&2
 else
     echo "Warning: no pinned uv in ci/requirements.txt; Python installs below will fail" >&2
 fi
 
-# Into the system Python: containerEnv sets UV_SYSTEM_PYTHON (Makefile, environment selection).
+# Into the system Python: containerEnv sets UV_SYSTEM_PYTHON (the Makefile's Python environment block).
 echo "Installing project dependencies (make install)..."
 make_install_failed=false
 make install || make_install_failed=true
 
-# Optional: Headroom token compression proxy (https://github.com/chopratejas/headroom)
-# Reduces token usage 60-95% by compressing context sent to the LLM.
-# Uncomment to enable:
-# uv pip install --system "headroom-ai[proxy]"
-# headroom init claude
+# The ruff extension formats on save with the ruff in the selected Python, else its own
+# bundled one. Pinned from the ruff hook's frozen version, so the editor runs make lint's ruff.
+ruff_version=$(sed -n '/astral-sh\/ruff-pre-commit/{n;s/.*# frozen: v\([^[:space:]]*\).*/\1/p}' .pre-commit-config.yaml 2>/dev/null | head -1)
+if [ -n "$ruff_version" ]; then
+    echo "Installing ruff $ruff_version..."
+    uv pip install "ruff==$ruff_version" || echo "Warning: ruff install failed (ruff==$ruff_version); format on save uses the ruff extension's bundled ruff" >&2
+elif grep -q 'astral-sh/ruff-pre-commit' .pre-commit-config.yaml 2>/dev/null; then
+    echo "Warning: no '# frozen: vX.Y.Z' on the line after the ruff hook's repo; format on save uses the ruff extension's bundled ruff" >&2
+fi
 
 # Reported here, at the end, so it survives the dependency-install output above
 # rather than scrolling away. Not fatal: a non-zero postCreateCommand makes the

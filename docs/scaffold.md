@@ -7,21 +7,21 @@ setup.
 
 | Area | Contents |
 |------|----------|
-| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, desktop-lite, and the [enchantments](https://github.com/Jartan-LLC/enchantments) Features: Claude Code, the GitHub CLI login, grimoire's plugins, Liza and its agent toolchain. The grimoire Feature installs its plugins at local scope in each clone, skipping any that the repo's `.claude/settings.json` or the clone's `settings.local.json` sets to `false`; `claude plugins disable <id>@grimoire --scope local` sets it for one clone. To drop a Feature, follow the Removal section on its page, where it has one ([the Features list](https://github.com/Jartan-LLC/enchantments#features) links each page), then remove its entry and its `devcontainer-lock.json` key. `post-create.sh` runs `make install`, which installs the project's dependencies into the system Python, as CI does: `containerEnv` sets `UV_SYSTEM_PYTHON`, so the container has no project `.venv` |
-| `.claude/` | Claude Code configuration — enabled plugins (skills & agents from the grimoire marketplace) |
+| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, and the [enchantments](https://github.com/Jartan-LLC/enchantments) Features: Claude Code, the GitHub CLI login, Liza and its agent toolchain. To drop a Feature, follow the Removal section on its page, where it has one ([the Features list](https://github.com/Jartan-LLC/enchantments#features) links each page), then remove its entry and its `devcontainer-lock.json` key. `post-create.sh` runs `make install`, which installs the project's dependencies into the system Python, as CI does: `containerEnv` sets `UV_SYSTEM_PYTHON`, so the container has no project `.venv`. It also installs the ruff version in the ruff hook's `# frozen:` comment, so the ruff extension formats on save as `make lint` does |
+| `.claude/` | Claude Code project files — the `/onboard` command, which onboarding deletes, and `workspace/`, where agents keep plans and other working files, git-ignored |
 | `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates |
-| `pyproject.toml`, `ci/`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use; `ci/release_notes.py` makes the release notes `release.yml` publishes. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
+| `pyproject.toml`, `ci/`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use, each with its release files' hashes, so an install rejects a download that doesn't match. The tools' own dependencies are not pinned. `ci/release_notes.py` makes the release notes `release.yml` publishes. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
 | `src/`, `tests/` | The package (src layout, PEP 561 typed) and its tests; the template ships a CLI entry point and logging setup |
 | `Makefile`, `.pre-commit-config.yaml` | Task runner (`make install`/`lint`/`fix`/`test`/`check`/`docs`, backed by [uv](https://docs.astral.sh/uv/), installing into the checkout's `.venv`, else the active environment, else the devcontainer's system Python) + the single lint source (ruff, codespell, shellcheck, markdownlint, lychee, actionlint, zizmor, hygiene) that `make lint` and CI both run, and the source of ruff's and codespell's versions |
 | `docs/`, `.readthedocs.yaml.example` | Sphinx docs site (Markdown via MyST, API reference from docstrings); `make docs` builds it. Publish via `pages.yml.example` (GitHub Pages) or ReadTheDocs |
-| `AGENTS.md` | Symlink to `CLAUDE.md` for vendor-neutral agent tools (Cursor, Copilot, …); tools that don't follow `@` imports won't load `GUARDRAILS.md` |
+| `AGENTS.md` | Instructions every coding agent reads (Claude Code through `CLAUDE.md`): points to the project rules; corrections, verification commands, skill index |
 | `Dockerfile`, `.dockerignore` | Minimal Python image stub — pairs with `publish-docker.yml` |
 | `CHANGELOG.md`, `CONTRIBUTING.md` | Keep-a-Changelog skeleton and a Python contributor guide |
 | `.env.example`, `.prettierrc` | Env-var template and Prettier config (for JS/TS work) |
 | `.editorconfig` | Language-aware formatting — 4-space Python, 2-space JS/TS, tabs for Makefiles |
 | `.gitattributes` | Syntax-aware diffs, LF checkout on every platform |
 | `.gitignore` | Comprehensive patterns for Node, Python, Docker, IDEs, env files, build artifacts |
-| `CLAUDE.md` | Imports the project rules; corrections, verification commands, skill index |
+| `CLAUDE.md` | Imports `AGENTS.md` for Claude Code; edit `AGENTS.md` instead |
 | `GUARDRAILS.md` | Project rules ranked by how firmly each holds (never / ask first / default / preference) — the tiers Liza agents enforce |
 
 ## Syncing template updates
@@ -103,14 +103,40 @@ the rest of the run: checkpoints, the operator session, logs.
 
 ## CI
 
-`ci.yml`'s `lint`, `typecheck`, `test`, `build` and `docs` jobs gate the `check`
-aggregator; `audit` runs but is advisory. Removing a gating job also means removing its
-`check.needs` and results entries. To add the `docker` or `integration-tests` job,
-uncomment it and add it to both. The Node checks are commented steps inside `lint`:
-uncomment them there, with no `check` change needed.
+`ci.yml`'s `lint`, `python`, `test` and `docs` jobs gate the `check` aggregator. `python`
+runs pyright, builds and checks the package, and runs pip-audit, which is advisory: its
+failure doesn't fail the job, and adds a warning annotation naming pip-audit to the
+`python` check. Removing a gating job also means removing its `check.needs` and results
+entries. To add the `docker` or `integration-tests` job, uncomment it and add it to both.
+The Node checks are commented steps inside `lint`: uncomment them there, with no `check`
+change needed.
+
+The `changes` job skips `python` and `test` when every changed file is Markdown,
+`.pre-commit-config.yaml`, or under `docs/`, `.claude/` or `.github/`. A change to
+`README.md`, `.github/workflows/ci.yml` or anything under `src/` or `tests/` always runs
+them. If a Python job comes to use a file in a skipped path, such as a local action under
+`.github/actions/`, add it to that list in the `changes` job's `diff` step in `ci.yml`.
+
+The dev container job runs only when a change touches one of its build inputs, which the
+`diff` step lists. `pyproject.toml`, `package.json` and pnpm's lockfile and config are not
+among them; `ci/requirements.txt` is, because `post-create.sh` reads uv's pin from it.
+Scheduled and manual runs run every job, so a `pyproject.toml` or Node manifest change that
+breaks only the dev container build shows at the weekly run, not on its PR. A push to
+`main` that skips the Python jobs doesn't check the dev extras, which resolve at run time;
+the weekly run or the next PR that runs those jobs does.
 
 In `.github/dependabot.yml`, remove the ecosystems you don't use, add the ones you need,
 and adjust `directory` where manifests aren't at the root.
+
+A private repository pays for Actions minutes, and GitHub bills each job as at least one
+minute. Two levers cut those minutes:
+
+- Each Dependabot PR runs CI. In each `updates` entry of `.github/dependabot.yml` whose
+  PRs should batch a month of updates instead of a week, set `interval: "monthly"` and
+  remove `day: "monday"`, which applies to weekly schedules.
+- CI doesn't run on a pushed branch other than `main` until it has a PR, and each push to
+  a PR cancels the run before it, which still bills the minutes it used. A review needs no
+  PR, so finish review rounds on the pushed branch before opening the PR.
 
 ## Publishing
 

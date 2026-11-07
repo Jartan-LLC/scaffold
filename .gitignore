@@ -4,7 +4,7 @@ node_modules/
 __pycache__/
 *.py[cod]
 *.egg-info/
-# Leading / matches the root only, so same-named source dirs (src/app/data/) are tracked and packaged
+# Leading / matches the root only, so a same-named dir under src/ is still tracked and packaged
 /.eggs/
 /dist/
 /build/

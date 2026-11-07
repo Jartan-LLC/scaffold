@@ -1,12 +1,13 @@
+# TODO(/onboard): if the project isn't Python, delete this file (docs/onboard.md, Not a Python project).
 [build-system]
-requires = ["hatchling>=1.32.4,<2"] # latest; >=1.22 is the PEP 639 license-files floor
+requires = ["hatchling>=1.33.0,<2"] # latest; >=1.22 is the PEP 639 license-files floor
 build-backend = "hatchling.build"
 
 [project]
 # TODO(/onboard): rename to your project's distribution name.
 name = "app"
 version = "0.0.0"
-description = "Project scaffold — replace during onboarding."
+description = "Project template"  # TODO(/onboard): the project's one-line description
 readme = "README.md"
 requires-python = ">=3.12"
 license-files = ["LICENSE"]
@@ -22,11 +23,10 @@ dependencies = []
 [project.optional-dependencies]
 # The test and typecheck toolchain CI runs. ruff and codespell are configured in
 # this file but versioned by their hook revs in .pre-commit-config.yaml.
-# Delete this whole file if the project isn't Python.
 # Upper bounds stop at each tool's next breaking release, so Dependabot proposes
 # that bump as a PR rather than CI picking it up unannounced.
 dev = [
-    "pytest>=9.1.1,<10",     # test runner
+    "pytest>=9.2.0,<10",     # test runner
     "pyright==1.1.414",    # static type checker; every release is 1.1.x
 ]
 # Docs site toolchain (Sphinx + MyST + furo). Install with `uv pip install -e '.[docs]'`.
@@ -38,7 +38,8 @@ docs = [
     "furo>=2025.12.19",     # theme (CalVer — date floor, no semver major to cap)
 ]
 
-# src-layout: the wheel contains src/app (rename src/app/ to your package).
+# src-layout: the wheel contains the package directory under src/.
+# TODO(/onboard): point packages at the package directory once src/app/ is renamed.
 # Hatchling ships the package's non-.py files (the py.typed PEP 561 marker)
 # automatically.
 [tool.hatch.build.targets.wheel]
@@ -86,7 +87,7 @@ select = [
     "RUF",      # ruff-specific
 ]
 ignore = [
-    "E501", # line length is enforced by the formatter
+    "E501",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -94,13 +95,12 @@ ignore = [
 "tests/**" = ["S101", "ARG", "PLR2004", "D"]  # asserts, fixtures, magic values, docstrings
 
 [tool.ruff.lint.flake8-tidy-imports]
-# Absolute imports only — keeps the package rename-agnostic to import style and
-# avoids modeling relative imports in the template.
+# Absolute imports only, so the package keeps one import style.
 ban-relative-imports = "all"
 
 [tool.ruff.lint.pydocstyle]
-# Google-style docstrings; this also disables the D rules that conflict with the
-# formatter and the mutually-incompatible D203/D211 and D212/D213 pairs.
+# Google-style docstrings; the convention also settles the mutually incompatible
+# D203/D211 and D212/D213 pairs.
 convention = "google"
 
 [tool.pytest.ini_options]
