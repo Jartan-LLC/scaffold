@@ -35,7 +35,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 
 ### Cleanup
 
-- [ ] Replace `README.md` with your own
+- [ ] Replace `README.md` with your own, keeping its badges ([details](#readme-badges))
 - [ ] Delete this page and its entry in `docs/index.md`
 - [ ] Delete `.claude/commands/onboard.md`
 
@@ -142,3 +142,13 @@ gh label create major --color B60205 --description "Major version update" --forc
 gh label create minor --color FBCA04 --description "Minor version update" --force
 gh label create patch --color 0E8A16 --description "Patch version update" --force
 ```
+
+## README badges
+
+Copy the badge lines from the top of the template README into yours, then:
+
+- Replace `Jartan-LLC/scaffold` with your org and repo in each badge.
+- License badge: replace `MIT` in `license-MIT-blue` with your license. shields.io splits the
+  badge text on `-`, so write each `-` in the name as `--` (`license-Apache--2.0-blue`).
+- Delete the OpenSSF Scorecard badge if you deleted `scorecard.yml` or the repo is private;
+  Scorecard runs only on public repos.
