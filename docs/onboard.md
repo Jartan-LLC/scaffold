@@ -6,8 +6,8 @@ afterwards.
 
 ## Decide
 
-Settle these first: the steps below take their values from the answers. Where an answer
-needs no procedure, its item says what to do with it.
+Settle these first: the procedures and markers below take their values from the answers.
+An item whose answer needs neither, such as which workflows to keep, says what to do with it.
 
 - [ ] Project name and one-line description; for Python, the distribution and import names,
       and whether it has a command-line interface
@@ -86,8 +86,9 @@ Finish deletes.
 1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
 2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md` and
    this page, `.readthedocs.yaml.example`, `.github/workflows/pages.yml.example`,
-   `.github/workflows/publish-pypi.yml` and `.github/workflows/dependency-audit.yml`. If not containerized, also `Dockerfile`,
-   `.dockerignore`, `.github/workflows/publish-docker.yml` and the commented `docker` job in
+   `.github/workflows/publish-pypi.yml` and `.github/workflows/dependency-audit.yml`. If
+   not containerized, also `Dockerfile`, `.dockerignore`,
+   `.github/workflows/publish-docker.yml` and the commented `docker` job in
    `.github/workflows/ci.yml`.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
