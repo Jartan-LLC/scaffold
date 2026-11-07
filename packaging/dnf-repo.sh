@@ -13,6 +13,11 @@
 #     unsigned RPM, with a warning. Writes OUTDIR/NAME-dnf-repo.tar.gz, holding repodata/
 #     with repomd.xml signed by FINGERPRINT, and KEYFILE as RPM-GPG-KEY-NAME, and prints
 #     its path. PREVIOUS is the bundle this replaces, if any.
+#   packaging/dnf-repo.sh prune KEYFILE RPMDIR
+#     Deletes each RPMDIR/vX.Y.Z/NAME.noarch.rpm signed by a key not in KEYFILE, with a
+#     warning, so metadata, which fails on one, can index the rest: an earlier release's RPM
+#     is one once a key rotation or leak takes its key out of KEYFILE. Fails on a damaged
+#     RPM or a bad signature, as metadata does.
 set -euo pipefail
 
 die() {
@@ -22,7 +27,8 @@ die() {
 
 usage() {
     die "usage: packaging/dnf-repo.sh sign FINGERPRINT RPM
-       packaging/dnf-repo.sh metadata FINGERPRINT KEYFILE URL RPMDIR OUTDIR [PREVIOUS]"
+       packaging/dnf-repo.sh metadata FINGERPRINT KEYFILE URL RPMDIR OUTDIR [PREVIOUS]
+       packaging/dnf-repo.sh prune KEYFILE RPMDIR"
 }
 
 # A full fingerprint, so gpg can't pick another key whose ID or user ID matches.
@@ -38,19 +44,35 @@ sign() {
     rpmsign --addsign --define "_openpgp_sign_id $1" --define "_gpg_name $1" -- "$2" >&2
 }
 
+# Imports the keys in key file $2 into a new keyring database $1.
+import_keys() {
+    mkdir "$1"
+    rpmkeys --dbpath "$1" --import "$2" || die "can't read the keys in $2"
+}
+
 # Prints "signed" when RPM $1 has signatures and each verifies with a key in the keyring
-# database $2, "unsigned" when it has none, and fails otherwise.
+# database $2, "unsigned" when it has none, "other key" when it is intact and each signature
+# that fails is by a key not in $2, and fails otherwise.
 signature() {
-    local out status=0
+    local out checks status=0
     out=$(rpmkeys --dbpath "$2" -Kv -- "$1" 2>&1) || status=$?
+    # The first line is the RPM's path, which could hold any of the text matched below.
+    checks=${out#*$'\n'}
     # rpmkeys names the key of each signature it finds ("Signature, key" in rpm 4). With
-    # none, rpm 6 fails the check and rpm 4 passes it, so the status alone can't tell. The
-    # match skips the first line, the RPM's path, which could hold the same text.
-    if [[ ${out#*$'\n'} == *[Ss]"ignature, key "* ]]; then
-        ((status == 0)) || die "$1 has a signature by a key not in the key file, or a bad one:
+    # none, rpm 6 fails the check and rpm 4 passes it, so the status alone can't tell.
+    if [[ $checks == *[Ss]"ignature, key "* ]]; then
+        if ((status == 0)); then
+            echo signed
+            return
+        fi
+        # rpmkeys marks a signature whose key it lacks NOKEY, and a check that fails BAD.
+        if [[ $checks == *": NOKEY"* && $checks != *": BAD"* ]] &&
+            rpmkeys --dbpath "$2" -K --nosignature -- "$1" >/dev/null 2>&1; then
+            echo other key
+            return
+        fi
+        die "$1 has a bad signature, or is damaged:
 $out"
-        echo signed
-        return
     fi
     rpmkeys --dbpath "$2" -K --nosignature -- "$1" >/dev/null 2>&1 ||
         die "$1 is damaged:
@@ -79,9 +101,8 @@ metadata() (
     local work
     work=$(mktemp -d)
     trap 'rm -rf -- "$work"' EXIT
-    mkdir "$work/keyring" "$work/packages" "$work/bundle"
-    rpmkeys --dbpath "$work/keyring" --import "$keyfile" ||
-        die "can't read the keys in $keyfile"
+    mkdir "$work/packages" "$work/bundle"
+    import_keys "$work/keyring" "$keyfile"
 
     local rpm tag nv pkg version sig name='' count=0
     shopt -s nullglob
@@ -96,11 +117,15 @@ metadata() (
         [[ $version != *"~"* ]] || die "$rpm is a pre-release ($version)"
         [[ $tag == "v$version" ]] || die "$rpm is version $version, not ${tag#v}"
         sig=$(signature "$rpm" "$work/keyring")
-        if [[ $sig == unsigned ]]; then
-            # Releases made before the project signed its RPMs.
-            printf 'dnf-repo.sh: warning: leaving out %s: it is not signed\n' "$rpm" >&2
-            continue
-        fi
+        case $sig in
+            unsigned)
+                # Releases made before the project signed its RPMs.
+                printf 'dnf-repo.sh: warning: leaving out %s: it is not signed\n' "$rpm" >&2
+                continue
+                ;;
+            # More likely a wrong key file than an earlier release, which prune leaves out.
+            "other key") die "$rpm is signed by a key not in the key file" ;;
+        esac
         # The name goes into the bundle's file names.
         [[ $pkg =~ ^[A-Za-z0-9._+-]+$ ]] || die "$rpm has a name dnf-repo.sh can't use: $pkg"
         [[ -z $name || $name == "$pkg" ]] || die "$rpm is not a package of $name"
@@ -137,11 +162,31 @@ metadata() (
     printf '%s\n' "$outdir/$name-dnf-repo.tar.gz"
 )
 
+prune() (
+    (($# == 2)) || usage
+    local keyfile=$1 rpmdir=$2 work rpm sig
+    [[ -f $keyfile ]] || die "no such key file: $keyfile"
+    [[ -d $rpmdir ]] || die "no such directory: $rpmdir"
+    work=$(mktemp -d)
+    trap 'rm -rf -- "$work"' EXIT
+    import_keys "$work/keyring" "$keyfile"
+    shopt -s nullglob
+    for rpm in "$rpmdir"/*/*.rpm; do
+        sig=$(signature "$rpm" "$work/keyring")
+        if [[ $sig == "other key" ]]; then
+            printf 'dnf-repo.sh: warning: leaving out %s: it is signed by a key not in %s\n' \
+                "$rpm" "$keyfile" >&2
+            rm -- "$rpm"
+        fi
+    done
+)
+
 (($# > 0)) || usage
 mode=$1
 shift
 case $mode in
     sign) sign "$@" ;;
     metadata) metadata "$@" ;;
+    prune) prune "$@" ;;
     *) usage ;;
 esac

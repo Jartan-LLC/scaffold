@@ -3,8 +3,9 @@
 The script runs with stub `rpm`, `rpmkeys`, `rpmsign`, `createrepo_c` and `gpg`
 first on `PATH`, so no rpm tools are needed. A stub RPM is a text file holding
 its name, version and signing key: ``-`` for none as rpm 6 reports it, ``-4``
-for none as rpm 4 does (passing the check), ``bad`` for a bad signature and
-``damaged`` for an unsigned package whose digests don't match. The stub
+for none as rpm 4 does (passing the check), ``bad`` for a bad signature,
+``damaged`` for an unsigned package whose digests don't match, and a key and
+``-damaged`` for a package that key signed whose digests don't match. The stub
 `rpmkeys` prints the RPM's path before its checks, as the real one does. A key
 file holds one key per line, each optionally followed by ``rvk:`` and the
 fingerprint of its designated revoker. The stub `createrepo_c` writes a
@@ -31,6 +32,7 @@ URL = "https://github.com/ORG/REPO/releases/download/"
 USAGE = """\
 dnf-repo.sh: usage: packaging/dnf-repo.sh sign FINGERPRINT RPM
        packaging/dnf-repo.sh metadata FINGERPRINT KEYFILE URL RPMDIR OUTDIR [PREVIOUS]
+       packaging/dnf-repo.sh prune KEYFILE RPMDIR
 """
 
 STUBS = {
@@ -49,7 +51,7 @@ if "--import" in args:
 known = keys.read_text().split()
 _, _, signer = open(args[-1]).read().split()
 if "--nosignature" in args:
-    sys.exit(1 if signer == "damaged" else 0)
+    sys.exit(1 if signer.endswith("damaged") else 0)
 print(f"{args[-1]}:")
 if signer == "damaged":
     print("    Payload SHA256 digest: BAD")
@@ -65,6 +67,8 @@ if signer == "bad":
     sys.exit(1)
 if signer not in known:
     print(f"    Header OpenPGP V4 RSA/SHA512 signature, key ID {signer}: NOKEY")
+    if signer.endswith("damaged"):
+        print("    Payload SHA256 digest: BAD")
     sys.exit(1)
 print(f"    Header OpenPGP V4 RSA/SHA512 signature, key fingerprint: {signer}: OK")
 """,
@@ -177,6 +181,8 @@ def bundle_files(path: Path) -> dict[str, str]:
         pytest.param(
             ["metadata", SIGNER, "KEY", URL, "rpms", "out", "prev", "x"], id="metadata, extra"
         ),
+        pytest.param(["prune", "KEY"], id="prune without RPMDIR"),
+        pytest.param(["prune", "KEY", "rpms", "x"], id="prune, extra"),
     ],
 )
 def test_bad_arguments_exit_1_with_usage(env: dict[str, str], args: list[str]) -> None:
@@ -255,17 +261,26 @@ def test_metadata_does_not_read_the_rpms_path_as_a_signature(
     assert result.stderr == f"dnf-repo.sh: warning: leaving out {rpm}: it is not signed\n"
 
 
-@pytest.mark.parametrize("signer", [pytest.param(OTHER, id="other key"), "bad"])
-def test_metadata_fails_on_a_signature_it_cannot_verify(
+def test_metadata_fails_on_an_rpm_signed_by_another_key(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    add_rpm(tmp_path / "rpms", "v1.0.0", "1.0.0", SIGNER)
+    rpm = add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", OTHER)
+    result = metadata(env, tmp_path, keyfile)
+    assert result.returncode == 1
+    assert result.stderr == f"dnf-repo.sh: {rpm} is signed by a key not in the key file\n"
+    assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize("signer", ["bad", f"{SIGNER}-damaged", f"{OTHER}-damaged"])
+def test_metadata_fails_on_a_bad_signature_or_a_damaged_signed_rpm(
     env: dict[str, str], tmp_path: Path, keyfile: Path, signer: str
 ) -> None:
     add_rpm(tmp_path / "rpms", "v1.0.0", "1.0.0", SIGNER)
     rpm = add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", signer)
     result = metadata(env, tmp_path, keyfile)
     assert result.returncode == 1
-    assert result.stderr.startswith(
-        f"dnf-repo.sh: {rpm} has a signature by a key not in the key file, or a bad one:\n"
-    )
+    assert result.stderr.startswith(f"dnf-repo.sh: {rpm} has a bad signature, or is damaged:\n")
     assert not (tmp_path / "out").exists()
 
 
@@ -473,3 +488,59 @@ def test_metadata_fails_on_a_file_that_is_not_an_rpm(
     assert result.returncode == 1
     assert result.stderr.endswith(f"dnf-repo.sh: not an RPM: {rpm}\n")
     assert not (tmp_path / "out").exists()
+
+
+def test_prune_deletes_only_rpms_signed_by_another_key(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    rpmdir = tmp_path / "rpms"
+    kept = [
+        add_rpm(rpmdir, "v1.0.0", "1.0.0", "-"),
+        add_rpm(rpmdir, "v1.1.0", "1.1.0", "-4"),
+        add_rpm(rpmdir, "v1.3.0", "1.3.0", SIGNER),
+    ]
+    other = add_rpm(rpmdir, "v1.2.0", "1.2.0", OTHER)
+    result = run(env, "prune", keyfile, rpmdir)
+    assert result.returncode == 0, result.stderr
+    assert result.stderr == (
+        f"dnf-repo.sh: warning: leaving out {other}: it is signed by a key not in {keyfile}\n"
+    )
+    assert not other.exists()
+    assert all(rpm.exists() for rpm in kept)
+
+
+@pytest.mark.parametrize(
+    ("signer", "error"),
+    [
+        pytest.param("damaged", "is damaged", id="damaged, unsigned"),
+        pytest.param(
+            f"{OTHER}-damaged", "has a bad signature, or is damaged", id="damaged, other key"
+        ),
+        pytest.param("bad", "has a bad signature, or is damaged", id="bad signature"),
+    ],
+)
+def test_prune_fails_on_a_damaged_rpm_or_a_bad_signature(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, signer: str, error: str
+) -> None:
+    rpm = add_rpm(tmp_path / "rpms", "v1.0.0", "1.0.0", signer)
+    result = run(env, "prune", keyfile, tmp_path / "rpms")
+    assert result.returncode == 1
+    assert result.stderr.startswith(f"dnf-repo.sh: {rpm} {error}:\n")
+    assert rpm.exists()
+
+
+@pytest.mark.parametrize("missing", ["keyfile", "rpmdir"])
+def test_prune_fails_on_a_missing_input(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, missing: str
+) -> None:
+    rpmdir = tmp_path / "rpms"
+    rpmdir.mkdir()
+    path = tmp_path / "missing"
+    if missing == "keyfile":
+        result = run(env, "prune", path, rpmdir)
+        error = f"no such key file: {path}"
+    else:
+        result = run(env, "prune", keyfile, path)
+        error = f"no such directory: {path}"
+    assert result.returncode == 1
+    assert result.stderr == f"dnf-repo.sh: {error}\n"

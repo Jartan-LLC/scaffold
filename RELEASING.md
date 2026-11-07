@@ -56,8 +56,8 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 The tag starts `release.yml`, `publish-pypi.yml` and `publish-docker.yml`. While
 `packaging/rpm.spec` exists, a failed RPM build or attestation leaves the tag without a GitHub
 Release; if the failure was transient, such as a mirror timeout, `gh run rerun <run ID> --failed`
-on the `release.yml` run creates it. While `packaging/dnf.repo` exists, so does a failed or
-rejected `sign` job.
+on the `release.yml` run creates it. While `packaging/dnf.repo` exists, a failed or rejected
+`sign` job also leaves the tag without a GitHub Release.
 
 1. Approve the `publish-pypi.yml` and `publish-docker.yml` runs: open each from
    `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits for this only when

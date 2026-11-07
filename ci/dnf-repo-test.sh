@@ -80,7 +80,7 @@ build() {
     done < <(sed -n 's|.*<location href="repodata/\([^"/]*\)".*|\1|p' \
         "$www/v1/repodata/repomd.xml")
 
-    # A package signed by another key fails the whole run.
+    # A package signed by another key fails metadata, and prune deletes it.
     other=$(new_key 'dnf-repo CI, another key <other@example.invalid>')
     mkdir -p "$work/in-other/v0.0.3"
     cp "$work/rpms/v0.0.3/$name.noarch.rpm" "$work/in-other/v0.0.3/"
@@ -90,6 +90,9 @@ build() {
         die "dnf-repo.sh indexed a package signed by another key"
     fi
     grep -q 'a key not in the key file' "$work/other.err" || die "$(cat "$work/other.err")"
+    "$root/packaging/dnf-repo.sh" prune "$work/RPM-GPG-KEY" "$work/in-other"
+    [[ ! -e $work/in-other/v0.0.3/$name.noarch.rpm ]] ||
+        die "dnf-repo.sh prune kept a package signed by another key"
 
     # Signed metadata that lists an unsigned package, which gpgcheck refuses.
     mkdir "$www/unsigned"

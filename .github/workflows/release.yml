@@ -27,6 +27,7 @@ jobs:
       prerelease: ${{ steps.notes.outputs.prerelease }}
       rpm: ${{ steps.packaging.outputs.rpm }}
       dnf_repo: ${{ steps.packaging.outputs.dnf_repo }}
+      artifact: ${{ steps.packaging.outputs.artifact }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -63,6 +64,9 @@ jobs:
           fi
           if [ -f packaging/dnf.repo ]; then
             echo "dnf_repo=true" >>"$GITHUB_OUTPUT"
+            echo "artifact=release-assets" >>"$GITHUB_OUTPUT"
+          else
+            echo "artifact=release-rpm" >>"$GITHUB_OUTPUT"
           fi
 
   rpm:
@@ -77,7 +81,7 @@ jobs:
       artifact: release-rpm
 
   # Signs the RPM, and on a full release builds the dnf repository's signed metadata for it
-  # and the 4 newest earlier full releases, so dnf downgrade and dnf history undo have the
+  # and the newest earlier full releases, so dnf downgrade and dnf history undo have the
   # previous version. A pre-release stays out of the repository: dnf would upgrade every
   # user to it, since it sorts 2.0.0~rc.1 above 1.1.0.
   sign:
@@ -121,6 +125,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          KEEP: 4
         run: |
           # In an if condition, a function ignores set -e, hence the || exit.
           has_asset() {
@@ -132,8 +137,9 @@ jobs:
           rpms=(rpm/*.noarch.rpm)
           name=$(basename "${rpms[0]}" .noarch.rpm)
           # A re-run finds this tag's own release, if the first run created it.
-          tags=$(gh release list --exclude-drafts --exclude-pre-releases --limit 5 \
-            --json tagName --jq '[.[].tagName | select(. != env.GITHUB_REF_NAME)][:4][]')
+          tags=$(gh release list --exclude-drafts --exclude-pre-releases \
+            --limit "$((KEEP + 1))" --json tagName \
+            --jq '[.[].tagName | select(. != env.GITHUB_REF_NAME)][:(env.KEEP | tonumber)][]')
           for tag in $tags; do
             if has_asset "$tag" "$name.noarch.rpm"; then
               gh release download "$tag" --pattern "$name.noarch.rpm" --dir "releases/$tag"
@@ -188,19 +194,10 @@ jobs:
           cp -- "$rpm" out/
           [[ $PRERELEASE == false ]] || exit 0
 
-          # dnf-repo.sh fails on an RPM signed by a key the key file doesn't hold. An earlier
-          # release's RPM is, once a rotation or a leak takes its key out of the file; it
-          # leaves the repository and stays installable by URL.
-          rpmkeys --dbpath "$work/rpmdb" --import packaging/RPM-GPG-KEY
-          shopt -s nullglob
-          for old in releases/*/*.rpm; do
-            if ! rpmkeys --dbpath "$work/rpmdb" -K -- "$old" >/dev/null; then
-              echo "::warning::Leaving $old out of the dnf repository: no key in packaging/RPM-GPG-KEY signed it"
-              rm -- "$old"
-            fi
-          done
           mkdir -p "releases/$GITHUB_REF_NAME"
           cp -- "$rpm" "releases/$GITHUB_REF_NAME/"
+          packaging/dnf-repo.sh prune packaging/RPM-GPG-KEY releases
+          shopt -s nullglob
           previous=(previous/*.tar.gz)
           packaging/dnf-repo.sh metadata "$fingerprint" packaging/RPM-GPG-KEY \
             "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/" releases out "${previous[@]}"
@@ -227,7 +224,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: ${{ needs.notes.outputs.dnf_repo == 'true' && 'release-assets' || 'release-rpm' }}
+          name: ${{ needs.notes.outputs.artifact }}
           path: assets
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
@@ -247,7 +244,7 @@ jobs:
       - if: needs.rpm.result == 'success'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: ${{ needs.notes.outputs.dnf_repo == 'true' && 'release-assets' || 'release-rpm' }}
+          name: ${{ needs.notes.outputs.artifact }}
           path: assets
 
       # No checkout needed: gh talks to the API and resolves the repo from
