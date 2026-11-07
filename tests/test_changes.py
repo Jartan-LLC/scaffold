@@ -1,9 +1,8 @@
 """Tests for `ci/changes.py`, which decides which of `ci.yml`'s gated jobs run.
 
-`check` counts a skipped job as passing, so a path wrongly skipped skips its
-checks without failing anything; these tests are what catch it. The script runs
-as the workflow runs it, a subprocess: the path table gives it the changed paths,
-and the git tests run it in a throwaway repository.
+A path the script wrongly skips passes CI green; these tests are what catch it.
+The script runs as the workflow runs it, a subprocess: the path table gives it
+the changed paths, and the git tests run it in a throwaway repository.
 """
 
 import os
