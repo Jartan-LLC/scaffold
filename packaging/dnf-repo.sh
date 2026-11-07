@@ -19,6 +19,9 @@
 #     warning, so metadata, which fails on one, can index the rest: an earlier release's RPM
 #     is one once a key rotation or leak takes its key out of KEYFILE. Fails on a damaged
 #     RPM or a bad signature, as metadata does.
+#   packaging/dnf-repo.sh fingerprint
+#     Prints the fingerprint of the one secret key in gpg's keyring, and fails unless the
+#     keyring holds exactly one.
 set -euo pipefail
 
 die() {
@@ -29,7 +32,8 @@ die() {
 usage() {
     die "usage: packaging/dnf-repo.sh sign FINGERPRINT KEYFILE RPM
        packaging/dnf-repo.sh metadata FINGERPRINT KEYFILE URL RPMDIR OUTDIR [PREVIOUS]
-       packaging/dnf-repo.sh prune KEYFILE RPMDIR"
+       packaging/dnf-repo.sh prune KEYFILE RPMDIR
+       packaging/dnf-repo.sh fingerprint"
 }
 
 # A full fingerprint, so gpg can't pick another key whose ID or user ID matches.
@@ -37,20 +41,26 @@ check_fingerprint() {
     [[ $1 =~ ^[0-9A-Fa-f]{40}$ ]] || die "not a key fingerprint (40 hex digits): $1"
 }
 
+# Prints each primary key's fingerprint in gpg's --with-colons listing on stdin. gpg lists
+# it, in uppercase, in the first fingerprint record after the key's pub or sec record. The
+# others are its subkeys', and the rvk records before it name designated revokers, keys the
+# listing needn't hold.
+primary_fingerprints() {
+    awk -F: '
+        $1 == "pub" || $1 == "sec" { p = 1; next }
+        p && $1 == "fpr" { print $10; p = 0 }' # codespell:ignore fpr
+}
+
 # Users trust only the keys the package installs from key file $2: dnf skips a repository
 # whose repomd.xml another key signed, with only a warning.
 check_key() {
     [[ -f $2 ]] || die "no such key file: $2"
-    local keys
+    local keys key
     keys=$(gpg --batch --with-colons --show-keys -- "$2" 2>&1) ||
         die "can't read the keys in $2: $keys"
-    # gpg lists a primary key's fingerprint, in uppercase, in the first fingerprint record
-    # after its pub record. The others are its subkeys', and the rvk records before it name
-    # designated revokers, which the file needn't hold.
-    awk -F: -v key="$(printf '%s' "$1" | tr a-f A-F)" '
-        $1 == "pub" { p = 1; next }
-        p && $1 == "fpr" { if ($10 == key) found = 1; p = 0 } # codespell:ignore fpr
-        END { exit !found }' <<<"$keys" ||
+    key=$(printf '%s' "$1" | tr a-f A-F)
+    # Not grep -q, which can stop reading before awk finishes and fail the pipeline.
+    primary_fingerprints <<<"$keys" | grep -xF -- "$key" >/dev/null ||
         die "$2 doesn't hold the key $1"
 }
 
@@ -197,6 +207,16 @@ prune() (
     done
 )
 
+fingerprint() {
+    (($# == 0)) || usage
+    local keys fingerprints
+    keys=$(gpg --batch --with-colons --list-secret-keys 2>&1) ||
+        die "can't list the secret keys: $keys"
+    fingerprints=$(primary_fingerprints <<<"$keys")
+    [[ $fingerprints =~ ^[0-9A-F]{40}$ ]] || die "the keyring must hold one secret key"
+    printf '%s\n' "$fingerprints"
+}
+
 (($# > 0)) || usage
 mode=$1
 shift
@@ -204,5 +224,6 @@ case $mode in
     sign) sign "$@" ;;
     metadata) metadata "$@" ;;
     prune) prune "$@" ;;
+    fingerprint) fingerprint "$@" ;;
     *) usage ;;
 esac

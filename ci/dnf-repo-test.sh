@@ -138,6 +138,16 @@ build() {
     gpg --armor --export "$other" >"$work/other-key"
     refused "doesn't hold the key $subkey" \
         sign "$subkey" "$work/other-key" "$work/rpms/v0.0.3/$name.noarch.rpm"
+
+    # fingerprint refuses this keyring, which holds two secret keys, and names a key with a
+    # signing subkey by its primary key.
+    refused 'must hold one secret key' fingerprint
+    local one=$work/one-key
+    mkdir -m 700 "$one"
+    gpg --batch --armor --export-secret-keys "$other" |
+        GNUPGHOME=$one gpg --batch --quiet --import
+    [[ $(GNUPGHOME=$one "$root/packaging/dnf-repo.sh" fingerprint) == "$other" ]] ||
+        die "dnf-repo.sh fingerprint didn't print the primary key's fingerprint, $other"
 }
 
 # Runs dnf-repo.sh with the arguments after $1, which must fail with the message $1.

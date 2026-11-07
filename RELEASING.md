@@ -57,7 +57,8 @@ The tag starts `release.yml`, `publish-pypi.yml` and `publish-docker.yml`. While
 `packaging/rpm.spec` exists, a failed RPM build or attestation leaves the tag without a GitHub
 Release; if the failure was transient, such as a mirror timeout, `gh run rerun <run ID> --failed`
 on the `release.yml` run creates it. While `packaging/dnf.repo` exists, a failed or rejected
-`sign` job also leaves the tag without a GitHub Release.
+`sign` job also leaves the tag without a GitHub Release, and [Signing key](#signing-key) says
+when a re-run fails again.
 
 1. Approve the `publish-pypi.yml` and `publish-docker.yml` runs: open each from
    `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits for this only when
@@ -114,7 +115,9 @@ While `packaging/dnf.repo` exists, `release.yml`'s `sign` job signs each RPM, an
 release's dnf repository metadata, with the key in the `RPM_SIGNING_KEY` secret of the
 `rpm-signing` environment. The package installs `packaging/RPM-GPG-KEY`, and dnf trusts only
 the keys in it, so the job refuses to sign with a key that file doesn't hold. Without the
-secret, the job fails and the tag gets no GitHub Release.
+secret, the job fails and the tag gets no GitHub Release. A re-run checks out the same tagged
+commit, so it fails again while that commit's `packaging/RPM-GPG-KEY` doesn't hold the secret's
+key.
 
 <!-- TODO(/onboard): in this section's commands, replace ORG/REPO with the GitHub org and repo, NAME with Name in packaging/rpm.spec, and ADDRESS with the key's contact email address. -->
 
@@ -186,9 +189,10 @@ two releases at least:
 
 A user who installs none of the releases in between stops getting updates, with only a warning
 in dnf's output, until they install from the release URL again, as
-[Installing the RPM](#installing-the-rpm) says. Leave the old key in `packaging/RPM-GPG-KEY`:
-the `sign` job leaves an earlier release out of the dnf repository once the file no longer
-holds the key that signed it.
+[Installing the RPM](#installing-the-rpm) says. Leave the old key in `packaging/RPM-GPG-KEY`
+until the new key has signed every release in the dnf repository, which holds the latest full
+release and as many earlier ones as `KEEP` in `release.yml`'s `sign` job says: the job leaves an
+earlier release out of the repository once the file no longer holds the key that signed it.
 
 ### If the key leaks
 

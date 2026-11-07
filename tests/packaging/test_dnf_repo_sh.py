@@ -13,7 +13,9 @@ and the fingerprint of its designated revoker, or ``sub:`` and the fingerprint
 of a subkey. The stub `createrepo_c` writes a primary.xml that lists each
 package's location, and the stub `gpg` writes the signing key into the
 signature and lists a key file's keys in the real one's order, failing as it
-does on an empty file. ci.yml's dnf-repo job runs the real tools.
+does on an empty file. It lists the secret keys of `$GNUPGHOME/secret-keys`,
+which takes a key file's form, the same way. ci.yml's dnf-repo job runs the
+real tools.
 """
 
 import io
@@ -35,6 +37,7 @@ USAGE = """\
 dnf-repo.sh: usage: packaging/dnf-repo.sh sign FINGERPRINT KEYFILE RPM
        packaging/dnf-repo.sh metadata FINGERPRINT KEYFILE URL RPMDIR OUTDIR [PREVIOUS]
        packaging/dnf-repo.sh prune KEYFILE RPMDIR
+       packaging/dnf-repo.sh fingerprint
 """
 
 STUBS = {
@@ -97,22 +100,31 @@ hrefs = sorted(prefix + str(p.relative_to(packages)) for p in packages.rglob("*.
 (repodata / "repomd.xml").write_text('<location href="repodata/new-primary.xml"/>\\n')
 """,
     "gpg": """\
-import sys
+import os, pathlib, sys
 args = sys.argv[1:]
-if "--show-keys" in args:
-    lines = [line.split() for line in open(args[-1]) if line.strip()]
-    if not lines:
-        sys.exit("gpg: no valid OpenPGP data found.")
+
+def show(path, primary_type, sub_type):
+    lines = [line.split() for line in open(path) if line.strip()]
     for primary, *extras in lines:
-        print("pub:-:4096:1:0123456789ABCDEF:1700000000:::-:::scSC::::::23::0:")
+        print(f"{primary_type}:-:4096:1:0123456789ABCDEF:1700000000:::-:::scSC::::::23::0:")
         for extra in extras:
             if extra.startswith("rvk:"):
                 print(f"rvk:::1::::::{extra[4:]}:80:")
         print(f"fpr:::::::::{primary}:")  # codespell:ignore fpr
         for extra in extras:
             if extra.startswith("sub:"):
-                print("sub:-:4096:1:89ABCDEF01234567:1700000000::::::s::::::23:")
+                print(f"{sub_type}:-:4096:1:89ABCDEF01234567:1700000000::::::s::::::23:")
                 print(f"fpr:::::::::{extra[4:]}:")  # codespell:ignore fpr
+    return lines
+
+if "--show-keys" in args:
+    if not show(args[-1], "pub", "sub"):
+        sys.exit("gpg: no valid OpenPGP data found.")
+    sys.exit(0)
+if "--list-secret-keys" in args:
+    keyring = pathlib.Path(os.environ["GNUPGHOME"]) / "secret-keys"
+    if keyring.exists():
+        show(keyring, "sec", "ssb")
     sys.exit(0)
 signer = args[args.index("--local-user") + 1]
 open(args[args.index("--output") + 1], "w").write(signer)
@@ -192,6 +204,7 @@ def bundle_files(path: Path) -> dict[str, str]:
         ),
         pytest.param(["prune", "KEY"], id="prune without RPMDIR"),
         pytest.param(["prune", "KEY", "rpms", "x"], id="prune, extra"),
+        pytest.param(["fingerprint", "x"], id="fingerprint, extra"),
     ],
 )
 def test_bad_arguments_exit_1_with_usage(env: dict[str, str], args: list[str]) -> None:
@@ -573,3 +586,34 @@ def test_prune_fails_on_a_missing_input(
         error = f"no such directory: {path}"
     assert result.returncode == 1
     assert result.stderr == f"dnf-repo.sh: {error}\n"
+
+
+@pytest.mark.parametrize(
+    "keys",
+    [
+        pytest.param(f"{SIGNER}\n", id="one key"),
+        pytest.param(f"{SIGNER} sub:{OTHER}\n", id="one key with a subkey"),
+        pytest.param(f"{SIGNER} rvk:{OTHER}\n", id="one key with a designated revoker"),
+    ],
+)
+def test_fingerprint_prints_the_one_secret_keys_fingerprint(
+    env: dict[str, str], tmp_path: Path, keys: str
+) -> None:
+    (tmp_path / "secret-keys").write_text(keys, encoding="utf-8")
+    result = run({**env, "GNUPGHOME": str(tmp_path)}, "fingerprint")
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == f"{SIGNER}\n"
+
+
+@pytest.mark.parametrize(
+    "keys", [pytest.param(None, id="no key"), pytest.param(f"{SIGNER}\n{OTHER}\n", id="two keys")]
+)
+def test_fingerprint_fails_unless_the_keyring_holds_one_secret_key(
+    env: dict[str, str], tmp_path: Path, keys: str | None
+) -> None:
+    if keys is not None:
+        (tmp_path / "secret-keys").write_text(keys, encoding="utf-8")
+    result = run({**env, "GNUPGHOME": str(tmp_path)}, "fingerprint")
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert result.stderr == "dnf-repo.sh: the keyring must hold one secret key\n"
