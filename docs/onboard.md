@@ -61,18 +61,18 @@ its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sent
 `RELEASING.md` that names that workflow. To drop the RPM, delete `packaging/`,
 `tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, `docs/signing-key.md` and
 its entry in `docs/index.md`, the `docker` entry for `/packaging` in `.github/dependabot.yml`,
-the `rpm.yml` row in Publishing, and, in `RELEASING.md`, the Installing the RPM section and each
-sentence and list item that opens with "while `packaging/rpm.spec` exists" or "while
-`packaging/dnf.repo` exists". Keep `.github/workflows/rpm.yml` and the RPM jobs in `ci.yml` and
-`release.yml`: they skip while the spec is missing.
+the `rpm.yml` and `sign` rows in Publishing, and, in `RELEASING.md`, the Installing the RPM
+section and each sentence and list item that opens with "while `packaging/rpm.spec` exists" or
+"while `packaging/dnf.repo` exists". Keep `.github/workflows/rpm.yml` and the RPM jobs in
+`ci.yml` and `release.yml`: they skip while the spec is missing.
 
 To keep the RPM without the dnf repository, as a private repository must, delete
 `packaging/dnf.repo`, `packaging/RPM-GPG-KEY`, `packaging/dnf-repo.sh`,
 `tests/packaging/test_dnf_repo_sh.py`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`,
 `docs/signing-key.md` and its entry in `docs/index.md`, the spec's lines that make, install and
-list those two files, with their comments, and, in `RELEASING.md`, each sentence and list item that
-opens with "while `packaging/dnf.repo` exists". Keep the `sign` job in `release.yml`: it skips
-while `packaging/dnf.repo` is missing.
+list those two files, with their comments, the `sign` row in Publishing, and, in `RELEASING.md`,
+each sentence and list item that opens with "while `packaging/dnf.repo` exists". Keep the `sign`
+job in `release.yml`: it skips while `packaging/dnf.repo` is missing.
 
 ## Procedures
 
@@ -215,8 +215,9 @@ In a project that isn't Python, `ci/changes.py` keeps its lines on the Python jo
    to state only the default it gives (for the supported versions, `Report against the
    latest release.`), and delete the comment with the example table.
 3. Run the grep again. It should print only this page, the marker on its `docs/index.md`
-   entry, which Finish deletes, and `.scaffold-sync`, which the next section fills or, in a
-   fork, deletes.
+   entry, which Finish deletes, `.scaffold-sync`, which the next section fills or, in a
+   fork, deletes, and, if you kept the dnf repository, the markers in `packaging/RPM-GPG-KEY`
+   and `RELEASING.md`, which [Making a key](signing-key.md#making-a-key) resolves.
 
 ## Record the sync point
 
@@ -324,7 +325,8 @@ which the dnf repository needs anyway. Make the first key as
        ([details](#readme-badges)).
 2. [ ] Delete this page, its entry in `docs/index.md` with the marker above it (unless
        tearing down Python deleted `docs/index.md`), and `.claude/commands/onboard.md`.
-3. [ ] Run `git grep -n 'TODO(/onboard)'`. It must print nothing.
+3. [ ] Run `git grep -n 'TODO(/onboard)'`. It must print nothing, or, until you make the
+       signing key, only the markers in `packaging/RPM-GPG-KEY` and `RELEASING.md`.
 4. [ ] Run `make check`.
 
 ### README badges

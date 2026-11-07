@@ -10,7 +10,8 @@
 #   packaging/dnf-repo.sh metadata FINGERPRINT KEYFILE URL RPMDIR OUTDIR [PREVIOUS]
 #     Indexes RPMDIR/vX.Y.Z/NAME.noarch.rpm for each release, with each package's
 #     location URL as URL, which ends in /, then vX.Y.Z/NAME.noarch.rpm. Leaves out an
-#     unsigned RPM, with a warning. Writes OUTDIR/NAME-dnf-repo.tar.gz, holding repodata/
+#     unsigned RPM, with a warning, and fails on an RPM signed by a key not in KEYFILE,
+#     which prune deletes. Writes OUTDIR/NAME-dnf-repo.tar.gz, holding repodata/
 #     with repomd.xml signed by FINGERPRINT, and KEYFILE as RPM-GPG-KEY-NAME, and prints
 #     its path. PREVIOUS is the bundle this replaces, if any. FINGERPRINT must be a primary
 #     key in KEYFILE.

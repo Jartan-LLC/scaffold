@@ -44,7 +44,8 @@ Make the first key before the first release, once the `rpm-signing` environment 
    [If the key leaks](#if-the-key-leaks) needs.
 4. Write the key's fingerprint in place of `FINGERPRINT`, or of the leaked key's after a leak,
    in `RELEASING.md`'s Installing the RPM section and in your README's copy of it, so users can
-   check the key the package installs.
+   check the key the package installs. Delete the `TODO(/onboard)` marker above that paragraph
+   in `RELEASING.md`, if it is still there.
 
 ## Rotating the key
 
