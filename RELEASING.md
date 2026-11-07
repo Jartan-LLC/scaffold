@@ -41,7 +41,7 @@ is in [Publishing](docs/scaffold.md#publishing).
 
    ```bash
    git fetch origin   # so the merge commit exists locally
-   sha=$(gh pr view <PR number> --json mergeCommit --jq .mergeCommit.oid)
+   sha=$(gh pr view <PR number> --json mergeCommit --jq .mergeCommit.oid)   # again, in case step 5's shell is gone
    git tag vX.Y.Z "$sha"
    git push origin vX.Y.Z
    ```
