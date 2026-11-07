@@ -7,14 +7,16 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 
 1. Choose the version, written `X.Y.Z` below, a pre-release suffix included. Write a
    pre-release as `1.2.0-rc.1` (or `-alpha.1`, `-beta.1`), not `1.2.0rc1`:
-   `publish-docker.yml`, where the repository has it, tags images only from SemVer versions.
-   [Pre-releases](#pre-releases) says what one publishes.
+   `publish-docker.yml` tags images only from SemVer versions. [Pre-releases](#pre-releases)
+   says what one publishes.
 2. On a branch from `main`, move the entries under `## [Unreleased]` in `CHANGELOG.md` to a new
    section below it, headed `## [X.Y.Z] - YYYY-MM-DD`. That section becomes the release notes;
    an entry may wrap across lines, since the notes join them. Then replace the `[Unreleased]`
    link, which before the first release points at `commits/main`, and add a link for the new
    version. Keep all link definitions at the end of the file, below every section and after a
    blank line, since one written straight after an entry becomes part of that entry's text:
+
+   <!-- TODO(/onboard): replace ORG/REPO in the links below with the GitHub org and repo. -->
 
    ```markdown
    [Unreleased]: https://github.com/ORG/REPO/compare/vX.Y.Z...HEAD
@@ -53,12 +55,11 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 
 ## After the tag
 
-The tag starts `release.yml`, which creates the GitHub Release, and `publish-pypi.yml` and
-`publish-docker.yml` where the repository has them.
+The tag starts `release.yml`, `publish-pypi.yml` and `publish-docker.yml`.
 
-1. Approve each publish run waiting on its `pypi` or `ghcr` environment: open the run from
-   `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits only when its
-   environment has required reviewers.
+1. Approve the `publish-pypi.yml` and `publish-docker.yml` runs: open each from
+   `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits for this only when
+   its environment (`pypi`, `ghcr`) has required reviewers.
 2. Check that every run succeeded:
 
    ```bash
@@ -71,10 +72,9 @@ The tag starts `release.yml`, which creates the GitHub Release, and `publish-pyp
 
 ## Pre-releases
 
-A tag with a pre-release version, such as `v1.2.0-rc.1`:
+For a tag with a pre-release version, such as `v1.2.0-rc.1`:
 
-- creates a GitHub pre-release, which GitHub never marks Latest;
-- with `publish-pypi.yml`, publishes a PyPI pre-release, with the version normalized
-  (`1.2.0rc1`);
-- with `publish-docker.yml`, tags the image `1.2.0-rc.1` only, leaving `1.2` and `latest`
-  where they were.
+- `release.yml` creates a GitHub pre-release, which GitHub never marks Latest;
+- `publish-pypi.yml` publishes a PyPI pre-release, with the version normalized (`1.2.0rc1`);
+- `publish-docker.yml` tags the image `1.2.0-rc.1` only, leaving `1.2` and `latest` where
+  they were.

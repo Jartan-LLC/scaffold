@@ -22,7 +22,8 @@ An item whose answer needs neither, such as which workflows to keep, says what t
 - [ ] Publishing targets: the PyPI package, the container image, the docs site
       ([details](#publishing-targets))
 - [ ] Whether to keep `Dockerfile` (its marker says what goes with it, and the
-      `publish-docker.yml` row in [Publishing](scaffold.md#publishing) goes too),
+      `publish-docker.yml` row in [Publishing](scaffold.md#publishing) and the sentences
+      naming it in `RELEASING.md` go too),
       `.github/workflows/scorecard.yml` (an OpenSSF score; it skips on private repos) and
       `.github/workflows/external-link-check.yml` (a weekly check for broken external links).
       Delete each workflow you don't keep
@@ -44,7 +45,8 @@ stack.
   and import the repo there.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
-its row in [Publishing](scaffold.md#publishing).
+its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
+`RELEASING.md` that names that workflow.
 
 ## Procedures
 
@@ -125,6 +127,8 @@ Finish deletes.
 7. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
    table, delete the `publish-pypi.yml` row and, if not containerized, the
    `publish-docker.yml` row.
+8. In `RELEASING.md`, delete or rewrite each sentence that names `publish-pypi.yml` and, if
+   not containerized, `publish-docker.yml`.
 
 ### Stack
 
