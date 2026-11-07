@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Tests the signed dnf repository packaging/dnf-repo.sh builds, from first install to
-# upgrade, against the attacks repo_gpgcheck and gpgcheck stop. ci.yml's dnf-repo job runs
-# each mode as root in its own Fedora container, so the client starts with no keys.
+# upgrade, against the attacks repo_gpgcheck, gpgcheck and the key the package installs
+# stop. ci.yml's dnf-repo job runs each mode as root in its own Fedora container, so the
+# client starts with no keys.
 #
 # Usage:
 #   ci/dnf-repo-test.sh build WWW
@@ -47,9 +48,10 @@ build() {
     gpg --armor --export "$fingerprint" >"$work/RPM-GPG-KEY"
     mkdir -p "$www/assets"
 
-    # rpm.sh builds the commit checked out, so the packages come from a commit on HEAD, in a
-    # clone that leaves the checkout as it is. The checkout belongs to the runner's user, not
-    # this container's root, and git checks the owner of its .git directory.
+    # rpm.sh builds the commit checked out, so the packages come from a commit on top of
+    # HEAD, in a clone, that holds the throwaway key and baseurl. The checkout stays as it
+    # is. It belongs to the runner's user, not this container's root, and git checks the
+    # owner of its .git directory.
     local src=$work/src
     git -c safe.directory="$root/.git" -c advice.detachedHead=false clone --quiet -- "$root" "$src"
     cp "$work/RPM-GPG-KEY" "$src/packaging/RPM-GPG-KEY"

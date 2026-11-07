@@ -68,8 +68,8 @@ its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sent
 To keep the RPM without the dnf repository, delete `packaging/dnf.repo`,
 `packaging/RPM-GPG-KEY`, `packaging/dnf-repo.sh`, `tests/packaging/test_dnf_repo_sh.py`,
 `ci/dnf-repo-test.sh` and `ci/dnf_repo_server.py`, the lines in
-`packaging/rpm.spec` that install the first two and list them under `%files`, with their
-comments, and each sentence and list item in `RELEASING.md` that opens with "while
+`packaging/rpm.spec` that make and install the first two and list them under `%files`, with
+their comments, and each sentence and list item in `RELEASING.md` that opens with "while
 `packaging/dnf.repo` exists". `ci.yml`'s `dnf-repo` job skips while `packaging/dnf.repo` is
 missing.
 
