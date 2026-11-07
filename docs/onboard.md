@@ -20,7 +20,6 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 - [ ] Prune `.github/workflows/ci.yml` and `.github/dependabot.yml` to your stack ([details](scaffold.md#ci))
 - [ ] Update the docs site ([details](#docs-site))
 - [ ] Set your license: keep `LICENSE` (MIT) with your own year and name, or replace it with one of the `LICENSE.*` templates (filling in `[year]` and `[fullname]`), then delete the `LICENSE.*` files
-- [ ] Switch off plugin skills that don't fit your stack ([details](#claude-settings))
 
 ### Recommended
 
@@ -29,6 +28,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 - [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
 - [ ] Enable CodeQL default setup (Settings > Security > Code scanning)
 - [ ] Delete `.github/workflows/scorecard.yml` if you don't want an OpenSSF score (it skips on private repos)
+- [ ] Delete `.github/workflows/external-link-check.yml` if you don't want the weekly check for broken external links
 - [ ] Enable secret scanning with push protection (Settings > Security > Secret Protection)
 - [ ] Configure branch ruleset for `main` — require PR reviews, require the `check` status to pass, block force pushes
 - [ ] Enable auto-merge (Settings > General > Allow auto-merge) — Dependabot minor/patch PRs auto-merge after CI passes
@@ -49,16 +49,14 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 
 ## Devcontainer
 
-- `devcontainer.json`: change the `desktop-lite` password; add or remove Features and
-  extensions for your stack.
+- `devcontainer.json`: add or remove Features and extensions for your stack.
 - For each [enchantments](https://github.com/Jartan-LLC/enchantments) Feature you decline, follow
   the Removal section on its page, if it has one
   ([the Features list](https://github.com/Jartan-LLC/enchantments#features) links each page);
   otherwise remove its entry from `devcontainer.json`. Either way, also remove its key
   from `devcontainer-lock.json`, then rebuild. Also:
-  - Declining `claude-code` means declining `grimoire` too (and `codebase-memory-mcp`, if
-    you added it), and declining `liza` means declining `liza-toolchain`.
-  - Keep the `node` Feature while `grimoire` is declared.
+  - Declining `claude-code` means declining `codebase-memory-mcp` too, if you added it, and
+    declining `liza` means declining `liza-toolchain`.
   - To keep a code graph without `liza-toolchain`, declare `codebase-memory-mcp` in its place.
   - A Feature in your VS Code `dev.containers.defaultFeatures` comes back on rebuild, so
     declining it here applies only to contributors who don't set it. Declare `liza` and
@@ -135,13 +133,6 @@ which reads fine on GitHub without Sphinx, and this page, which Cleanup deletes.
 - `getting-started.md`: update the `pip install app` line.
 - `reference.md`: after the package rename, update the `automodule` names. The docs build
   fails while they point at `app`.
-
-## Claude settings
-
-In `.claude/settings.json`, add `skillOverrides` to switch off installed plugin skills that
-don't fit your stack, for example `{"go-review": "off"}`. Where two plugins cover one
-domain, keep the more specific; keep universal skills on. Update any agent's `skills:`
-frontmatter that names a skill you switched off.
 
 ## Dependabot labels
 

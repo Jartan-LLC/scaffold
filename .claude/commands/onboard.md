@@ -18,7 +18,7 @@ Its checklist is the source of truth for what needs to change, and its sections 
 
 ### 3. Interview
 
-Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, author/full name (for `LICENSE` + `docs/conf.py`), the Python package/import name if Python (for the `src/app` rename), contacts for conduct and security reports (one address, or two if they differ), noting that both are published publicly, so they should give addresses they are willing to publish, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), any version corrections for training data, and which of the enchantments Features in `.devcontainer/devcontainer.json` to keep (`docs/onboard.md`, Devcontainer). List the installed plugin skills/agents (from `enabledPlugins` in `.claude/settings.json`) so the user can choose which to disable via `skillOverrides`.
+Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, author/full name (for `LICENSE` + `docs/conf.py`), the Python package/import name if Python (for the `src/app` rename), contacts for conduct and security reports (one address, or two if they differ), noting that both are published publicly, so they should give addresses they are willing to publish, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), any version corrections for training data, and which of the enchantments Features in `.devcontainer/devcontainer.json` to keep (`docs/onboard.md`, Devcontainer).
 
 ### 4. Confirm
 
