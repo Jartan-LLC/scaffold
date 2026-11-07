@@ -55,12 +55,12 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
 `RELEASING.md` that names that workflow. To drop the RPM, delete `packaging/`,
-`tests/test_rpm_sh.py`, `tests/test_dnf_repo_sh.py`, `ci/dnf-repo-test.sh`,
-`ci/dnf_repo_server.py`, the `docker` entry for `/packaging` in `.github/dependabot.yml`, the
-`rpm.yml` row in Publishing, and, in `RELEASING.md`, the Installing the RPM section and each
-sentence and list item that opens with "while `packaging/rpm.spec` exists". Keep
-`.github/workflows/rpm.yml`: `ci.yml` and `release.yml` call it from jobs that skip while
-`packaging/rpm.spec` is missing. `ci.yml`'s `dnf-repo` job skips then too.
+`tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, the `docker` entry for
+`/packaging` in `.github/dependabot.yml`, the `rpm.yml` row in Publishing, and, in
+`RELEASING.md`, the Installing the RPM section and each sentence and list item that opens with
+"while `packaging/rpm.spec` exists". Keep `.github/workflows/rpm.yml`: `ci.yml` and
+`release.yml` call it from jobs that skip while `packaging/rpm.spec` is missing. `ci.yml`'s
+`dnf-repo` job skips then too.
 
 ## Procedures
 

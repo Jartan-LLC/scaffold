@@ -14,7 +14,7 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-SCRIPT = Path(__file__).resolve().parents[1] / "ci" / "changes.py"
+SCRIPT = Path(__file__).resolve().parents[2] / "ci" / "changes.py"
 
 NONE = ""
 DEVCONTAINER = "devcontainer=true\n"
