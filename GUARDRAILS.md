@@ -35,8 +35,9 @@ rules for every agent, and imports it for Claude Code; Liza agents also enforce 
 - Don't wrap things the underlying library already expresses clearly.
 - Don't speculate about fixes — investigate first, then propose.
 - Don't hardcode derived counts in comments — they drift silently.
-- Comments state only the load-bearing why. Rationale goes in the commit message; a PR
-  body carries only the gotchas.
+- Comments state only the load-bearing why; the rest of a change's rationale goes in its
+  commit message. Write commit messages, PR titles and PR descriptions as the Conventions in
+  `CONTRIBUTING.md` say.
 
 ## Tier 3 (Preferences)
 <!-- Degraded gracefully. Kept when empty: the heading is what prompts adding a preference
