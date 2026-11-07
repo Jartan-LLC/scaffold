@@ -6,9 +6,7 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 ## Cut a release
 
 1. Choose the version, written `X.Y.Z` below, a pre-release suffix included. Write a
-   pre-release as `1.2.0-alpha.N`, `1.2.0-beta.N` or `1.2.0-rc.N`: the workflows read a version
-   as PEP 440 first, which reads other SemVer suffixes differently, such as `1.2.0-1` as a full
-   release. [Pre-releases](#pre-releases) says what one publishes.
+   pre-release as `1.2.0-rc.1`. [Pre-releases](#pre-releases) says what one publishes.
 2. On a branch from `main`, move the entries under `## [Unreleased]` in `CHANGELOG.md` to a new
    section below it, headed `## [X.Y.Z] - YYYY-MM-DD`. That section becomes the release notes;
    an entry may wrap across lines, since the notes join them. Then replace the `[Unreleased]`
