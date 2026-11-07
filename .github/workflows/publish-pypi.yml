@@ -39,12 +39,12 @@ jobs:
           enable-cache: false
 
       # The package takes its version from pyproject.toml, not the tag, so this fails
-      # the publish when the tag without its `v` differs from that `version`. Repoint
-      # `ver=` if the version is declared elsewhere.
+      # the publish when the tag without its `v` differs from `[project] version`.
+      # Repoint `ver=` if the version is declared elsewhere.
       - name: Verify tag matches package version
         run: |
           tag="${GITHUB_REF_NAME#v}"
-          ver="$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)"
+          ver="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"].get("version", ""))')"
           if [ "$tag" != "$ver" ]; then
             echo "::error::tag 'v$tag' does not match pyproject.toml's version '$ver'"
             exit 1

@@ -36,7 +36,8 @@ Keep `release.yml` whatever you publish: it creates a GitHub Release for each `v
 stack.
 
 - PyPI package: keep `publish-pypi.yml`, and set up its environment in
-  [GitHub settings](#publishing-environments).
+  [GitHub settings](#publishing-environments). If the package's version isn't
+  `[project] version` in `pyproject.toml`, repoint `ver=` in the workflow's tag check.
 - Container image: keep `publish-docker.yml`, set up its environment in
   [GitHub settings](#publishing-environments), and give the `Dockerfile` a real entrypoint.
 - Docs site: for a single version, use GitHub Pages: set Settings > Pages > Source to "GitHub
