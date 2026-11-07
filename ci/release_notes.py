@@ -87,8 +87,6 @@ _SEMVER = re.compile(
     r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
     r"(?:\+[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*)?"
 )
-# A line indented this far after a blank line or a heading starts an indented
-# code block.
 _CODE_INDENT = 4
 
 
