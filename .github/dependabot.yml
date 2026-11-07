@@ -103,7 +103,9 @@ updates:
     cooldown:
       default-days: 7
 
-  # The Fedora image the RPM jobs run in.
+  # The Fedora image the RPM jobs run in, its digest only: the fedora image tags the next
+  # release's number before that release ships, so a major bump would move the jobs onto an
+  # unreleased Fedora.
   - package-ecosystem: "docker"
     directory: "/packaging"
     schedule:
@@ -111,6 +113,10 @@ updates:
       day: "monday"
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "fedora"
+        update-types:
+          - "version-update:semver-major"
     cooldown:
       default-days: 7
 
