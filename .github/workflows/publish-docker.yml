@@ -46,20 +46,16 @@ jobs:
       - name: Compute lowercase image name
         run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
-      # Not metadata-action's `latest=auto`: it tags every non-prerelease build, so a
-      # patch on an older release line would move `latest` backwards.
-      - name: Decide whether this tag takes `latest`
-        id: latest
+      # Not metadata-action's semver or pep440 tag types: neither keeps the names of both
+      # version forms release.yml accepts (semver drops v1.2.0rc1, pep440 renames
+      # v1.2.0-rc.1), and metadata-action's `latest=auto` tags every non-prerelease
+      # build, so a patch on an older release line would move `latest` backwards.
+      - name: Choose the image's tags
+        id: tags
         run: |
-          version="${GITHUB_REF#refs/tags/v}"
-          # sort -V orders 1.0.0 before 1.0.0-rc1, so drop pre-releases first.
-          highest="$(git tag -l 'v*' | sed 's/^v//' | grep -v -- '-' | sort -V | tail -1)"
-          if [ "$version" = "$highest" ]; then
-            echo "take=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "take=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::v$version is not the highest release (v$highest); leaving :latest alone"
-          fi
+          # Not a pipe: without pipefail, a failed `git tag` would pass an empty list.
+          tags="$(git tag -l 'v*')"
+          python3 ci/versions.py --image-tags "${GITHUB_REF_NAME#v}" <<<"$tags" >>"$GITHUB_OUTPUT"
 
       - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         id: meta
@@ -67,9 +63,9 @@ jobs:
           images: ${{ env.IMAGE_NAME }}
           flavor: latest=false
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ steps.latest.outputs.take }}
+            type=raw,value=${{ steps.tags.outputs.version }}
+            type=raw,value=${{ steps.tags.outputs.minor }},enable=${{ steps.tags.outputs.minor != '' }}
+            type=raw,value=latest,enable=${{ steps.tags.outputs.latest }}
 
       # Any v* tag publishes without waiting for CI, so a broken tagged commit can ship.
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
