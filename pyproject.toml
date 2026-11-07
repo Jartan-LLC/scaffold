@@ -116,7 +116,7 @@ markers = [
 ]
 
 [tool.pyright]
-include = ["src", "tests", "conftest.py", ".github/scripts"]
+include = ["src", "tests", "conftest.py"]
 pythonVersion = "3.12"
 # "strict" is the most thorough; drop to "standard" (pyright's default) if
 # untyped third-party deps get noisy.
