@@ -19,8 +19,9 @@ root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 readonly root
 # ci.yml's dnf-repo job starts ci/dnf_repo_server.py on this port.
 readonly url=http://127.0.0.1:8000
-# Set by build, for its EXIT trap, and by run, for check.
+# build's scratch directory, which its EXIT trap removes.
 work=''
+# The output of run's last command, which check reads.
 log=''
 
 die() {
