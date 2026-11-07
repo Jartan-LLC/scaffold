@@ -29,6 +29,6 @@ RUN uv pip install --system --no-cache .
 COPY --chown=appuser:appuser . .
 USER appuser
 
-# TODO: set your start command, e.g.
+# Set a start command before running the image, e.g.
 # ENTRYPOINT ["your-cli"]
 # CMD ["python", "-m", "app"]

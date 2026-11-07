@@ -82,8 +82,8 @@ Rename the `app` stub to your import name:
 
 ## Not a Python project
 
-Do this after the other Required items and before the markers: it deletes the docs site,
-and with it some markers. Keep `docs/scaffold.md`, which reads fine on GitHub without
+Do this before resolving the markers, after every other Required item: it deletes the docs
+site, and with it some markers. Keep `docs/scaffold.md`, which reads fine on GitHub without
 Sphinx, and this page, which Cleanup deletes.
 
 1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
@@ -91,7 +91,8 @@ Sphinx, and this page, which Cleanup deletes.
    `.readthedocs.yaml.example`,
    `.github/workflows/pages.yml.example`, `.github/workflows/publish-pypi.yml` and
    `.github/workflows/dependency-audit.yml`. If not containerized, also `Dockerfile`,
-   `.dockerignore` and `.github/workflows/publish-docker.yml`.
+   `.dockerignore`, `.github/workflows/publish-docker.yml` and the commented `docker` job in
+   `.github/workflows/ci.yml`.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
    `check` entries (`docs/scaffold.md`, CI). In the `changes` job, remove the `python:` line
@@ -120,7 +121,8 @@ carries no marker: it stays true after onboarding.
    ```
 
 2. Do what each marker says, then delete the marker.
-3. Run the grep again. What it still prints is template text left in the project. Leave a
+3. Run the grep again. Apart from this page and the marker on its `docs/index.md` entry,
+   which Cleanup deletes, what it still prints is template text left in the project. Leave a
    marker only while you have no answer for it, such as the response targets in
    `.github/SECURITY.md`.
 

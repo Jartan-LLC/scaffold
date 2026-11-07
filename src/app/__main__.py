@@ -1,9 +1,7 @@
-"""Command-line entry point: ``python -m app``.
-
-TODO(/onboard): if the project has no command-line interface, delete this module,
-its ``automodule`` entry in docs/reference.md, tests/test_smoke.py, which runs it,
-and the Dockerfile ``CMD`` hint.
-"""
+# TODO(/onboard): if the project has no command-line interface, delete this module,
+# its automodule entry in docs/reference.md, tests/test_smoke.py, which runs it,
+# and the Dockerfile CMD hint.
+"""Command-line entry point: ``python -m app``."""
 
 from __future__ import annotations
 
