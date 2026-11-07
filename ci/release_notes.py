@@ -24,6 +24,8 @@ from collections.abc import Iterable, Iterator
 from itertools import pairwise
 from pathlib import Path
 
+from versions import is_prerelease
+
 # A fence may sit inside a list item, so it opens at any indent outside an
 # indented code block. A backtick fence's info string can't contain a backtick
 # (CommonMark).
@@ -68,25 +70,6 @@ _BLANK = re.compile(r"^\s*$")
 # A GFM table's delimiter row, such as `| --- | :-: |`.
 _TABLE_DELIMITER = re.compile(r"[\s|:-]*-[\s|:-]*")
 _HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
-# PEP 440's own pattern (its Appendix B), without the leading `v` the tag loses.
-_PEP_440 = re.compile(
-    r"""
-    (?:(?P<epoch>[0-9]+)!)?
-    (?P<release>[0-9]+(?:\.[0-9]+)*)
-    (?P<pre>[-_.]?(?P<pre_l>a|b|c|rc|alpha|beta|pre|preview)[-_.]?(?P<pre_n>[0-9]+)?)?
-    (?P<post>(?:-(?P<post_n1>[0-9]+))|(?:[-_.]?(?P<post_l>post|rev|r)[-_.]?(?P<post_n2>[0-9]+)?))?
-    (?P<dev>[-_.]?(?P<dev_l>dev)[-_.]?(?P<dev_n>[0-9]+)?)?
-    (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?
-    """,
-    re.VERBOSE | re.IGNORECASE,
-)
-# The pattern semver.org gives for SemVer 2.0.0.
-_SEMVER = re.compile(
-    r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
-    r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
-    r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
-    r"(?:\+[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*)?"
-)
 _CODE_INDENT = 4
 
 
@@ -272,25 +255,6 @@ def _used_definitions(changelog: str, notes: str) -> list[str]:
 
 def _label(text: str) -> str:
     return " ".join(text.split()).casefold()
-
-
-def is_prerelease(version: str) -> bool:
-    """Return whether ``version`` is a pre-release under PEP 440 or SemVer.
-
-    A version both schemes accept is read as PEP 440, as PyPI reads it, so
-    ``1.2.0-1`` is a post-release there and not a pre-release.
-
-    Args:
-        version: The version without the tag's leading ``v``.
-
-    Returns:
-        True for a PEP 440 pre-release or development release (``1.2.0rc1``,
-        ``1.2.0.dev3``) or a SemVer pre-release (``1.2.0-alpha.1``).
-    """
-    if pep_440 := _PEP_440.fullmatch(version):
-        return bool(pep_440["pre"] or pep_440["dev"])
-    semver = _SEMVER.fullmatch(version)
-    return bool(semver and semver["prerelease"])
 
 
 def main(argv: list[str]) -> int:

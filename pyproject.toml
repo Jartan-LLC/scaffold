@@ -50,7 +50,7 @@ packages = ["src/app"]
 # nor the tests of ci/'s scripts, which need ci/.
 [tool.hatch.build.targets.sdist]
 include = ["src", "tests", "conftest.py"]
-exclude = ["tests/test_release_notes.py", "tests/test_changes.py"]
+exclude = ["tests/test_release_notes.py", "tests/test_changes.py", "tests/test_versions.py"]
 
 [tool.ruff]
 target-version = "py312"

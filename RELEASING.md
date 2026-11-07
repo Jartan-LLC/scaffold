@@ -6,11 +6,10 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 ## Cut a release
 
 1. Choose the version, written `X.Y.Z` below, a pre-release suffix included. Write a
-   pre-release as `1.2.0-rc.1` (or `-alpha.1`, `-beta.1`), not `1.2.0rc1`:
-   `publish-docker.yml` tags images only from SemVer versions. [Pre-releases](#pre-releases)
-   says what one publishes. While `packaging/rpm.spec` exists, use a version in a form the
-   `rpm.yml` row in [Publishing](docs/scaffold.md#publishing) lists: any other tag gets no
-   GitHub Release.
+   pre-release in PEP 440 form (`1.2.0rc1`) or SemVer form (`1.2.0-rc.1`).
+   [Pre-releases](#pre-releases) says what one publishes. While `packaging/rpm.spec` exists,
+   use a version in a form the `rpm.yml` row in [Publishing](docs/scaffold.md#publishing)
+   lists: any other tag gets no GitHub Release.
 2. On a branch from `main`, move the entries under `## [Unreleased]` in `CHANGELOG.md` to a new
    section below it, headed `## [X.Y.Z] - YYYY-MM-DD`. That section becomes the release notes;
    an entry may wrap across lines, since the notes join them. Then replace the `[Unreleased]`

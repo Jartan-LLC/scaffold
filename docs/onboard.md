@@ -118,12 +118,12 @@ This deletes the docs site, and with it some markers, so it runs before [Markers
 Keep `docs/scaffold.md`, which reads fine on GitHub without Sphinx, and this page, which
 Finish deletes.
 
-Keep `ci/`. `ci.yml`'s `changes` job runs `ci/changes.py` and `release.yml` runs
-`ci/release_notes.py`, both on the runner's `python3`. This repository doesn't test, lint
-or type-check those scripts: scaffold does, and its changes to them come in by
-[syncing](scaffold.md#syncing-template-updates), so leave them as they are.
-`ci/changes.py` still describes the `python` and `test` jobs and prints a `python` output
-that nothing reads.
+Keep `ci/`. `ci.yml`'s `changes` job runs `ci/changes.py`, `release.yml` runs
+`ci/release_notes.py` and `publish-docker.yml` runs `ci/versions.py`, all on the runner's
+`python3`. This repository doesn't test, lint or type-check those scripts: scaffold does,
+and its changes to them come in by [syncing](scaffold.md#syncing-template-updates), so leave
+them as they are. `ci/changes.py` still describes the `python` and `test` jobs and prints a
+`python` output that nothing reads.
 
 1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
 2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md` and
@@ -312,7 +312,7 @@ Copy the badge lines from the top of the template README into yours, then:
 | `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, and the [enchantments](https://github.com/Jartan-LLC/enchantments) Features: Claude Code, the GitHub CLI login, Liza and its agent toolchain ([Features](#features) drops one). `post-create.sh` runs `make install`, which installs the project's dependencies into the system Python, as CI does: `containerEnv` sets `UV_SYSTEM_PYTHON`, so the container has no project `.venv`. It also installs the ruff version in the ruff hook's `# frozen:` comment, so the ruff extension formats on save as `make lint` does |
 | `.claude/` | Claude Code project files — the `/onboard` command, which onboarding deletes, and `workspace/`, where agents keep plans and other working files, git-ignored |
 | `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates |
-| `pyproject.toml`, `ci/`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use, each with its release files' hashes, so an install rejects a download that doesn't match. The tools' own dependencies are not pinned. `ci/release_notes.py` makes the release notes `release.yml` publishes, and `ci/changes.py` decides which of `ci.yml`'s gated jobs a change runs. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
+| `pyproject.toml`, `ci/`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use, each with its release files' hashes, so an install rejects a download that doesn't match. The tools' own dependencies are not pinned. `ci/release_notes.py` makes the release notes `release.yml` publishes, `ci/versions.py` chooses the image tags `publish-docker.yml` pushes, and `ci/changes.py` decides which of `ci.yml`'s gated jobs a change runs. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
 | `packaging/` | `rpm.sh` and the spec stub for the RPM each GitHub Release attaches, which `.github/workflows/rpm.yml` builds and installs |
 | `src/`, `tests/` | The package (src layout, PEP 561 typed) and its tests; the template ships a CLI entry point and logging setup |
 | `Makefile`, `.pre-commit-config.yaml` | Task runner (`make install`/`lint`/`fix`/`test`/`check`/`docs`, backed by [uv](https://docs.astral.sh/uv/), installing into the checkout's `.venv`, else the active environment, else the devcontainer's system Python) + the single lint source, whose hooks `make lint` and CI both run, and the source of ruff's and codespell's versions |
