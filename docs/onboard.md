@@ -33,8 +33,8 @@ An item whose answer needs neither, such as which workflows to keep, says what t
 ### Publishing targets
 
 Keep `release.yml` whatever you publish: it creates a GitHub Release for each `v*` tag, in any
-stack. While you keep the RPM, it does so only for the tag forms the `rpm.yml` row in
-[Publishing](scaffold.md#publishing) lists.
+stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
+[Publishing](scaffold.md#publishing) doesn't list gets no GitHub Release.
 
 - PyPI package: keep `publish-pypi.yml`, and set up its environment in
   [GitHub settings](#publishing-environments). If the package's version isn't
@@ -47,10 +47,10 @@ stack. While you keep the RPM, it does so only for the tag forms the `rpm.yml` r
   Actions", then rename `.github/workflows/pages.yml.example` to `pages.yml`. For a version
   per release, use Read the Docs: rename `.readthedocs.yaml.example` to `.readthedocs.yaml`
   and import the repo there.
-- RPM for Fedora, attached to each GitHub Release: keep `packaging/`. It fits files that run
-  unchanged on every Fedora release, such as a shell script. A Python package's RPM requires
-  the Python version of the Fedora release that built it, so publish a Python package to PyPI
-  instead. Put the commands in `RELEASING.md`'s Installing the RPM section in your README.
+- RPM for Fedora, attached to each GitHub Release: for files that run unchanged on every
+  Fedora release, such as a shell script, keep `packaging/`, and copy the commands in
+  `RELEASING.md`'s Installing the RPM section into your README. For a Python package, publish
+  to PyPI instead.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
@@ -131,8 +131,7 @@ them as they are. `ci/changes.py` still describes the `python` and `test` jobs a
    `.github/workflows/publish-pypi.yml` and `.github/workflows/dependency-audit.yml`. If
    not containerized, also `Dockerfile`, `.dockerignore`,
    `.github/workflows/publish-docker.yml` and the commented `docker` job in
-   `.github/workflows/ci.yml`. Deleting `tests/` also deletes `tests/test_rpm_sh.py`, the
-   test of `packaging/rpm.sh`'s version check.
+   `.github/workflows/ci.yml`.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
    `check` entries (`docs/scaffold.md`, CI), and the commented `integration-tests` job. In

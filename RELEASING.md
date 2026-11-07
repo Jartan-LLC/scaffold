@@ -57,11 +57,9 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 ## After the tag
 
 The tag starts `release.yml`, `publish-pypi.yml` and `publish-docker.yml`. While
-`packaging/rpm.spec` exists, `release.yml` first builds the RPM from the tag, installs it and,
-in a public repository, attests it, then creates the Release with `NAME.noarch.rpm` attached
-(`NAME` is `Name` in `packaging/rpm.spec`); if that build fails, the tag gets no Release until
-`gh run rerun <run ID> --failed` succeeds, which fixes only a transient failure such as a
-mirror timeout.
+`packaging/rpm.spec` exists, a failed RPM build or attestation leaves the tag without a GitHub
+Release; if the failure was transient, such as a mirror timeout, `gh run rerun <run ID> --failed`
+on the `release.yml` run creates it.
 
 1. Approve the `publish-pypi.yml` and `publish-docker.yml` runs: open each from
    `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits for this only when
@@ -74,7 +72,8 @@ mirror timeout.
 
 3. Check the notes with `gh release view vX.Y.Z`. If the `release.yml` run warns that it used
    generated notes, `CHANGELOG.md` had nothing under `## [X.Y.Z]` at the tag; the warning says
-   why. While `packaging/rpm.spec` exists, check that it lists `NAME.noarch.rpm` too.
+   why. While `packaging/rpm.spec` exists, check that it lists `NAME.noarch.rpm` too, where
+   `NAME` is `Name` in `packaging/rpm.spec`.
 
 ## Pre-releases
 
