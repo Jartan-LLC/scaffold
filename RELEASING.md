@@ -5,10 +5,10 @@ is in [Publishing](docs/scaffold.md#publishing).
 
 ## Cut a release
 
-1. Choose the version, written `X.Y.Z` below. Write a pre-release as `X.Y.Z-rc.N` (or
-   `-alpha.N`, `-beta.N`), not `X.Y.ZrcN`: `publish-docker.yml`, where the repository has it,
-   tags images only from SemVer versions. [Pre-releases](#pre-releases) says what one
-   publishes.
+1. Choose the version, written `X.Y.Z` below, a pre-release suffix included. Write a
+   pre-release as `1.2.0-rc.1` (or `-alpha.1`, `-beta.1`), not `1.2.0rc1`:
+   `publish-docker.yml`, where the repository has it, tags images only from SemVer versions.
+   [Pre-releases](#pre-releases) says what one publishes.
 2. On a branch from `main`, move the entries under `## [Unreleased]` in `CHANGELOG.md` to a new
    section below it, headed `## [X.Y.Z] - YYYY-MM-DD`. That section becomes the release notes;
    an entry may wrap across lines, since the notes join them. Then, at the end of the file,
@@ -40,6 +40,7 @@ is in [Publishing](docs/scaffold.md#publishing).
 
    ```bash
    git fetch origin   # so the merge commit exists locally
+   sha=$(gh pr view <PR number> --json mergeCommit --jq .mergeCommit.oid)
    git tag vX.Y.Z "$sha"
    git push origin vX.Y.Z
    ```
@@ -67,10 +68,10 @@ The tag starts `release.yml`, which creates the GitHub Release, and `publish-pyp
 
 ## Pre-releases
 
-A tag with a pre-release version, such as `vX.Y.Z-rc.N`:
+A tag with a pre-release version, such as `v1.2.0-rc.1`:
 
 - creates a GitHub pre-release, which GitHub never marks Latest;
 - with `publish-pypi.yml`, publishes a PyPI pre-release, with the version normalized
-  (`1.2.0rc1` for `1.2.0-rc.1`);
-- with `publish-docker.yml`, tags the image `X.Y.Z-rc.N` only, leaving `X.Y` and `latest`
+  (`1.2.0rc1`);
+- with `publish-docker.yml`, tags the image `1.2.0-rc.1` only, leaving `1.2` and `latest`
   where they were.
