@@ -20,7 +20,8 @@ An item whose answer needs neither, such as which workflows to keep, says what t
       published, so give addresses you are willing to publish
 - [ ] Which enchantments Features to keep ([Features](#features))
 - [ ] Publishing targets: the PyPI package, the container image, the docs site, an RPM for
-      Fedora, with or without a dnf repository ([details](#publishing-targets))
+      Fedora, with or without a dnf repository, and, with a dnf repository, the public key
+      that signs it ([details](#publishing-targets))
 - [ ] Whether to keep `Dockerfile` (its marker says what goes with it, and the
       `publish-docker.yml` row in [Publishing](scaffold.md#publishing) and the sentences
       naming it in `RELEASING.md` go too),
