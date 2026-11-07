@@ -50,13 +50,14 @@ stack. While you keep the RPM, it does so only for the tag forms the `rpm.yml` r
 - RPM for Fedora, attached to each GitHub Release: keep `packaging/`. It fits files that run
   unchanged on every Fedora release, such as a shell script. A Python package's RPM requires
   the Python version of the Fedora release that built it, so publish a Python package to PyPI
-  instead.
+  instead. Put the commands in `RELEASING.md`'s Installing the RPM section in your README.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
 `RELEASING.md` that names that workflow. To drop the RPM, delete `packaging/`,
-`tests/test_rpm_sh.py`, the `rpm.yml` row in Publishing, and the sentences in `RELEASING.md`
-that name the RPM or `packaging/`. Keep `.github/workflows/rpm.yml`: `ci.yml` and `release.yml`
+`tests/test_rpm_sh.py`, the `rpm.yml` row in Publishing, and, in `RELEASING.md`, the
+Installing the RPM section and each sentence and list item that opens with "while
+`packaging/rpm.spec` exists". Keep `.github/workflows/rpm.yml`: `ci.yml` and `release.yml`
 call it from jobs that skip while `packaging/rpm.spec` is missing.
 
 ## Procedures

@@ -59,8 +59,10 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 
 The tag starts `release.yml`, `publish-pypi.yml` and `publish-docker.yml`. While
 `packaging/rpm.spec` exists, `release.yml` first builds the RPM from the tag, installs it and,
-in a public repository, attests it, then creates the Release with `NAME.noarch.rpm` attached,
-`NAME` being `Name` in `packaging/rpm.spec`. If that build fails, the tag gets no Release.
+in a public repository, attests it, then creates the Release with `NAME.noarch.rpm` attached
+(`NAME` is `Name` in `packaging/rpm.spec`); if that build fails, the tag gets no Release until
+`gh run rerun <run ID> --failed` succeeds, which fixes only a transient failure such as a
+mirror timeout.
 
 1. Approve the `publish-pypi.yml` and `publish-docker.yml` runs: open each from
    `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits for this only when
@@ -81,14 +83,14 @@ For a tag with a pre-release version, such as `v1.2.0-rc.1`:
 
 - `release.yml` creates a GitHub pre-release, which GitHub never marks Latest;
 - `publish-pypi.yml` publishes a PyPI pre-release, with the version normalized (`1.2.0rc1`);
-- `publish-docker.yml` tags the image `1.2.0-rc.1` only, leaving `1.2` and `latest` where
-  they were;
 - while `packaging/rpm.spec` exists, the RPM's version is `1.2.0~rc.1`, which `dnf` upgrades in
-  place to `1.2.0`.
+  place to `1.2.0`;
+- `publish-docker.yml` tags the image `1.2.0-rc.1` only, leaving `1.2` and `latest` where
+  they were.
 
 ## Installing the RPM
 
-<!-- TODO(/onboard): replace ORG/REPO in the commands below with the GitHub org and repo. -->
+<!-- TODO(/onboard): in the commands below, replace ORG/REPO with the GitHub org and repo, and NAME with Name in packaging/rpm.spec. -->
 
 Users install the RPM, and later upgrade it in place, with:
 
