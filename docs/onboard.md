@@ -62,18 +62,20 @@ its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sent
 `RELEASING.md` that names that workflow. To drop the RPM, delete `packaging/`,
 `tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, `docs/signing-key.md` and
 its entry in `docs/index.md`, the `docker` entry for `/packaging` in `.github/dependabot.yml`,
-the `rpm.yml` and `sign` rows in Publishing, and, in `RELEASING.md`, the Installing the RPM
-section and each sentence and list item that opens with "while `packaging/rpm.spec` exists" or
-"while `packaging/dnf.repo` exists". Keep `.github/workflows/rpm.yml` and the RPM jobs in
+the codespell hook's `exclude` in `.pre-commit-config.yaml`, the `rpm.yml` and `sign` rows in
+Publishing, and, in `RELEASING.md`, the Installing the RPM section and each sentence and list
+item that opens with "while `packaging/rpm.spec` exists" or "while `packaging/dnf.repo`
+exists". Keep `.github/workflows/rpm.yml` and the RPM jobs in
 `ci.yml` and `release.yml`: they skip while the spec is missing.
 
 To keep the RPM without the dnf repository, as a private repository must, delete
 `packaging/dnf.repo`, `packaging/RPM-GPG-KEY`, `packaging/dnf-repo.sh`,
 `tests/packaging/test_dnf_repo_sh.py`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`,
 `docs/signing-key.md` and its entry in `docs/index.md`, the spec's lines that make, install and
-list those two files, with their comments, the `sign` row in Publishing, and, in `RELEASING.md`,
-each sentence and list item that opens with "while `packaging/dnf.repo` exists". Keep the `sign`
-job in `release.yml`: it skips while `packaging/dnf.repo` is missing.
+list those two files, with their comments, the codespell hook's `exclude` in
+`.pre-commit-config.yaml`, the `sign` row in Publishing, and, in `RELEASING.md`, each sentence
+and list item that opens with "while `packaging/dnf.repo` exists". Keep the `sign` job in
+`release.yml`: it skips while `packaging/dnf.repo` is missing.
 
 ## Procedures
 
