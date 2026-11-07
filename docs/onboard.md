@@ -48,9 +48,9 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
   per release, use Read the Docs: rename `.readthedocs.yaml.example` to `.readthedocs.yaml`
   and import the repo there.
 - RPM for Fedora, attached to each GitHub Release: for files that run unchanged on every
-  Fedora release, such as a shell script, keep `packaging/`, and put the commands in
-  `RELEASING.md`'s Installing the RPM section in your README. Publish a Python package to
-  PyPI instead.
+  Fedora release, such as a shell script, keep `packaging/`, and copy the commands in
+  `RELEASING.md`'s Installing the RPM section into your README. For a Python package, publish
+  to PyPI instead.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
