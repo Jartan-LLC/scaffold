@@ -21,8 +21,10 @@ How to cut a release from `main`. The workflows a tag runs are listed in
    [X.Y.Z]: https://github.com/ORG/REPO/releases/tag/vX.Y.Z
    ```
 
-3. On the same branch, set `version = "X.Y.Z"` in `pyproject.toml`. The built package takes
-   its version from there, whatever the tag says.
+3. On the same branch, set `version = "X.Y.Z"` in `pyproject.toml`, written exactly as the tag
+   writes it. The built package takes its version from there. `publish-pypi.yml` fails without
+   publishing when that version differs from the tag, `1.2.0rc1` against `v1.2.0-rc.1`
+   included, while the other workflows the tag starts publish regardless.
    <!-- TODO(/onboard): if the project isn't Python, name the file that holds its version, or delete this step. -->
 4. Open a pull request from that branch and merge it once its checks pass.
 5. Wait for CI to pass on the commit the merge made on `main`. A `v*` tag publishes without
