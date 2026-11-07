@@ -13,7 +13,9 @@ permissions: {}
 
 jobs:
   # The notes and rpm jobs read the tagged checkout with a read-only token; only the
-  # attest and release jobs, which run no repository code, hold write tokens.
+  # attest and release jobs, which run no repository code, hold write tokens. The sign job
+  # holds the signing key and a read-only token, and runs only packaging/dnf-repo.sh from
+  # the tag.
   notes:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -24,6 +26,7 @@ jobs:
       notes: ${{ steps.notes.outputs.notes }}
       prerelease: ${{ steps.notes.outputs.prerelease }}
       rpm: ${{ steps.packaging.outputs.rpm }}
+      dnf_repo: ${{ steps.packaging.outputs.dnf_repo }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -51,11 +54,15 @@ jobs:
             echo "source=generated" >>"$GITHUB_OUTPUT"
           fi
 
-      # Each release attaches an RPM while the project ships one.
+      # Each release attaches an RPM while the project ships one, signed while the RPM
+      # carries a dnf repository.
       - id: packaging
         run: |
           if [ -f packaging/rpm.spec ]; then
             echo "rpm=true" >>"$GITHUB_OUTPUT"
+          fi
+          if [ -f packaging/dnf.repo ]; then
+            echo "dnf_repo=true" >>"$GITHUB_OUTPUT"
           fi
 
   rpm:
@@ -69,11 +76,149 @@ jobs:
       version: ${{ github.ref_name }}
       artifact: release-rpm
 
+  # Signs the RPM, and on a full release builds the dnf repository's signed metadata for it
+  # and the 4 newest earlier full releases, so dnf downgrade and dnf history undo have the
+  # previous version. A pre-release stays out of the repository: dnf would upgrade every
+  # user to it, since it sorts 2.0.0~rc.1 above 1.1.0.
+  sign:
+    needs: [notes, rpm]
+    if: needs.notes.outputs.dnf_repo == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: rpm-signing
+    permissions:
+      contents: read # checkout, and the earlier releases' assets
+    # rpm.yml's image job fails unless the ref is pinned by digest.
+    container: ${{ needs.rpm.outputs.image }} # zizmor: ignore[unpinned-images]
+    defaults:
+      run:
+        shell: bash
+    env:
+      PRERELEASE: ${{ needs.notes.outputs.prerelease }}
+    steps:
+      # Before checkout, which without git ignores sparse-checkout and downloads the whole
+      # tree.
+      - run: dnf -y install createrepo_c rpm-sign gnupg2 gh git-core
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            packaging/dnf-repo.sh
+            packaging/RPM-GPG-KEY
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-rpm
+          path: rpm
+
+      # The latest release's bundle is the one Pages serves until this one replaces it: a
+      # client that read its repomd.xml just before the deploy fetches the files it names
+      # just after, so the new bundle keeps them.
+      - name: Download the earlier full releases' RPMs and the latest bundle
+        if: env.PRERELEASE == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # In an if condition, a function ignores set -e, hence the || exit.
+          has_asset() {
+            local found
+            found=$(ASSET=$2 gh release view "$1" --json assets \
+              --jq 'any(.assets[]; .name == env.ASSET)') || exit 1
+            [[ $found == true ]]
+          }
+          rpms=(rpm/*.noarch.rpm)
+          name=$(basename "${rpms[0]}" .noarch.rpm)
+          # A re-run finds this tag's own release, if the first run created it.
+          tags=$(gh release list --exclude-drafts --exclude-pre-releases --limit 5 \
+            --json tagName --jq '[.[].tagName | select(. != env.GITHUB_REF_NAME)][:4][]')
+          for tag in $tags; do
+            if has_asset "$tag" "$name.noarch.rpm"; then
+              gh release download "$tag" --pattern "$name.noarch.rpm" --dir "releases/$tag"
+            fi
+          done
+          if [[ -n $tags ]]; then
+            latest=$(gh release view --json tagName --jq .tagName)
+            if has_asset "$latest" "$name-dnf-repo.tar.gz"; then
+              gh release download "$latest" --pattern "$name-dnf-repo.tar.gz" --dir previous
+            fi
+          fi
+
+      - name: Sign the RPM, and build the repository bundle on a full release
+        env:
+          RPM_SIGNING_KEY: ${{ secrets.RPM_SIGNING_KEY }}
+        run: |
+          if [[ -z $RPM_SIGNING_KEY ]]; then
+            echo "::error::The rpm-signing environment has no RPM_SIGNING_KEY secret. Set it up as RELEASING.md's Signing key section says, or delete packaging/dnf.repo to release the RPM unsigned, with no dnf repository."
+            exit 1
+          fi
+          case "$PRERELEASE" in
+            true | false) ;;
+            *) echo "::error::The notes job did not say whether this is a pre-release"; exit 1 ;;
+          esac
+          work=$(mktemp -d)
+          GNUPGHOME=$work/gnupg
+          export GNUPGHOME
+          trap 'gpgconf --kill all; rm -rf -- "$work"' EXIT
+          mkdir -m 700 "$GNUPGHOME"
+          printf '%s\n' "$RPM_SIGNING_KEY" | gpg --batch --quiet --import
+          # Prints the fingerprint of each primary key gpg lists, from the record after its
+          # sec or pub record, not a subkey's.
+          primaries() {
+            awk -F: '$1 == "sec" || $1 == "pub" { p = 1; next } p && $1 == "fpr" { print $10; p = 0 }' # codespell:ignore fpr
+          }
+          fingerprint=$(gpg --batch --with-colons --list-secret-keys | primaries)
+          if [[ ! $fingerprint =~ ^[0-9A-F]{40}$ ]]; then
+            echo "::error::RPM_SIGNING_KEY must hold one secret key"
+            exit 1
+          fi
+          # Users trust only the keys the package installs from this file.
+          if ! gpg --batch --with-colons --show-keys packaging/RPM-GPG-KEY | primaries |
+            grep -xF -- "$fingerprint" >/dev/null; then
+            echo "::error::packaging/RPM-GPG-KEY doesn't hold the public key of RPM_SIGNING_KEY, $fingerprint"
+            exit 1
+          fi
+
+          rpms=(rpm/*.noarch.rpm)
+          rpm=${rpms[0]}
+          packaging/dnf-repo.sh sign "$fingerprint" "$rpm"
+          mkdir out
+          cp -- "$rpm" out/
+          [[ $PRERELEASE == false ]] || exit 0
+
+          # dnf-repo.sh fails on an RPM signed by a key the key file doesn't hold. An earlier
+          # release's RPM is, once a rotation or a leak takes its key out of the file; it
+          # leaves the repository and stays installable by URL.
+          rpmkeys --dbpath "$work/rpmdb" --import packaging/RPM-GPG-KEY
+          shopt -s nullglob
+          for old in releases/*/*.rpm; do
+            if ! rpmkeys --dbpath "$work/rpmdb" -K -- "$old" >/dev/null; then
+              echo "::warning::Leaving $old out of the dnf repository: no key in packaging/RPM-GPG-KEY signed it"
+              rm -- "$old"
+            fi
+          done
+          mkdir -p "releases/$GITHUB_REF_NAME"
+          cp -- "$rpm" "releases/$GITHUB_REF_NAME/"
+          previous=(previous/*.tar.gz)
+          packaging/dnf-repo.sh metadata "$fingerprint" packaging/RPM-GPG-KEY \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/" releases out "${previous[@]}"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-assets
+          path: out
+          if-no-files-found: error
+
   attest:
-    needs: rpm
+    needs: [notes, rpm, sign]
     # Attestations need a public repository, or a private one on GitHub Enterprise Cloud,
-    # which can drop this condition. Elsewhere the action fails and the tag gets no Release.
-    if: ${{ !github.event.repository.private }}
+    # which can drop the private condition. Elsewhere the action fails and the tag gets no
+    # Release. While packaging/dnf.repo exists, it attests the sign job's files.
+    if: >-
+      !cancelled() && !github.event.repository.private && needs.rpm.result == 'success'
+      && (needs.notes.outputs.dnf_repo != 'true' || needs.sign.result == 'success')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -82,15 +227,17 @@ jobs:
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-rpm
+          name: ${{ needs.notes.outputs.dnf_repo == 'true' && 'release-assets' || 'release-rpm' }}
           path: assets
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: assets/*
 
   release:
-    # A skipped rpm job attaches nothing; a failed one stops the release.
-    needs: [notes, rpm, attest]
+    # A skipped rpm job attaches nothing; a failed rpm or sign job stops the release. While
+    # packaging/dnf.repo exists, it attaches only the sign job's files: when that job didn't
+    # finish, the download fails rather than release the unsigned RPM.
+    needs: [notes, rpm, sign, attest]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -100,7 +247,7 @@ jobs:
       - if: needs.rpm.result == 'success'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-rpm
+          name: ${{ needs.notes.outputs.dnf_repo == 'true' && 'release-assets' || 'release-rpm' }}
           path: assets
 
       # No checkout needed: gh talks to the API and resolves the repo from
