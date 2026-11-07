@@ -13,7 +13,7 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-SCRIPT = Path(__file__).resolve().parents[1] / "ci" / "versions.py"
+SCRIPT = Path(__file__).resolve().parents[2] / "ci" / "versions.py"
 
 
 def run(*args: str, tags: str = "") -> subprocess.CompletedProcess[str]:
