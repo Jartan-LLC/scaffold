@@ -97,7 +97,7 @@ In a project created with *Use this template*, `.scaffold-sync` holds the newest
 commit it has ported or skipped. List the scaffold commits after it:
 
 ```bash
-git remote add upstream https://github.com/Jartan-LLC/scaffold.git  # once per clone
+git remote add upstream https://github.com/Jartan-LLC/scaffold.git  # once per clone; the clone onboarding ran in has it
 git fetch upstream
 git log --oneline --reverse "$(cat .scaffold-sync)"..upstream/main  # not yet dealt with, oldest first
 ```

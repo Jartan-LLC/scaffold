@@ -192,8 +192,10 @@ If `test -n` fails, the file keeps its marker:
 
 The `upstream` remote stays for [syncing](scaffold.md#syncing-template-updates).
 
-If you forked scaffold instead, the history is shared, so a merge brings in later scaffold
-changes:
+If you forked scaffold instead, the history is shared, so later scaffold changes come in by a
+merge. Delete `.scaffold-sync`, and rewrite
+[Syncing template updates](scaffold.md#syncing-template-updates) as this merge in place of its
+cherry-pick steps. The block is that section's new content, not a step to run now:
 
 ```bash
 git remote add upstream https://github.com/Jartan-LLC/scaffold.git  # once per clone
@@ -201,9 +203,6 @@ git fetch upstream
 git checkout -b template-update
 git merge upstream/main   # resolve conflicts, keeping your customizations
 ```
-
-Delete `.scaffold-sync`, and rewrite
-[Syncing template updates](scaffold.md#syncing-template-updates) for that merge.
 
 ## GitHub settings
 
