@@ -114,7 +114,7 @@ jobs:
 
       # Advisory: an unfixable transitive advisory must not fail every run.
       # dependency-audit.yml tracks findings in an issue. The job stays green either
-      # way, so the warning is what shows a failure on the PR.
+      # way, so the step adds a warning naming pip-audit to flag a failure on the PR.
       - name: Audit dependencies for known CVEs
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         continue-on-error: true
