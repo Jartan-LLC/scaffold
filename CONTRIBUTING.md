@@ -28,7 +28,11 @@ supported Python and builds the dev container when a change touches its inputs.
 ## Conventions
 
 - Commits follow [Conventional Commits](https://www.conventionalcommits.org/)
-  (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`).
+  (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`). So do PR titles, which a squash
+  merge can use as the commit subject.
+- A commit message says why the change was made; the diff already shows what changed.
+- A PR description answers the [pull request template](.github/PULL_REQUEST_TEMPLATE.md)'s
+  prompts.
 - User-facing changes go in `CHANGELOG.md` under `## [Unreleased]`.
 - `>>>` examples in docstrings run as tests, so keep them executable and their
   expected output exact — the suite fails when one drifts from the code.

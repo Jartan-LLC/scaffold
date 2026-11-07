@@ -18,8 +18,7 @@ cleanly ([how](docs/onboard.md#not-a-python-project)).
 2. Run `/onboard` in Claude Code. It interviews you, configures the project and lists the
    manual steps left. To set up by hand instead, follow the
    [setup checklist](docs/onboard.md).
-3. Run `make check`: CI's lint, type checks, tests, build and docs checks, plus the
-   advisory dependency audit.
+3. Run `make check`.
 
 ## What you get
 

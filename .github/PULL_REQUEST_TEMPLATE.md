@@ -1,7 +1,11 @@
 ## Summary
 
-<!-- What changed and why. Focus on motivation, not restating the diff.
-     Note any breaking changes. -->
+<!--
+What does this change do, and why? A sentence or two.
+Does it break anything for users?
+What might a reviewer miss or question?
+Where should a reviewer start reading?
+-->
 
 ## Related issues
 
@@ -9,4 +13,4 @@
 
 ## How to verify
 
-<!-- How you tested this, or how a reviewer can verify it works. Delete this section if N/A. -->
+<!-- What you ran, and what it showed. Delete this section if N/A. -->
