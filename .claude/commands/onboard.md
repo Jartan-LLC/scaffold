@@ -34,7 +34,7 @@ Work through every Required checklist item that can be automated, following `doc
 - Markers: resolve the markers as `docs/onboard.md`, Markers, says, after the package rename or the non-Python teardown. In `SECURITY.md`, always set the contact; set supported versions and response targets only if the user gave them, and otherwise leave their markers: a timing commitment the user never chose is worse than an unset field with a stated default
 - Features: for each enchantments Feature the user declines, follow `docs/onboard.md`, Devcontainer: run the in-clone steps of its Removal section while it's still declared, remove its entry and its lockfile key, then give the user the rest of its Removal steps in their order (removing the container, then a volume), ending with the rebuild
 - Create the Dependabot `major`/`minor`/`patch` labels (`docs/onboard.md`, Dependabot labels)
-- Once every item is done, delete `docs/onboard.md` and, unless the non-Python teardown removed `docs/index.md`, its entry there
+- Once every item is done, delete `docs/onboard.md` and, unless the non-Python teardown removed `docs/index.md`, its entry there and the marker above it
 
 For questions the user didn't have answers to (e.g., version corrections, verify commands), leave the placeholder comments in place — they are written so that Claude will fill them in naturally when the information is discovered during normal development. Only replace placeholders that have actual answers.
 
