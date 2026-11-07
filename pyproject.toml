@@ -111,7 +111,7 @@ testpaths = ["tests", "src"]
 addopts = "--strict-markers --strict-config --doctest-modules"
 xfail_strict = true
 markers = [
-    "unit: fast in-process test with no external services",
+    "unit: fast test with no external services",
     "integration: needs the docker-compose stack (see the commented integration-tests job in ci.yml)",
 ]
 
