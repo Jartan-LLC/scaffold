@@ -39,7 +39,7 @@ jobs:
           enable-cache: false
 
       # TODO: Fail the release if the git tag doesn't match your package version.
-      # The shipped pyproject.toml keeps `version` static; uncomment to enforce it
+      # pyproject.toml keeps `version` static; uncomment to enforce it
       # matches the tag. Repoint `ver=` if you declare the version elsewhere.
       # - name: Verify tag matches package version
       #   run: |

@@ -7,8 +7,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 project = "Project Docs"  # TODO(/onboard): your project name
-author = "Your Name"  # TODO(/onboard)
-project_copyright = "YEAR, Your Name"  # TODO(/onboard)
+author = "Your Name"  # TODO(/onboard): the author's name
+project_copyright = "YEAR, Your Name"  # TODO(/onboard): the year and copyright holder
 
 extensions = [
     "sphinx.ext.autodoc",

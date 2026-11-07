@@ -4,11 +4,13 @@
 
 **Do not open a public issue for security vulnerabilities.**
 
+<!-- TODO(/onboard): replace ORG/REPO in the link below with the GitHub org and repo. -->
+
 Please report security issues privately using [GitHub's security advisory feature](https://github.com/ORG/REPO/security/advisories/new): on this repository's **Security** tab, choose **Report a vulnerability**.
 
 If neither opens a form, write to the maintainers privately instead — TODO(/onboard): private security contact.
 
-<!-- BEGIN unconfigured-contact: delete this block once the contact above is set -->
+<!-- BEGIN unconfigured-contact. TODO(/onboard): set the contact above, in angle brackets (<security@example.org>) since markdownlint rejects a bare address, then delete this block: both comment lines, the text between them and the blank line after the END line. -->
 
 If that line still shows a `TODO` placeholder, this project has no private channel configured. Ask the account or organization that owns this repository for one before sending anything.
 
