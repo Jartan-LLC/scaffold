@@ -313,6 +313,32 @@ def test_notes_using_no_definition_get_none(tmp_path: Path) -> None:
     assert run(tmp_path, changelog, "1.2.0").stdout == "- Plain.\n"
 
 
+@pytest.mark.parametrize(
+    ("version", "expected"),
+    [
+        pytest.param("1.2.0-rc.1", "true", id="semver rc"),
+        pytest.param("1.2.0-alpha", "true", id="semver alpha"),
+        pytest.param("1.0.0-x.7.z.92", "true", id="semver dotted"),
+        pytest.param("1.2.0rc1", "true", id="pep440 rc"),
+        pytest.param("1.2.0a1", "true", id="pep440 alpha"),
+        pytest.param("1.2.0b2", "true", id="pep440 beta"),
+        pytest.param("1.2.0.dev3", "true", id="pep440 dev"),
+        pytest.param("1.2.0", "false", id="release"),
+        pytest.param("1.2.0+build.5", "false", id="build metadata"),
+        pytest.param("1.2.0.post1", "false", id="pep440 post"),
+        pytest.param("1.2.0-1", "false", id="pep440 implicit post"),
+    ],
+)
+def test_prerelease_is_reported(version: str, expected: str) -> None:
+    result = subprocess.run(  # noqa: S603 -- fixed interpreter and script, test-owned arguments
+        [sys.executable, str(SCRIPT), "--prerelease", version],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert result.stdout == f"{expected}\n"
+
+
 @pytest.mark.parametrize("version", ["1.2.0-rc.1", "1.2.0rc1", "1.2.0"])
 def test_tag_matches_only_its_own_heading(tmp_path: Path, version: str) -> None:
     changelog = """\
@@ -371,13 +397,16 @@ def test_changelog_defaults_to_the_working_directory(tmp_path: Path) -> None:
     assert result.stdout == "- Entry.\n"
 
 
-@pytest.mark.parametrize("args", [[], ["1.2.0", "CHANGELOG.md", "extra"]])
+@pytest.mark.parametrize("args", [[], ["1.2.0", "CHANGELOG.md", "extra"], ["--prerelease"]])
 def test_bad_arguments_exit_2_with_usage(args: list[str]) -> None:
     result = subprocess.run(  # noqa: S603 -- fixed interpreter and script, test-owned arguments
         [sys.executable, str(SCRIPT), *args], capture_output=True, text=True, check=False
     )
     assert result.returncode == 2
-    assert result.stderr == "usage: release_notes.py VERSION [CHANGELOG]\n"
+    assert result.stderr == (
+        "usage: release_notes.py VERSION [CHANGELOG]\n"
+        "       release_notes.py --prerelease VERSION\n"
+    )
     assert result.stdout == ""
 
 

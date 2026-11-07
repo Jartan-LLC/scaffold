@@ -12,8 +12,10 @@ section that is empty or holds only HTML comments), nothing is printed on
 stdout and the reason goes to stderr; the workflow then falls back to
 generated notes.
 
-Usage: ``release_notes.py VERSION [CHANGELOG]``. Standard library only, so the
-notes job needs nothing but the runner's ``python3``.
+Usage: ``release_notes.py VERSION [CHANGELOG]``, or
+``release_notes.py --prerelease VERSION`` to print ``true`` or ``false``.
+Standard library only, so the notes job needs nothing but the runner's
+``python3``.
 """
 
 import re
@@ -53,6 +55,25 @@ _LIST_ITEM_WITH_TEXT = re.compile(r"\s*([-*+]|\d{1,9}[.)])\s+\S")
 # A GFM table's delimiter row, such as `| --- | :-: |`.
 _TABLE_DELIMITER = re.compile(r"[\s|:-]*-[\s|:-]*")
 _HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+# PEP 440's own pattern (its Appendix B), without the leading `v` the tag loses.
+_PEP_440 = re.compile(
+    r"""
+    (?:(?P<epoch>[0-9]+)!)?
+    (?P<release>[0-9]+(?:\.[0-9]+)*)
+    (?P<pre>[-_.]?(?P<pre_l>a|b|c|rc|alpha|beta|pre|preview)[-_.]?(?P<pre_n>[0-9]+)?)?
+    (?P<post>(?:-(?P<post_n1>[0-9]+))|(?:[-_.]?(?P<post_l>post|rev|r)[-_.]?(?P<post_n2>[0-9]+)?))?
+    (?P<dev>[-_.]?(?P<dev_l>dev)[-_.]?(?P<dev_n>[0-9]+)?)?
+    (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?
+    """,
+    re.VERBOSE | re.IGNORECASE,
+)
+# The pattern semver.org gives for SemVer 2.0.0.
+_SEMVER = re.compile(
+    r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
+    r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
+    r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
+    r"(?:\+[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*)?"
+)
 # A line indented this far after a blank line or a heading starts an indented
 # code block.
 _CODE_INDENT = 4
@@ -210,23 +231,48 @@ def _label(text: str) -> str:
     return " ".join(text.split()).casefold()
 
 
+def is_prerelease(version: str) -> bool:
+    """Return whether ``version`` is a pre-release under PEP 440 or SemVer.
+
+    A version both schemes accept is read as PEP 440, as PyPI reads it, so
+    ``1.2.0-1`` is a post-release there and not a pre-release.
+
+    Args:
+        version: The version without the tag's leading ``v``.
+
+    Returns:
+        True for a PEP 440 pre-release or development release (``1.2.0rc1``,
+        ``1.2.0.dev3``) or a SemVer pre-release (``1.2.0-alpha.1``).
+    """
+    if pep_440 := _PEP_440.fullmatch(version):
+        return bool(pep_440["pre"] or pep_440["dev"])
+    semver = _SEMVER.fullmatch(version)
+    return bool(semver and semver["prerelease"])
+
+
 def main(argv: list[str]) -> int:
-    """Print the notes for ``argv[0]`` from the changelog at ``argv[1]``.
+    """Print the notes for a version, or whether it is a pre-release.
 
     Args:
         argv: The version, then optionally the changelog path (default
-            ``CHANGELOG.md``).
+            ``CHANGELOG.md``); or ``--prerelease`` and the version.
 
     Returns:
         The exit status: 0, also when there are no notes; 2 for bad arguments.
     """
     match argv:
-        case [version]:
+        case ["--prerelease", version]:
+            sys.stdout.write("true\n" if is_prerelease(version) else "false\n")
+            return 0
+        case [version] if not version.startswith("-"):
             path = Path("CHANGELOG.md")
-        case [version, changelog]:
+        case [version, changelog] if not version.startswith("-"):
             path = Path(changelog)
         case _:
-            sys.stderr.write("usage: release_notes.py VERSION [CHANGELOG]\n")
+            sys.stderr.write(
+                "usage: release_notes.py VERSION [CHANGELOG]\n"
+                "       release_notes.py --prerelease VERSION\n"
+            )
             return 2
     if not path.is_file():
         sys.stderr.write(f"No {path}\n")
