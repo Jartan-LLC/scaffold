@@ -229,6 +229,35 @@ jobs:
     with:
       version: 0.0.0-ci
 
+  # The signed dnf repository packaging/dnf-repo.sh builds: built in one Fedora container,
+  # then served from the runner and installed from in a second, fresh one.
+  dnf-repo:
+    needs: changes
+    if: needs.changes.outputs.rpm == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      # rpm.yml's image. Dependabot doesn't update an image a step runs: bump both by hand.
+      FEDORA: fedora:45@sha256:a7d72ba2745b100a3351087472e5ee7b2450af7cf331e7673007e3817612839c
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build the repository
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src "$FEDORA" bash -c \
+            'dnf -y install git-core rpm-build createrepo_c rpm-sign gnupg2 && ci/dnf-repo-test.sh build www'
+
+      # auto_import_local_keys needs dnf5 5.4.7, newer than the image's.
+      - name: Install from the repository
+        run: |
+          python3 ci/dnf_repo_server.py www 8000 &
+          docker run --rm --network host -v "$PWD:/src" -w /src "$FEDORA" bash -c \
+            'dnf -y upgrade dnf5 && dnf -y install dnf5-plugin-automatic && ci/dnf-repo-test.sh check www'
+
   changes:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -244,8 +273,8 @@ jobs:
           # reach in a private repo, so push runs check out the whole history. '0' is
           # quoted because a bare 0 is falsy and would give push runs depth 2.
           fetch-depth: ${{ github.event_name == 'push' && '0' || '2' }}
-      # The rpm job runs on every change while the project ships an RPM: it depends on the
-      # tree, not the diff, so it stays out of ci/changes.py.
+      # The rpm and dnf-repo jobs run on every change while the project ships an RPM: they
+      # depend on the tree, not the diff, so they stay out of ci/changes.py.
       - id: packaging
         run: |
           if [ -f packaging/rpm.spec ]; then
@@ -286,12 +315,12 @@ jobs:
     if: always()
     # When you uncomment integration-tests / docker above, add them to BOTH the
     # needs list and the results array below.
-    needs: [lint, python, test, docs, rpm, changes, devcontainer]
+    needs: [lint, python, test, docs, rpm, dnf-repo, changes, devcontainer]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - run: |
-          results=("${{ needs.lint.result }}" "${{ needs.python.result }}" "${{ needs.test.result }}" "${{ needs.docs.result }}" "${{ needs.rpm.result }}" "${{ needs.changes.result }}" "${{ needs.devcontainer.result }}")
+          results=("${{ needs.lint.result }}" "${{ needs.python.result }}" "${{ needs.test.result }}" "${{ needs.docs.result }}" "${{ needs.rpm.result }}" "${{ needs.dnf-repo.result }}" "${{ needs.changes.result }}" "${{ needs.devcontainer.result }}")
           for r in "${results[@]}"; do
             if [[ "$r" != "success" && "$r" != "skipped" ]]; then
               echo "Check failed: $r"
