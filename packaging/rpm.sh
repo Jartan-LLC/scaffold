@@ -18,35 +18,39 @@ git() {
     command git -C "$root" -c safe.directory="$root" "$@"
 }
 
+# Prints the RPM version of the tag's version $1, or fails when $1 is not a form it takes.
+# RPM sorts 1.2.0rc1 after 1.2.0 and can't hold a - in a version, so a ~ goes before the
+# pre-release part, which RPM sorts before the release. Every version taken gets a ~
+# exactly when release.yml reads it as a pre-release.
+rpm_version() {
+    local n='(0|[1-9][0-9]*)'
+    local numbers="$n\.$n\.$n"
+    # SemVer's pre-release, in lowercase, without hyphens and led by a letter. RPM sorts
+    # letters in ASCII order, so 1.2.0~RC.1 would sort before 1.2.0~beta.1.
+    local semver='[a-z][0-9a-z]*(\.(0|[1-9][0-9]*|[0-9]*[a-z][0-9a-z]*))*'
+    [[ $1 =~ ^$numbers((a|b|rc)[0-9]+|-$semver)?$ ]] || return 1
+    # PEP 440, which release.yml reads before SemVer, reads 1.2.0-dev3 as a development
+    # release, sorted before 1.2.0-alpha, and 1.2.0-post.1 as a post-release, sorted after
+    # 1.2.0. With a ~, RPM would sort each the other way, so dnf would skip an upgrade.
+    local pre='([-_.]?(a|b|c|rc|alpha|beta|pre|preview)[-_.]?[0-9]*)?'
+    local post='(-[0-9]+|[-_.]?(post|rev|r)[-_.]?[0-9]*)'
+    local dev='[-_.]?dev[-_.]?[0-9]*'
+    if [[ $1 =~ ^$numbers$pre$post?$dev$ || $1 =~ ^$numbers$post$ ]]; then
+        return 1
+    fi
+    local base=${1%%[!0-9.]*}
+    local pre_release=${1#"$base"}
+    if [[ -z $pre_release ]]; then
+        printf '%s\n' "$1"
+    else
+        printf '%s~%s\n' "$base" "${pre_release#-}"
+    fi
+}
+
 (($# == 2)) || die "usage: packaging/rpm.sh VERSION OUTDIR"
 outdir=$2
-# RPM sorts 1.2.0rc1 after 1.2.0 and can't hold a - in a version. A ~ before the
-# pre-release part sorts it before the release, as PEP 440 and SemVer do.
-release='[0-9]+(\.[0-9]+)*'
-# PEP 440's version pattern, which release.yml reads before SemVer's (in lowercase, without
-# epoch or local part).
-pre='([-_.]?(a|b|c|rc|alpha|beta|pre|preview)[-_.]?[0-9]*)?'
-post='(-[0-9]+|[-_.]?(post|rev|r)[-_.]?[0-9]*)?'
-dev='([-_.]?dev[-_.]?[0-9]*)?'
-pep440="^$release$pre$post$dev\$"
-# Whether PEP 440 reads $1 as a post-release of a release (1.2.0-post.1, sorted after
-# 1.2.0) or as a development release (1.2.0-dev3, sorted before 1.2.0-alpha). With a ~,
-# RPM would sort it the other way, so dnf would skip an upgrade.
-post_or_dev() {
-    local lower
-    # Not ${1,,}, which macOS's bash 3.2 lacks.
-    lower=$(tr '[:upper:]' '[:lower:]' <<<"$1")
-    # Groups: 2 is the pre-release, 4 the post-release, 6 the development release.
-    [[ $lower =~ $pep440 ]] &&
-        [[ -n ${BASH_REMATCH[6]} || (-n ${BASH_REMATCH[4]} && -z ${BASH_REMATCH[2]}) ]]
-}
-if [[ $1 =~ ^($release)((a|b|rc)[0-9]+)$ ]]; then
-    version="${BASH_REMATCH[1]}~${BASH_REMATCH[3]}"
-elif [[ $1 =~ ^$release(-[A-Za-z][0-9A-Za-z]*(\.[0-9A-Za-z]+)*)?$ ]] && ! post_or_dev "$1"; then
-    version=${1/-/\~}
-else
+version=$(rpm_version "$1") ||
     die "not a version: $1 (write X.Y.Z, or X.Y.ZrcN or X.Y.Z-rc.N for a pre-release)"
-fi
 
 # The commit's time as build time and file times, and a fixed build host, so a rebuild
 # of the same commit in the same image, with the same rpm-build, gives the same bytes.

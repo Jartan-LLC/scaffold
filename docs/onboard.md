@@ -49,8 +49,9 @@ stack.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing). To drop the RPM, delete `packaging/`,
-`tests/test_rpm_sh.py` and the `rpm.yml` row in Publishing: the `rpm` jobs in `ci.yml` and
-`release.yml` run only while `packaging/rpm.spec` exists.
+`tests/test_rpm_sh.py` and the `rpm.yml` row in Publishing. Keep
+`.github/workflows/rpm.yml`: `ci.yml` and `release.yml` call it from jobs that skip while
+`packaging/rpm.spec` is missing.
 
 ## Procedures
 

@@ -7,6 +7,7 @@ script defines into the RPM file it makes.
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,7 @@ import pytest
 pytestmark = pytest.mark.unit
 
 SCRIPT = Path(__file__).resolve().parents[1] / "packaging" / "rpm.sh"
+RELEASE_NOTES = Path(__file__).resolve().parents[1] / "ci" / "release_notes.py"
 
 STUBS = {
     "rpmspec": "#!/bin/sh\nprintf app\n",
@@ -48,6 +50,16 @@ def run(env: dict[str, str], *args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def is_prerelease(version: str) -> bool:
+    result = subprocess.run(  # noqa: S603 -- fixed interpreter and script, test-owned argument
+        [sys.executable, str(RELEASE_NOTES), "--prerelease", version],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout == "true\n"
+
+
 @pytest.mark.parametrize(
     ("version", "expected"),
     [
@@ -57,6 +69,8 @@ def run(env: dict[str, str], *args: str) -> subprocess.CompletedProcess[str]:
         pytest.param("1.2.0b2", "1.2.0~b2", id="pep440 beta"),
         pytest.param("1.2.0-rc.1", "1.2.0~rc.1", id="semver rc"),
         pytest.param("1.2.0-alpha", "1.2.0~alpha", id="semver alpha"),
+        pytest.param("1.2.0-x.1", "1.2.0~x.1", id="semver, not pep440"),
+        pytest.param("0.0.0-ci", "0.0.0~ci", id="ci version"),
     ],
 )
 def test_rpm_version_has_a_tilde_before_the_pre_release(
@@ -67,6 +81,8 @@ def test_rpm_version_has_a_tilde_before_the_pre_release(
     assert result.returncode == 0, result.stderr
     assert result.stdout == f"{rpm}\n"
     assert rpm.read_text(encoding="utf-8") == expected
+    # rpm.sh and release.yml agree on which tags are pre-releases.
+    assert ("~" in expected) == is_prerelease(version)
 
 
 @pytest.mark.parametrize(
@@ -74,13 +90,18 @@ def test_rpm_version_has_a_tilde_before_the_pre_release(
     [
         pytest.param("1.2.0-1", id="pep440 implicit post"),
         pytest.param("1.2.0-post.1", id="pep440 post"),
-        pytest.param("1.2.0-Rev2", id="pep440 rev"),
+        pytest.param("1.2.0-rev2", id="pep440 rev"),
         pytest.param("1.2.0-r.1", id="pep440 r"),
         pytest.param("1.2.0.dev3", id="pep440 dev"),
         pytest.param("1.2.0rc1.dev2", id="pep440 rc dev"),
         pytest.param("1.2.0-dev3", id="pep440 dev after -"),
         pytest.param("1.2.0-rc1.dev2", id="pep440 rc dev after -"),
-        pytest.param("1.2.0-RC1DEV2", id="pep440 rc dev unseparated"),
+        pytest.param("1.2.0-rc1dev2", id="pep440 rc dev unseparated"),
+        pytest.param("1.2.0-RC.1", id="uppercase"),
+        pytest.param("1.2-foo", id="two numbers"),
+        pytest.param("1.2.0.0-foo", id="four numbers"),
+        pytest.param("01.2.0-foo", id="leading zero"),
+        pytest.param("1.2.0-x.01", id="semver leading zero"),
         pytest.param("1.2.0+build", id="build metadata"),
         pytest.param("v1.2.0", id="leading v"),
         pytest.param("1;id", id="shell"),
