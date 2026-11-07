@@ -277,19 +277,18 @@ jobs:
           changed=$([ -z "${base:-}" ] || git diff --no-renames --name-only "$base" HEAD)
           # The dev container build's own inputs (post-create.sh reads uv's pin from
           # ci/requirements.txt) and the .gitignore that verify.sh's clean-status check
-          # depends on. Dependency manifests are left out: the Python jobs, and lint's Node
-          # steps once uncommented, install them, and the weekly run catches a manifest
-          # change that breaks only the dev container.
+          # depends on. Dependency manifests are left out on purpose (docs/scaffold.md, CI).
           if [ -z "${base:-}" ] \
               || grep -qE -e '^\.devcontainer/' -e '^\.github/workflows/ci\.yml$' -e '^Makefile$' -e '^\.gitignore$' \
                 -e '^ci/requirements\.txt$' <<<"$changed"; then
             echo devcontainer=true >>"$GITHUB_OUTPUT"
           fi
-          # The Python jobs read no docs/, .claude/ or Markdown, except README.md (the
-          # package's readme) and anything under src/ or tests/.
+          # The Python jobs read no docs/, .claude/, .github/, .pre-commit-config.yaml or
+          # Markdown, except README.md (the package's readme), anything under src/ or tests/,
+          # and ci.yml, which defines them.
           if [ -z "${base:-}" ] \
-              || grep -qE -e '^README\.md$' -e '^(src|tests)/' <<<"$changed" \
-              || grep -qvE -e '\.md$' -e '^docs/' -e '^\.claude/' <<<"$changed"; then
+              || grep -qE -e '^README\.md$' -e '^(src|tests)/' -e '^\.github/workflows/ci\.yml$' <<<"$changed" \
+              || grep -qvE -e '\.md$' -e '^docs/' -e '^\.claude/' -e '^\.github/' -e '^\.pre-commit-config\.yaml$' <<<"$changed"; then
             echo python=true >>"$GITHUB_OUTPUT"
           fi
 
