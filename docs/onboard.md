@@ -22,7 +22,8 @@ An item whose answer needs neither, such as which workflows to keep, says what t
 - [ ] Publishing targets: the PyPI package, the container image, the docs site
       ([details](#publishing-targets))
 - [ ] Whether to keep `Dockerfile` (its marker says what goes with it, and the
-      `publish-docker.yml` row in [Publishing](scaffold.md#publishing) goes too),
+      `publish-docker.yml` row in [Publishing](scaffold.md#publishing) and the sentences
+      naming it in `RELEASING.md` go too),
       `.github/workflows/scorecard.yml` (an OpenSSF score; it skips on private repos) and
       `.github/workflows/external-link-check.yml` (a weekly check for broken external links).
       Delete each workflow you don't keep
@@ -35,7 +36,10 @@ Keep `release.yml` whatever you publish: it creates a GitHub Release for each `v
 stack.
 
 - PyPI package: keep `publish-pypi.yml`, and set up its environment in
-  [GitHub settings](#publishing-environments). Its commented tag-vs-version check is optional.
+  [GitHub settings](#publishing-environments). If the package's version isn't
+  `[project] version` in `pyproject.toml`, repoint `ver=` in the workflow's tag check, and
+  name where it is in `RELEASING.md`'s version step and the `publish-pypi.yml` row in
+  [Publishing](scaffold.md#publishing).
 - Container image: keep `publish-docker.yml`, set up its environment in
   [GitHub settings](#publishing-environments), and give the `Dockerfile` a real entrypoint.
 - Docs site: for a single version, use GitHub Pages: set Settings > Pages > Source to "GitHub
@@ -44,7 +48,8 @@ stack.
   and import the repo there.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
-its row in [Publishing](scaffold.md#publishing).
+its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
+`RELEASING.md` that names that workflow.
 
 ## Procedures
 
@@ -127,6 +132,8 @@ Finish deletes.
 7. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
    table, delete the `publish-pypi.yml` row and, if not containerized, the
    `publish-docker.yml` row.
+8. In `RELEASING.md`, delete or rewrite each sentence that names `publish-pypi.yml` and, if
+   not containerized, `publish-docker.yml`.
 
 ### Stack
 
@@ -285,7 +292,7 @@ Copy the badge lines from the top of the template README into yours, then:
 | `docs/`, `.readthedocs.yaml.example` | Sphinx docs site (Markdown via MyST, API reference from docstrings); `make docs` builds it. [Publishing targets](#publishing-targets) says how to publish it |
 | `AGENTS.md` | Instructions every coding agent reads (Claude Code through `CLAUDE.md`): points to the project rules; corrections, verification commands, skill index |
 | `Dockerfile`, `.dockerignore` | Minimal Python image stub — pairs with `publish-docker.yml` |
-| `CHANGELOG.md`, `CONTRIBUTING.md` | Keep-a-Changelog skeleton and a Python contributor guide |
+| `CHANGELOG.md`, `CONTRIBUTING.md`, `RELEASING.md` | Keep-a-Changelog skeleton, a Python contributor guide and the release procedure |
 | `.env.example`, `.prettierrc` | Env-var template and Prettier config (for JS/TS work) |
 | `.editorconfig` | Language-aware formatting — 4-space Python, 2-space JS/TS, tabs for Makefiles |
 | `.gitattributes` | Syntax-aware diffs, LF checkout on every platform |

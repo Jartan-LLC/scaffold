@@ -88,7 +88,7 @@ Nothing publishes until you push a `v*` tag. Each tag runs these workflows:
 | Workflow | Publishes |
 |---|---|
 | `release.yml` | a GitHub Release whose notes are the tag's `CHANGELOG.md` section (`## [1.2.0]` for `v1.2.0`) with its hard-wrapped lines joined, or GitHub's generated notes, with a warning in the run, when there is no `CHANGELOG.md` or that section is missing, empty or holds only HTML comments. A PEP 440 or SemVer pre-release tag (`v1.2.0rc1`, `v1.2.0-rc.1`) makes a pre-release |
-| `publish-pypi.yml` | the package to PyPI from the `pypi` environment, through [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/), so no token secret is stored |
+| `publish-pypi.yml` | the package to PyPI from the `pypi` environment, once the tag matches `pyproject.toml`'s `version`, through [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/), so no token secret is stored |
 | `publish-docker.yml` | multi-arch images to `ghcr.io/OWNER/REPO` from the `ghcr` environment, with the built-in `GITHUB_TOKEN`, no secret needed. Images are tagged `X.Y.Z` and `X.Y`; `latest` moves only when the tag is the highest release |
 
 ## Syncing template updates
