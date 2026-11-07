@@ -58,9 +58,9 @@ its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sent
 `tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, the `docker` entry for
 `/packaging` in `.github/dependabot.yml`, the `rpm.yml` row in Publishing, and, in
 `RELEASING.md`, the Installing the RPM section and each sentence and list item that opens with
-"while `packaging/rpm.spec` exists". Keep
-`.github/workflows/rpm.yml`: `ci.yml` and `release.yml` call it from jobs that skip while
-`packaging/rpm.spec` is missing. `ci.yml`'s `dnf-repo` job skips then too.
+"while `packaging/rpm.spec` exists". Keep `.github/workflows/rpm.yml`: `ci.yml` and
+`release.yml` call it from jobs that skip while `packaging/rpm.spec` is missing. `ci.yml`'s
+`dnf-repo` job skips then too.
 
 ## Procedures
 
