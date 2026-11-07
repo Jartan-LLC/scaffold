@@ -14,8 +14,8 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-SCRIPT = Path(__file__).resolve().parents[1] / "packaging" / "rpm.sh"
-RELEASE_NOTES = Path(__file__).resolve().parents[1] / "ci" / "release_notes.py"
+SCRIPT = Path(__file__).resolve().parents[2] / "packaging" / "rpm.sh"
+RELEASE_NOTES = Path(__file__).resolve().parents[2] / "ci" / "release_notes.py"
 
 STUBS = {
     "rpmspec": "#!/bin/sh\nprintf app\n",

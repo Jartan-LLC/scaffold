@@ -24,7 +24,7 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-SCRIPT = Path(__file__).resolve().parents[1] / "packaging" / "dnf-repo.sh"
+SCRIPT = Path(__file__).resolve().parents[2] / "packaging" / "dnf-repo.sh"
 SIGNER = "0123456789ABCDEF0123456789ABCDEF01234567"
 OTHER = "89ABCDEF0123456789ABCDEF0123456789ABCDEF"
 URL = "https://github.com/ORG/REPO/releases/download/"
