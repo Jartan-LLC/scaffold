@@ -110,18 +110,20 @@ uncomment it and add it to both. The Node checks are commented steps inside `lin
 uncomment them there, with no `check` change needed.
 
 The `changes` job skips `typecheck`, `test`, `build` and `audit` when a change touches only
-docs, and the dev container job unless its build inputs change; its comments in `ci.yml`
-list the paths. Scheduled and manual runs run every job, so a dependency change that breaks
-only the dev container build shows at the weekly run, not on its PR.
+`docs/`, `.claude/` or Markdown, other than `README.md` and Markdown under `src/` or
+`tests/`. It skips the dev container job unless the change touches one of its build inputs,
+which the `changes` job's `diff` step in `ci.yml` lists. Scheduled and manual runs run
+every job, so a dependency change that breaks only the dev container build shows at the
+weekly run, not on its PR.
 
 A private repository pays for Actions minutes, and GitHub bills each job as at least one
 minute. Two levers are yours to pull:
 
-- Each Dependabot PR runs CI. Setting `interval: "monthly"` in `.github/dependabot.yml`
-  batches a month of updates instead of a week.
-- `ci.yml` runs on pull requests and pushes to `main`, and a new push to a PR cancels the
-  run before it, which still bills the minutes it used. Review rounds on a pushed branch
-  run no CI until the PR opens.
+- Each Dependabot PR runs CI. Set `interval: "monthly"` in each `updates` entry of
+  `.github/dependabot.yml` whose PRs should batch a month of updates instead of a week.
+- `ci.yml` runs on pull requests and pushes to `main`, not on other pushed branches, and a
+  new push to a PR cancels the run before it, which still bills the minutes it used. Run
+  review rounds on the pushed branch, and open the PR once they are done.
 
 In `.github/dependabot.yml`, remove the ecosystems you don't use, add the ones you need,
 and adjust `directory` where manifests aren't at the root.
