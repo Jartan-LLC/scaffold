@@ -35,7 +35,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 
 ### Cleanup
 
-- [ ] Replace `README.md` with your own, keeping its badges ([details](#readme-badges))
+- [ ] Replace `README.md` with your own, carrying over its badges adjusted for your repo ([details](#readme-badges))
 - [ ] Delete this page and its entry in `docs/index.md`
 - [ ] Delete `.claude/commands/onboard.md`
 
