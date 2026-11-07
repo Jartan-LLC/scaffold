@@ -24,7 +24,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 
 ### Recommended
 
-- [ ] Set up publishing: package, image, docs site ([details](scaffold.md#publishing))
+- [ ] Set up publishing: package, image, docs site, with required reviewers on the `pypi` and `ghcr` environments ([details](scaffold.md#publishing))
 - [ ] Create the `major`/`minor`/`patch` labels Dependabot adds to its PRs ([details](#dependabot-labels))
 - [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
 - [ ] Enable CodeQL default setup (Settings > Security > Code scanning)
@@ -118,11 +118,11 @@ which reads fine on GitHub without Sphinx, and this page, which Cleanup deletes.
 
 ## ORG/REPO placeholders
 
-- `.github/ISSUE_TEMPLATE/config.yml` and the `[Unreleased]` link in `CHANGELOG.md`:
-  replace `ORG/REPO` with your org and repo.
-- `.lycheeignore`: delete only the `https://github.com/ORG/REPO` line. Replacing it would
-  make the link check ignore your own repo. Keep every other line; the `file://`
-  advisory-form pattern is permanent.
+- `.github/ISSUE_TEMPLATE/config.yml`, the advisory-form link in `.github/SECURITY.md` and
+  the `[Unreleased]` link in `CHANGELOG.md`: replace `ORG/REPO` with your org and repo.
+- `.lycheeignore`: delete only the `https://github.com/ORG/REPO` line and its comment.
+  Replacing it would make the link check ignore your own repo. Keep every other line,
+  including the advisory-form pattern.
 
 ## Docs site
 

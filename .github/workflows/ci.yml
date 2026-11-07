@@ -3,9 +3,9 @@ name: CI
 on:
   pull_request:
     branches: [main]
-  # Dev extras, hook envs and the dev container Features' create-time downloads resolve
-  # at run time, so `main` can go red with no commit touching it; these catch that
-  # before the next PR does.
+  # Dev extras, hook envs and the dev container build's downloads resolve at run time,
+  # so `main` can go red with no commit touching it; these catch that before the next
+  # PR does.
   push:
     branches: [main]
   schedule:
@@ -45,8 +45,8 @@ jobs:
           enable-cache: true
 
       # All file linters live in .pre-commit-config.yaml (the single source, shared
-      # with `make lint`). pre-commit manages its own hook envs, so no
-      # pyproject/dev-extras, which keeps this job language-agnostic.
+      # with `make lint`). pre-commit builds its own hook envs, so this job installs
+      # no project extras.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/pre-commit
@@ -100,8 +100,6 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    # Add `needs: lint` to skip tests when lint fails — saves runner time on slow
-    # suites, at the cost of not seeing lint and test failures in a single run.
     strategy:
       fail-fast: false
       matrix:
@@ -249,9 +247,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 2
+          # A push diffs against the previous tip, which a credential-less fetch can't
+          # reach in a private repo, so push runs check out the whole history. '0' is
+          # quoted because a bare 0 is falsy and would give push runs depth 2.
+          fetch-depth: ${{ github.event_name == 'push' && '0' || '2' }}
       # A PR's merge commit has its base as first parent. With no base (a scheduled or
-      # manual run, a failed fetch) the dev container job runs, rather than risk skipping a change.
+      # manual run, a new branch, a force push) the dev container job runs, rather than
+      # risk skipping a change.
       - id: diff
         env:
           EVENT: ${{ github.event_name }}
@@ -259,12 +261,15 @@ jobs:
         run: |
           case "$EVENT" in
             pull_request) base=HEAD^1 ;;
-            push) git fetch -q --depth=1 origin "$BEFORE" && base=$BEFORE ;;
+            push) git cat-file -e "$BEFORE^{commit}" 2>/dev/null && base=$BEFORE ;;
           esac
-          changed=$([ -z "${base:-}" ] || git diff --name-only "$base" HEAD)
-          # Everything the dev container build reads, make install's manifests included.
+          # --no-renames lists a renamed file's old path too, so moving a matched file away
+          # still counts.
+          changed=$([ -z "${base:-}" ] || git diff --no-renames --name-only "$base" HEAD)
+          # Everything the dev container build reads, make install's manifests included, and
+          # the .gitignore that verify.sh's clean-status check depends on.
           if [ -z "${base:-}" ] \
-              || grep -qE -e '^\.devcontainer/' -e '^\.github/workflows/ci\.yml$' -e '^Makefile$' -e '^\.claude/settings\.json$' \
+              || grep -qE -e '^\.devcontainer/' -e '^\.github/workflows/ci\.yml$' -e '^Makefile$' -e '^\.gitignore$' \
                 -e '(^|/)(pyproject\.toml|requirements\.txt|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|\.npmrc)$' <<<"$changed"; then
             echo devcontainer=true >>"$GITHUB_OUTPUT"
           fi
