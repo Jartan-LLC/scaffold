@@ -83,7 +83,7 @@ jobs:
       artifact: release-rpm
 
   # Signs the RPM, and on a full release builds the dnf repository's signed metadata for it
-  # and the earlier full releases created most recently, so dnf downgrade and dnf history
+  # and the earlier full releases published most recently, so dnf downgrade and dnf history
   # undo have the previous version. A pre-release stays out of the repository: dnf would
   # upgrade every user to it, since it sorts 2.0.0~rc.1 above 1.1.0.
   sign:
@@ -147,10 +147,13 @@ jobs:
               --jq 'any(.assets[]; .name == env.ASSET)') || exit 1
             [[ $found == true ]]
           }
-          # A re-run finds this tag's own release, if the first run created it.
+          # gh lists releases by their tagged commit's date, so a tag on an older commit, such
+          # as a maintenance release, sorts low; take the ones published most recently. A
+          # re-run finds this tag's own release, if the first run created it.
           tags=$(gh release list --exclude-drafts --exclude-pre-releases \
-            --limit "$((KEEP + 1))" --json tagName \
-            --jq '[.[].tagName | select(. != env.GITHUB_REF_NAME)][:(env.KEEP | tonumber)][]')
+            --limit 1000 --json tagName,publishedAt \
+            --jq 'sort_by(.publishedAt) | reverse
+              | [.[].tagName | select(. != env.GITHUB_REF_NAME)][:(env.KEEP | tonumber)][]')
           for tag in $tags; do
             if has_asset "$tag" "$NAME.noarch.rpm"; then
               gh release download "$tag" --pattern "$NAME.noarch.rpm" --dir "releases/$tag"

@@ -74,9 +74,9 @@ A user who installs none of the releases in between stops getting updates, with 
 dnf's output, until they install from the release URL again, as `RELEASING.md`'s Installing the RPM
 section says. Leave the old key in `packaging/RPM-GPG-KEY` until the new key has signed every
 release in the dnf repository, which holds the latest full release and the earlier full releases
-created most recently, by date rather than version, as many as `KEEP` in `release.yml`'s `sign` job
-says: the job leaves an earlier release out of the repository once the file no longer holds the key
-that signed it.
+published most recently, by date rather than version, as many as `KEEP` in `release.yml`'s `sign`
+job says: the job leaves an earlier release out of the repository once the file no longer holds the
+key that signed it.
 
 ## If the key leaks
 
