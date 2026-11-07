@@ -5,7 +5,8 @@ on:
     branches: [main]
   # Dev extras, hook envs and the dev container build's downloads resolve at run time,
   # so `main` can go red with no commit touching it; these catch that before the next
-  # PR does.
+  # PR does. A push that the `changes` job gates out of a job leaves that job's check
+  # to the weekly run.
   push:
     branches: [main]
   schedule:

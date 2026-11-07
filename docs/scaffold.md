@@ -131,8 +131,9 @@ and adjust `directory` where manifests aren't at the root.
 A private repository pays for Actions minutes, and GitHub bills each job as at least one
 minute. Two levers cut those minutes:
 
-- Each Dependabot PR runs CI. Set `interval: "monthly"` in each `updates` entry of
-  `.github/dependabot.yml` whose PRs should batch a month of updates instead of a week.
+- Each Dependabot PR runs CI. In each `updates` entry of `.github/dependabot.yml` whose
+  PRs should batch a month of updates instead of a week, set `interval: "monthly"` and
+  remove `day: "monday"`, which applies to weekly schedules.
 - CI doesn't run on a pushed branch other than `main` until it has a PR, and each push to
   a PR cancels the run before it, which still bills the minutes it used. A review needs no
   PR, so finish review rounds on the pushed branch before opening the PR.
