@@ -56,8 +56,9 @@ repos:
       - id: check-json
       - id: check-added-large-files
       - id: check-merge-conflict
-        # Without the flag it checks nothing outside a live merge, as in CI. With it, a
-        # line of exactly seven "=" (a setext underline that length) fails.
+        # Without the flag it checks nothing outside a live merge, as in CI. With it,
+        # any line that starts like a conflict marker fails, including a setext
+        # underline of exactly seven "=".
         args: [--assume-in-merge]
   - repo: local
     hooks:
