@@ -64,11 +64,10 @@ them. If a Python job comes to use a file in a skipped path, such as a local act
 `.github/actions/`, add it to `_PYTHON_READS` in `ci/changes.py`.
 
 The `rpm` job runs on every change while `packaging/rpm.spec` exists: it builds the RPM,
-running the spec's `%check`, and installs it in Fedora. So does the `dnf-repo` job: it builds
-RPMs of several releases, signs all but the last with a throwaway key, builds the dnf
-repository of them with `packaging/dnf-repo.sh`, and checks in a fresh Fedora container
-that `dnf` installs, upgrades and downgrades from it, and that it refuses an unsigned package
-and skips the repository when someone without the key changes its metadata.
+running the spec's `%check`, and installs it in Fedora. While `packaging/dnf.repo` also exists,
+the `dnf-repo` job builds a test dnf repository with `packaging/dnf-repo.sh` and checks in
+Fedora that `dnf` installs and upgrades from it and refuses unsigned packages and tampered
+metadata; `ci/dnf-repo-test.sh` lists its checks.
 
 The dev container job runs only when a change touches one of its build inputs, which
 `_DEVCONTAINER_INPUTS` in `ci/changes.py` lists. `pyproject.toml`, `package.json` and pnpm's
