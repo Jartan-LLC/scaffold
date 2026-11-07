@@ -14,14 +14,14 @@ setup.
 | `src/`, `tests/` | The package (src layout, PEP 561 typed) and its tests; the template ships a CLI entry point and logging setup |
 | `Makefile`, `.pre-commit-config.yaml` | Task runner (`make install`/`lint`/`fix`/`test`/`check`/`docs`, backed by [uv](https://docs.astral.sh/uv/), installing into the checkout's `.venv`, else the active environment, else the devcontainer's system Python) + the single lint source (ruff, codespell, shellcheck, markdownlint, lychee, actionlint, zizmor, hygiene) that `make lint` and CI both run, and the source of ruff's and codespell's versions |
 | `docs/`, `.readthedocs.yaml.example` | Sphinx docs site (Markdown via MyST, API reference from docstrings); `make docs` builds it. Publish via `pages.yml.example` (GitHub Pages) or ReadTheDocs |
-| `AGENTS.md` | Symlink to `CLAUDE.md` for vendor-neutral agent tools (Cursor, Copilot, …); tools that don't follow `@` imports won't load `GUARDRAILS.md` |
+| `AGENTS.md` | Instructions every coding agent reads (Claude Code through `CLAUDE.md`): points to the project rules; corrections, verification commands, skill index |
 | `Dockerfile`, `.dockerignore` | Minimal Python image stub — pairs with `publish-docker.yml` |
 | `CHANGELOG.md`, `CONTRIBUTING.md` | Keep-a-Changelog skeleton and a Python contributor guide |
 | `.env.example`, `.prettierrc` | Env-var template and Prettier config (for JS/TS work) |
 | `.editorconfig` | Language-aware formatting — 4-space Python, 2-space JS/TS, tabs for Makefiles |
 | `.gitattributes` | Syntax-aware diffs, LF checkout on every platform |
 | `.gitignore` | Comprehensive patterns for Node, Python, Docker, IDEs, env files, build artifacts |
-| `CLAUDE.md` | Imports the project rules; corrections, verification commands, skill index |
+| `CLAUDE.md` | Imports `AGENTS.md` for Claude Code; edit `AGENTS.md` instead |
 | `GUARDRAILS.md` | Project rules ranked by how firmly each holds (never / ask first / default / preference) — the tiers Liza agents enforce |
 
 ## Syncing template updates

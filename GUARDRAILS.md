@@ -1,7 +1,8 @@
 # Project Guardrails
 
-The project rules, ranked by how firmly each holds. `CLAUDE.md` imports this file, so
-every Claude Code session loads it; Liza agents also enforce the tiers (Liza's `CORE.md`).
+The project rules, ranked by how firmly each holds. `AGENTS.md` names this file as the
+rules for every agent, and imports it for Claude Code; Liza agents also enforce the tiers
+(Liza's `CORE.md`).
 
 ## Tier 0 (Inviolable)
 <!-- A violation halts the work (Liza's RESET state). -->
@@ -11,7 +12,7 @@ every Claude Code session loads it; Liza agents also enforce the tiers (Liza's `
 ## Tier 1 (Hard Constraints)
 <!-- Suspended only with explicit waiver. -->
 
-- Run the Verify command in `CLAUDE.md` before declaring work done or submitting it for
+- Run the Verify command in `AGENTS.md` before declaring work done or submitting it for
   review.
 - Ask first before changing public API signatures or database schemas, deleting files, or
   removing features.

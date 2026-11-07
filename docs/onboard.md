@@ -8,7 +8,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 
 ### Required
 
-- [ ] Fill in `CLAUDE.md` and `GUARDRAILS.md` ([details](#project-instructions))
+- [ ] Fill in `AGENTS.md` and `GUARDRAILS.md` ([details](#project-instructions))
 - [ ] Adapt the devcontainer and the `Makefile`'s `install` target to your stack ([details](#devcontainer))
 - [ ] Keep or decline each enchantments Feature ([details](#devcontainer))
 - [ ] Add your stack's patterns to `.gitignore` and rules to `.editorconfig`
@@ -41,7 +41,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 
 ## Project instructions
 
-- `CLAUDE.md`: replace the `# Project Name` heading and the `<!-- ONE LINE: … -->` comment
+- `AGENTS.md`: replace the `# Project Name` heading and the `<!-- ONE LINE: … -->` comment
   under it; add version-specific overrides for your stack under Corrections; add skills and
   conventions under Skills as they emerge. If your verify command is not `make check`,
   update the Verify section.
