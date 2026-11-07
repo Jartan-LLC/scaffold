@@ -14,8 +14,8 @@ of a subkey. The stub `createrepo_c` writes a primary.xml that lists each
 package's location, and the stub `gpg` writes the signing key into the
 signature and lists a key file's keys in the real one's order, failing as it
 does on an empty file. It lists the secret keys of `$GNUPGHOME/secret-keys`,
-which takes a key file's form, the same way. ci.yml's dnf-repo job runs the
-real tools.
+which takes a key file's form, the same way, and fails when `$GNUPGHOME` is not
+a directory. ci.yml's dnf-repo job runs the real tools.
 """
 
 import io
@@ -122,7 +122,10 @@ if "--show-keys" in args:
         sys.exit("gpg: no valid OpenPGP data found.")
     sys.exit(0)
 if "--list-secret-keys" in args:
-    keyring = pathlib.Path(os.environ["GNUPGHOME"]) / "secret-keys"
+    home = pathlib.Path(os.environ["GNUPGHOME"])
+    if not home.is_dir():
+        sys.exit(f"gpg: {home} is not a directory")
+    keyring = home / "secret-keys"
     if keyring.exists():
         show(keyring, "sec", "ssb")
     sys.exit(0)
@@ -236,10 +239,21 @@ def test_sign_signs_the_rpm_in_place_with_the_key(
     assert rpm.read_text(encoding="utf-8") == f"app 1.0.0~rc1 {SIGNER}"
 
 
-def test_sign_fails_on_a_missing_rpm(env: dict[str, str], tmp_path: Path, keyfile: Path) -> None:
-    result = run(env, "sign", SIGNER, keyfile, tmp_path / "missing.rpm")
+@pytest.mark.parametrize("missing", ["keyfile", "rpm"])
+def test_sign_fails_on_a_missing_input(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, missing: str
+) -> None:
+    rpm = add_rpm(tmp_path, "v1.0.0", "1.0.0", "-")
+    path = tmp_path / "missing"
+    if missing == "keyfile":
+        result = run(env, "sign", SIGNER, path, rpm)
+        error = f"no such key file: {path}"
+    else:
+        result = run(env, "sign", SIGNER, keyfile, path)
+        error = f"no such RPM: {path}"
     assert result.returncode == 1
-    assert result.stderr == f"dnf-repo.sh: no such RPM: {tmp_path / 'missing.rpm'}\n"
+    assert result.stderr == f"dnf-repo.sh: {error}\n"
+    assert rpm.read_text(encoding="utf-8") == "app 1.0.0 -"
 
 
 def test_metadata_indexes_each_release_at_its_download_url(
@@ -617,3 +631,16 @@ def test_fingerprint_fails_unless_the_keyring_holds_one_secret_key(
     assert result.returncode == 1
     assert result.stdout == ""
     assert result.stderr == "dnf-repo.sh: the keyring must hold one secret key\n"
+
+
+def test_fingerprint_fails_with_gpgs_error_when_gpg_cant_list_the_keys(
+    env: dict[str, str], tmp_path: Path
+) -> None:
+    home = tmp_path / "gnupg"
+    home.write_text("", encoding="utf-8")
+    result = run({**env, "GNUPGHOME": str(home)}, "fingerprint")
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert result.stderr == (
+        f"dnf-repo.sh: can't list the secret keys: gpg: {home} is not a directory\n"
+    )

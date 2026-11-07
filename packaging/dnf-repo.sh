@@ -81,7 +81,7 @@ import_keys() {
 }
 
 # Prints "signed" when RPM $1 has signatures and each verifies with a key in the keyring
-# database $2, "unsigned" when it has none, "other key" when it is intact and each signature
+# database $2, "unsigned" when it has none, "other_key" when it is intact and each signature
 # that fails is by a key not in $2, and fails otherwise.
 signature() {
     local out checks status=0
@@ -98,7 +98,7 @@ signature() {
         # rpmkeys marks a signature whose key it lacks NOKEY, and a check that fails BAD.
         if [[ $checks == *": NOKEY"* && $checks != *": BAD"* ]] &&
             rpmkeys --dbpath "$2" -K --nosignature -- "$1" >/dev/null 2>&1; then
-            echo other key
+            echo other_key
             return
         fi
         die "$1 has a bad signature, or is damaged:
@@ -146,8 +146,7 @@ metadata() (
                 continue
                 ;;
             # More likely a wrong key file than an earlier release, which prune leaves out.
-            "other key") die "$rpm is signed by a key not in the key file" ;;
-            *) die "unexpected signature state: $sig" ;;
+            other_key) die "$rpm is signed by a key not in the key file" ;;
         esac
         # The name goes into the bundle's file names.
         [[ $pkg =~ ^[A-Za-z0-9._+-]+$ ]] || die "$rpm has a name dnf-repo.sh can't use: $pkg"
@@ -198,12 +197,11 @@ prune() (
         sig=$(signature "$rpm" "$work/keyring")
         case $sig in
             signed | unsigned) ;;
-            "other key")
+            other_key)
                 printf 'dnf-repo.sh: warning: leaving out %s: it is signed by a key not in %s\n' \
                     "$rpm" "$keyfile" >&2
                 rm -- "$rpm"
                 ;;
-            *) die "unexpected signature state: $sig" ;;
         esac
     done
 )

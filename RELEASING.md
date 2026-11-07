@@ -65,8 +65,9 @@ what to fix first when the job failed.
    `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits for this only when
    its environment (`pypi`, `ghcr`) has required reviewers. While `packaging/dnf.repo` exists,
    approve the `release.yml` run's `sign` job the same way, in the `rpm-signing` environment,
-   an earlier tag's first: a tag's `release.yml` run waits until the previous tag's run
-   finishes, so reject or cancel a run you won't approve, or later tags get no GitHub Release.
+   and an earlier tag's `sign` job before a later tag's. While `packaging/dnf.repo` exists,
+   reject a `sign` job you won't approve, or cancel its run: a tag's `release.yml` run waits
+   until the previous tag's run finishes, so until then later tags get no GitHub Release.
 2. Check that every run succeeded:
 
    ```bash
