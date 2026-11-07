@@ -44,8 +44,9 @@ signature() {
     local out status=0
     out=$(rpmkeys --dbpath "$2" -Kv -- "$1" 2>&1) || status=$?
     # rpmkeys names the key of each signature it finds ("Signature, key" in rpm 4). With
-    # none, rpm 6 fails the check and rpm 4 passes it, so the status alone can't tell.
-    if [[ $out == *[Ss]"ignature, key "* ]]; then
+    # none, rpm 6 fails the check and rpm 4 passes it, so the status alone can't tell. The
+    # match skips the first line, the RPM's path, which could hold the same text.
+    if [[ ${out#*$'\n'} == *[Ss]"ignature, key "* ]]; then
         ((status == 0)) || die "$1 has a signature by a key not in the key file, or a bad one:
 $out"
         echo signed
@@ -57,7 +58,8 @@ $out"
     echo unsigned
 }
 
-metadata() {
+# A subshell, so the EXIT trap removes the scratch directory when metadata returns.
+metadata() (
     (($# == 5 || $# == 6)) || usage
     local fingerprint=$1 keyfile=$2 url=$3 rpmdir=$4 outdir=$5 previous=${6:-}
     check_fingerprint "$fingerprint"
@@ -70,19 +72,20 @@ metadata() {
     [[ $url == */ ]] || die "the URL must end in /: $url"
     [[ -z $previous || -f $previous ]] || die "no such bundle: $previous"
 
-    # Not local: the EXIT trap reads it after metadata returns.
+    local work
     work=$(mktemp -d)
     trap 'rm -rf -- "$work"' EXIT
     mkdir "$work/keyring" "$work/packages" "$work/bundle"
     rpmkeys --dbpath "$work/keyring" --import "$keyfile" ||
         die "can't read the keys in $keyfile"
 
-    local rpm tag nv version sig name='' count=0
+    local rpm tag nv pkg version sig name='' count=0
     shopt -s nullglob
     for rpm in "$rpmdir"/*/*.rpm; do
         tag=$(basename -- "$(dirname -- "$rpm")")
         nv=$(rpm -qp --nosignature --qf '%{NAME} %{VERSION}' -- "$rpm") ||
             die "not an RPM: $rpm"
+        pkg=${nv%% *}
         version=${nv#* }
         # A ~ is how rpm.sh writes a pre-release, and dnf would upgrade every user to one:
         # it sorts 2.0.0~rc.1 above 1.1.0.
@@ -95,10 +98,9 @@ metadata() {
             continue
         fi
         # The name goes into the bundle's file names.
-        [[ ${nv%% *} =~ ^[A-Za-z0-9._+-]+$ ]] ||
-            die "$rpm has a name dnf-repo.sh can't use: ${nv%% *}"
-        [[ -z $name || $name == "${nv%% *}" ]] || die "$rpm is not a package of $name"
-        name=${nv%% *}
+        [[ $pkg =~ ^[A-Za-z0-9._+-]+$ ]] || die "$rpm has a name dnf-repo.sh can't use: $pkg"
+        [[ -z $name || $name == "$pkg" ]] || die "$rpm is not a package of $name"
+        name=$pkg
         mkdir -p "$work/packages/$tag"
         cp -- "$rpm" "$work/packages/$tag/"
         count=$((count + 1))
@@ -129,7 +131,7 @@ metadata() {
     mkdir -p -- "$outdir"
     tar -czf "$outdir/$name-dnf-repo.tar.gz" -C "$work/bundle" repodata "RPM-GPG-KEY-$name"
     printf '%s\n' "$outdir/$name-dnf-repo.tar.gz"
-}
+)
 
 (($# > 0)) || usage
 mode=$1

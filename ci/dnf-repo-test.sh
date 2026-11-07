@@ -10,7 +10,7 @@
 #     assets under assets/, and one repository per scenario.
 #     Needs what dnf-repo.sh and rpm.sh need, and zstd.
 #   ci/dnf-repo-test.sh check WWW
-#     Runs dnf against WWW, which ci/dnf_repo_server.py serves on 127.0.0.1:8000 from
+#     Runs dnf against WWW, which ci/dnf_repo_server.py serves at the url below from
 #     outside this container: python3 here would hold tzdata, which the Obsoletes check
 #     needs dnf to be able to remove. Needs dnf5 5.4.7 or later and dnf5-plugin-automatic.
 set -euo pipefail

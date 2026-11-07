@@ -243,16 +243,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Read the Fedora image
+      # rpm.yml's image job, which runs whenever this job does, fails unless the FROM line
+      # pins a digest.
+      - name: Pull the Fedora image
         run: |
-          FEDORA=$(sed -n 's/^FROM //p' packaging/fedora.Containerfile)
-          case $FEDORA in
-            *@sha256:*) ;;
-            *)
-              echo "::error::packaging/fedora.Containerfile's FROM line must pin a digest (image@sha256:...)"
-              exit 1
-              ;;
-          esac
+          FEDORA=$(docker build -q - <packaging/fedora.Containerfile)
           echo "FEDORA=$FEDORA" >>"$GITHUB_ENV"
 
       - name: Build the repository
@@ -260,8 +255,8 @@ jobs:
           docker run --rm -v "$PWD:/src" -w /src "$FEDORA" bash -c \
             'dnf -y install git-core rpm-build createrepo_c rpm-sign gnupg2 zstd && ci/dnf-repo-test.sh build www'
 
-      # auto_import_local_keys needs dnf5 5.4.7, newer than the image's. The port is the
-      # one ci/dnf-repo-test.sh's url names.
+      # auto_import_local_keys needs dnf5 5.4.7 or later; the upgrade can go once the image
+      # has it. The port is the one ci/dnf-repo-test.sh's url names.
       - name: Install from the repository
         run: |
           python3 ci/dnf_repo_server.py www 8000 &

@@ -4,10 +4,11 @@ The script runs with stub `rpm`, `rpmkeys`, `rpmsign`, `createrepo_c` and `gpg`
 first on `PATH`, so no rpm tools are needed. A stub RPM is a text file holding
 its name, version and signing key: ``-`` for none as rpm 6 reports it, ``-4``
 for none as rpm 4 does (passing the check), ``bad`` for a bad signature and
-``damaged`` for an unsigned package whose digests don't match. A key file holds
-one key per line. The stub `createrepo_c` writes a primary.xml that lists each
-package's location, and the stub `gpg` writes the signing key into the
-signature and lists a key file's keys. ci.yml's dnf-repo job runs the real
+``damaged`` for an unsigned package whose digests don't match. The stub
+`rpmkeys` prints the RPM's path before its checks, as the real one does. A key
+file holds one key per line. The stub `createrepo_c` writes a primary.xml that
+lists each package's location, and the stub `gpg` writes the signing key into
+the signature and lists a key file's keys. ci.yml's dnf-repo job runs the real
 tools.
 """
 
@@ -48,6 +49,7 @@ known = keys.read_text().split()
 _, _, signer = open(args[-1]).read().split()
 if "--nosignature" in args:
     sys.exit(1 if signer == "damaged" else 0)
+print(f"{args[-1]}:")
 if signer == "damaged":
     print("    Payload SHA256 digest: BAD")
     sys.exit(1)
@@ -197,6 +199,12 @@ def test_sign_signs_the_rpm_in_place_with_the_key(env: dict[str, str], tmp_path:
     assert rpm.read_text(encoding="utf-8") == f"app 1.0.0~rc1 {SIGNER}"
 
 
+def test_sign_fails_on_a_missing_rpm(env: dict[str, str], tmp_path: Path) -> None:
+    result = run(env, "sign", SIGNER, tmp_path / "missing.rpm")
+    assert result.returncode == 1
+    assert result.stderr == f"dnf-repo.sh: no such RPM: {tmp_path / 'missing.rpm'}\n"
+
+
 def test_metadata_indexes_each_release_at_its_download_url(
     env: dict[str, str], tmp_path: Path, keyfile: Path
 ) -> None:
@@ -227,6 +235,17 @@ def test_metadata_leaves_out_an_unsigned_rpm(
     assert result.stderr == f"dnf-repo.sh: warning: leaving out {rpm}: it is not signed\n"
     files = bundle_files(tmp_path / "out" / "app-dnf-repo.tar.gz")
     assert files["repodata/new-primary.xml"] == f"{URL}v1.1.0/app.noarch.rpm"
+
+
+def test_metadata_does_not_read_the_rpms_path_as_a_signature(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    rpmdir = tmp_path / "Signature, key x"
+    rpm = add_rpm(rpmdir, "v1.0.0", "1.0.0", "-4")
+    add_rpm(rpmdir, "v1.1.0", "1.1.0", SIGNER)
+    result = run(env, "metadata", SIGNER, keyfile, URL, rpmdir, tmp_path / "out")
+    assert result.returncode == 0, result.stderr
+    assert result.stderr == f"dnf-repo.sh: warning: leaving out {rpm}: it is not signed\n"
 
 
 @pytest.mark.parametrize("signer", [pytest.param(OTHER, id="other key"), "bad"])
@@ -290,6 +309,7 @@ def test_metadata_refuses_an_rpm_under_another_releases_tag(
     result = metadata(env, tmp_path, keyfile)
     assert result.returncode == 1
     assert result.stderr == f"dnf-repo.sh: {rpm} is version 1.1.0, not 1.2.0\n"
+    assert not (tmp_path / "out").exists()
 
 
 def test_metadata_refuses_two_package_names(
