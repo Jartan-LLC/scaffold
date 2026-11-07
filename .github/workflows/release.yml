@@ -5,9 +5,11 @@ on:
     tags:
       - "v*"
 
+# One run at a time across tags, in push order: the sign job lists the earlier full releases,
+# and an earlier tag's Release exists only once its own run has finished.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}
+  queue: max
 
 permissions: {}
 

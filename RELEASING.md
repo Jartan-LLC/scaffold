@@ -63,7 +63,9 @@ says when a re-run fails again.
 1. Approve the `publish-pypi.yml` and `publish-docker.yml` runs: open each from
    `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits for this only when
    its environment (`pypi`, `ghcr`) has required reviewers. While `packaging/dnf.repo` exists,
-   approve the `release.yml` run's `sign` job the same way, in the `rpm-signing` environment.
+   approve the `release.yml` run's `sign` job the same way, in the `rpm-signing` environment,
+   an earlier tag's first: a tag's `release.yml` run waits until the previous tag's run
+   finishes, so reject or cancel a run you won't approve, or later tags get no GitHub Release.
 2. Check that every run succeeded:
 
    ```bash
@@ -74,9 +76,7 @@ says when a re-run fails again.
    generated notes, `CHANGELOG.md` had nothing under `## [X.Y.Z]` at the tag; the warning says
    why. While `packaging/rpm.spec` exists, check that it lists `NAME.noarch.rpm` too, where
    `NAME` is `Name` in `packaging/rpm.spec`. While `packaging/dnf.repo` exists, a full release
-   lists `NAME-dnf-repo.tar.gz` as well, the dnf repository's signed metadata; it leaves out an
-   earlier release whose `release.yml` run hadn't created its GitHub Release when this run's
-   `sign` job listed the releases, and the next full release's bundle has it again.
+   lists `NAME-dnf-repo.tar.gz` as well, the dnf repository's signed metadata.
 
 ## Pre-releases
 
