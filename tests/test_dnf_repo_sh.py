@@ -2,11 +2,13 @@
 
 The script runs with stub `rpm`, `rpmkeys`, `rpmsign`, `createrepo_c` and `gpg`
 first on `PATH`, so no rpm tools are needed. A stub RPM is a text file holding
-its name, version and signing key (``-`` for none, ``bad`` for a bad
-signature); a key file holds one key per line. The stub `createrepo_c` writes a
-primary.xml that lists each package's location, and the stub `gpg` writes the
-signing key into the signature and lists a key file's keys. ci.yml's dnf-repo
-job runs the real tools.
+its name, version and signing key: ``-`` for none as rpm 6 reports it, ``-4``
+for none as rpm 4 does (passing the check), ``bad`` for a bad signature and
+``damaged`` for an unsigned package whose digests don't match. A key file holds
+one key per line. The stub `createrepo_c` writes a primary.xml that lists each
+package's location, and the stub `gpg` writes the signing key into the
+signature and lists a key file's keys. ci.yml's dnf-repo job runs the real
+tools.
 """
 
 import io
@@ -45,6 +47,12 @@ if "--import" in args:
 known = keys.read_text().split()
 _, _, signer = open(args[-1]).read().split()
 if "--nosignature" in args:
+    sys.exit(1 if signer == "damaged" else 0)
+if signer == "damaged":
+    print("    Payload SHA256 digest: BAD")
+    sys.exit(1)
+if signer == "-4":
+    print("    Header SHA256 digest: OK")
     sys.exit(0)
 if signer == "-":
     print("    Header OpenPGP RSA signature: NOTFOUND")
@@ -206,14 +214,17 @@ def test_metadata_indexes_each_release_at_its_download_url(
     assert files["RPM-GPG-KEY-app"] == f"{SIGNER}\n"
 
 
+@pytest.mark.parametrize(
+    "unsigned", [pytest.param("-", id="rpm 6"), pytest.param("-4", id="rpm 4")]
+)
 def test_metadata_leaves_out_an_unsigned_rpm(
-    env: dict[str, str], tmp_path: Path, keyfile: Path
+    env: dict[str, str], tmp_path: Path, keyfile: Path, unsigned: str
 ) -> None:
-    unsigned = add_rpm(tmp_path / "rpms", "v1.0.0", "1.0.0", "-")
+    rpm = add_rpm(tmp_path / "rpms", "v1.0.0", "1.0.0", unsigned)
     add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", SIGNER)
     result = metadata(env, tmp_path, keyfile)
     assert result.returncode == 0, result.stderr
-    assert result.stderr == f"dnf-repo.sh: warning: leaving out {unsigned}: it is not signed\n"
+    assert result.stderr == f"dnf-repo.sh: warning: leaving out {rpm}: it is not signed\n"
     files = bundle_files(tmp_path / "out" / "app-dnf-repo.tar.gz")
     assert files["repodata/new-primary.xml"] == f"{URL}v1.1.0/app.noarch.rpm"
 
@@ -230,6 +241,27 @@ def test_metadata_fails_on_a_signature_it_cannot_verify(
         f"dnf-repo.sh: {rpm} has a signature by a key not in the key file, or a bad one:\n"
     )
     assert not (tmp_path / "out").exists()
+
+
+def test_metadata_fails_on_a_damaged_unsigned_rpm(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    add_rpm(tmp_path / "rpms", "v1.0.0", "1.0.0", SIGNER)
+    rpm = add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", "damaged")
+    result = metadata(env, tmp_path, keyfile)
+    assert result.returncode == 1
+    assert result.stderr.startswith(f"dnf-repo.sh: {rpm} is damaged:\n")
+    assert not (tmp_path / "out").exists()
+
+
+def test_metadata_accepts_a_lowercase_fingerprint(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    add_rpm(tmp_path / "rpms", "v1.0.0", "1.0.0", SIGNER)
+    result = run(env, "metadata", SIGNER.lower(), keyfile, URL, tmp_path / "rpms", tmp_path / "out")
+    assert result.returncode == 0, result.stderr
+    files = bundle_files(tmp_path / "out" / "app-dnf-repo.tar.gz")
+    assert files["repodata/repomd.xml.asc"] == SIGNER.lower()
 
 
 def test_metadata_accepts_any_key_in_the_key_file(

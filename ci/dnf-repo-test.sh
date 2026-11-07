@@ -6,8 +6,8 @@
 # Usage:
 #   ci/dnf-repo-test.sh build WWW
 #     Builds 0.0.1, 0.0.2 and 0.0.3 with packaging/rpm.sh, signs the first two with a
-#     throwaway key, and writes under WWW what the client serves: the Release assets
-#     under assets/, and one repository per scenario.
+#     throwaway key, and writes under WWW what ci/dnf_repo_server.py serves: the Release
+#     assets under assets/, and one repository per scenario.
 #     Needs what dnf-repo.sh and rpm.sh need, and zstd.
 #   ci/dnf-repo-test.sh check WWW
 #     Runs dnf against WWW, which ci/dnf_repo_server.py serves on 127.0.0.1:8000 from
@@ -47,11 +47,11 @@ build() {
 
     for v in 0.0.1 0.0.2 0.0.3; do
         rpm=$("$root/packaging/rpm.sh" "$v" "$work/rpms/v$v")
+        name=$(basename "$rpm" .noarch.rpm)
         # 0.0.3 stays unsigned, as a release made before signing would be.
         [[ $v == 0.0.3 ]] || "$root/packaging/dnf-repo.sh" sign "$fingerprint" "$rpm"
         cp -R "$work/rpms/v$v" "$www/assets/"
     done
-    name=$(basename "$rpm" .noarch.rpm)
 
     mkdir -p "$work/in1/v0.0.1"
     cp "$work/rpms/v0.0.1/$name.noarch.rpm" "$work/in1/v0.0.1/"
@@ -97,13 +97,14 @@ build() {
     modifyrepo_c --mdtype=primary "$work/primary.xml" "$www/obsoletes/repodata" >/dev/null
 }
 
-# Builds the bundle of RPMDIR $2 into $3, as a release would, and unpacks it into $4.
+# Builds the bundle of the RPMs in RPMDIR, signed by FINGERPRINT, into OUTDIR as a release
+# would, with PREVIOUS as the bundle it replaces, and unpacks it into DEST.
 bundle() {
-    local out
-    out=$("$root/packaging/dnf-repo.sh" metadata "$1" "$work/RPM-GPG-KEY" \
-        "$url/releases/download/" "$2" "$3" ${5:+"$5"})
-    mkdir -p "$4"
-    tar -xzf "$out" -C "$4"
+    local fingerprint=$1 rpmdir=$2 outdir=$3 dest=$4 previous=${5:-} out
+    out=$("$root/packaging/dnf-repo.sh" metadata "$fingerprint" "$work/RPM-GPG-KEY" \
+        "$url/releases/download/" "$rpmdir" "$outdir" ${previous:+"$previous"})
+    mkdir -p "$dest"
+    tar -xzf "$out" -C "$dest"
 }
 
 check() {
@@ -175,6 +176,7 @@ EOF
 
 # Serves the scenario $2 under WWW $1 as the repository.
 serve() {
+    [[ -d $1/$2 ]] || die "no scenario $2"
     ln -sfn "$2" "$1/repo"
     printf '== the repository is now %s\n' "$2"
 }
@@ -184,7 +186,6 @@ run() {
     printf '$ %s\n' "$*"
     log=$(mktemp)
     "$@" 2>&1 | tee "$log"
-    return "${PIPESTATUS[0]}"
 }
 
 expect() {

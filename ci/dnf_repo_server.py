@@ -1,9 +1,10 @@
 """Serve a directory over HTTP the way GitHub serves a dnf repository's two parts.
 
-`ci/dnf-repo-test.sh` runs this to test the repository `packaging/dnf-repo.sh`
-builds. Files under ROOT are served as they are, as Pages serves the metadata.
-A request for ``/releases/download/TAG/FILE`` gets a 302 to ``/assets/TAG/FILE``,
-as a GitHub Release download redirects to the host that stores its assets.
+`ci.yml`'s `dnf-repo` job runs this for `ci/dnf-repo-test.sh` to test the
+repository `packaging/dnf-repo.sh` builds. Files under ROOT are served as they
+are, as Pages serves the metadata. A request for ``/releases/download/TAG/FILE``
+gets a 302 to ``/assets/TAG/FILE``, as a GitHub Release download redirects to
+the host that stores its assets.
 
 Usage: ``dnf_repo_server.py ROOT PORT``. Standard library only.
 """

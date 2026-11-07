@@ -70,6 +70,7 @@ metadata() {
     [[ $url == */ ]] || die "the URL must end in /: $url"
     [[ -z $previous || -f $previous ]] || die "no such bundle: $previous"
 
+    # Not local: the EXIT trap reads it after metadata returns.
     work=$(mktemp -d)
     trap 'rm -rf -- "$work"' EXIT
     mkdir "$work/keyring" "$work/packages" "$work/bundle"
