@@ -131,9 +131,13 @@ that nothing reads.
    tools' own dependencies aren't pinned, and replace the sentence on where the other tools'
    versions live with "The lint tools are versioned by their hook revs in
    .pre-commit-config.yaml."
-7. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
+7. In `.github/dependabot.yml`, delete the `pip` entry for `/` and keep the one for `/ci`. In
+   the `/ci` entry's comment, delete the sentence "Separate from the "/" entry above so a
+   CI-tool bump lands as its own reviewable PR rather than riding along with a project
+   dependency."
+8. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
    uv" line for your stack.
-8. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
+9. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
    table, delete the `publish-pypi.yml` row and, if not containerized, the
    `publish-docker.yml` row.
 
@@ -148,7 +152,8 @@ that nothing reads.
 - `.github/workflows/ci.yml`: prune it to your stack. [CI](scaffold.md#ci) says how a job
   leaves the `check` gate.
 - `.github/dependabot.yml`: remove the ecosystems you don't use, add the ones you need, and
-  adjust `directory` where manifests aren't at the root.
+  adjust `directory` where manifests aren't at the root. Keep the `pip` entry for `/ci`: it
+  updates `ci/requirements.txt`.
 
 ### License
 
