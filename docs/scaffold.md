@@ -49,10 +49,9 @@ the rest of the run: checkpoints, the operator session, logs.
 ## CI
 
 `ci.yml`'s `check` job passes when every job in its `needs` list passed or was skipped. A
-job joins or leaves that gate through two entries in `check`: `needs` and the `results`
-array. To add the `docker` or `integration-tests` job, uncomment it and add it to both. The
-Node checks are commented steps inside `lint`: uncomment them there, with no `check` change
-needed.
+job joins or leaves that gate through two entries in `check`, `needs` and the `results`
+array, so a job you write or uncomment goes in both. A step added to an existing job, such as
+a Node check in `lint`, needs no `check` change.
 
 The `python` job runs pyright, builds and checks the package, and runs pip-audit, which is
 advisory: its failure doesn't fail the job, and adds a warning annotation naming pip-audit

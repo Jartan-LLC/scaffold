@@ -196,6 +196,8 @@ If you forked scaffold instead, the history is shared, so a merge brings in late
 changes:
 
 ```bash
+git remote add upstream https://github.com/Jartan-LLC/scaffold.git  # once per clone
+git fetch upstream
 git checkout -b template-update
 git merge upstream/main   # resolve conflicts, keeping your customizations
 ```
@@ -215,8 +217,8 @@ Delete `.scaffold-sync`, and rewrite
 - [ ] Auto-merge (Settings > General > Allow auto-merge): Dependabot minor and patch PRs
       merge after CI passes
 - [ ] Discussions (Settings > General > Features): the issue template config links to it
-- [ ] For each publishing target you kept, its `pypi` or `ghcr` environment with required
-      reviewers ([details](#publishing-environments))
+- [ ] For each publishing target you kept, its `pypi` or `ghcr` environment
+      ([details](#publishing-environments))
 
 ### Dependabot labels
 
@@ -239,8 +241,9 @@ gh api -X PUT repos/{owner}/{repo}/environments/pypi
 gh api -X PUT repos/{owner}/{repo}/environments/ghcr
 ```
 
-Then add required reviewers to each (Settings > Environments), so each publish waits for a
-reviewer's approval. For `pypi`, also configure
+In a public repository, add required reviewers to each (Settings > Environments), so each
+publish waits for a reviewer's approval; a private repository needs GitHub Enterprise for
+them. For `pypi`, also configure
 [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) for the environment, so no
 token secret is stored. Until it is configured, `publish-pypi.yml` fails on every tag. Creating
 `pypi` also clears the GitHub Actions VS Code extension's "environment `pypi` is not valid"
