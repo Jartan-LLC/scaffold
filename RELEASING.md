@@ -45,7 +45,7 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 
    ```bash
    git fetch origin   # so the merge commit exists locally
-   sha=$(gh pr view <PR number> --json mergeCommit --jq .mergeCommit.oid)   # again, in case step 5's shell is gone
+   sha=$(gh pr view <PR number> --json mergeCommit --jq .mergeCommit.oid)   # again, in case the CI step's shell is gone
    git tag vX.Y.Z "$sha"
    git push origin vX.Y.Z
    ```
