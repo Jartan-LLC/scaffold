@@ -229,11 +229,12 @@ jobs:
     with:
       version: 0.0.0-ci
 
-  # The signed dnf repository packaging/dnf-repo.sh builds: built in one Fedora container,
-  # then served from the runner and installed from in a second, fresh one.
+  # The signed dnf repository packaging/dnf-repo.sh builds, for RPMs that install its .repo
+  # file and key: built in one Fedora container, then served from the runner and installed
+  # from in a second, fresh one.
   dnf-repo:
     needs: changes
-    if: needs.changes.outputs.rpm == 'true'
+    if: needs.changes.outputs.dnf_repo == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -270,6 +271,7 @@ jobs:
       devcontainer: ${{ steps.diff.outputs.devcontainer }}
       python: ${{ steps.diff.outputs.python }}
       rpm: ${{ steps.packaging.outputs.rpm }}
+      dnf_repo: ${{ steps.packaging.outputs.dnf_repo }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -278,12 +280,16 @@ jobs:
           # reach in a private repo, so push runs check out the whole history. '0' is
           # quoted because a bare 0 is falsy and would give push runs depth 2.
           fetch-depth: ${{ github.event_name == 'push' && '0' || '2' }}
-      # The rpm and dnf-repo jobs run on every change while the project ships an RPM: they
-      # depend on the tree, not the diff, so they stay out of ci/changes.py.
+      # The rpm job runs on every change while the project ships an RPM, and the dnf-repo
+      # job while that RPM carries a dnf repository too: they depend on the tree, not the
+      # diff, so they stay out of ci/changes.py.
       - id: packaging
         run: |
           if [ -f packaging/rpm.spec ]; then
             echo "rpm=true" >>"$GITHUB_OUTPUT"
+            if [ -f packaging/dnf.repo ]; then
+              echo "dnf_repo=true" >>"$GITHUB_OUTPUT"
+            fi
           fi
       - id: diff
         env:

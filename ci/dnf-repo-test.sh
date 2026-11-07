@@ -5,9 +5,10 @@
 #
 # Usage:
 #   ci/dnf-repo-test.sh build WWW
-#     Builds 0.0.1, 0.0.2 and 0.0.3 with packaging/rpm.sh, signs the first two with a
-#     throwaway key, and writes under WWW what ci/dnf_repo_server.py serves: the Release
-#     assets under assets/, and one repository per scenario.
+#     Builds 0.0.1, 0.0.2 and 0.0.3 with packaging/rpm.sh, from HEAD with a throwaway key
+#     in packaging/RPM-GPG-KEY and packaging/dnf.repo's baseurl at the url below, signs the
+#     first two with that key, and writes under WWW what ci/dnf_repo_server.py serves: the
+#     Release assets under assets/, and one repository per scenario.
 #     Needs what dnf-repo.sh and rpm.sh need, and zstd.
 #   ci/dnf-repo-test.sh check WWW
 #     Runs dnf against WWW, which ci/dnf_repo_server.py serves at the url below from
@@ -46,8 +47,19 @@ build() {
     gpg --armor --export "$fingerprint" >"$work/RPM-GPG-KEY"
     mkdir -p "$www/assets"
 
+    # rpm.sh builds the commit checked out, so the packages come from a commit on HEAD, in a
+    # clone that leaves the checkout as it is.
+    local src=$work/src
+    git -c safe.directory="$root" -c advice.detachedHead=false clone --quiet -- "$root" "$src"
+    cp "$work/RPM-GPG-KEY" "$src/packaging/RPM-GPG-KEY"
+    sed -i "s|^baseurl=.*|baseurl=$url/repo/|" "$src/packaging/dnf.repo"
+    grep -qx "baseurl=$url/repo/" "$src/packaging/dnf.repo" ||
+        die "packaging/dnf.repo has no baseurl line"
+    git -C "$src" -c user.name=CI -c user.email=ci@example.invalid \
+        commit --quiet --all --message 'The dnf-repo CI key and server'
+
     for v in 0.0.1 0.0.2 0.0.3; do
-        rpm=$("$root/packaging/rpm.sh" "$v" "$work/rpms/v$v")
+        rpm=$("$src/packaging/rpm.sh" "$v" "$work/rpms/v$v")
         name=$(basename "$rpm" .noarch.rpm)
         # 0.0.3 stays unsigned, as a release made before signing would be.
         [[ $v == 0.0.3 ]] || "$root/packaging/dnf-repo.sh" sign "$fingerprint" "$rpm"
@@ -121,22 +133,9 @@ check() {
     done
     rpm -q tzdata >/dev/null || die "tzdata is not installed, so the Obsoletes check can't run"
 
+    # The package installs the .repo file and key that every dnf command below uses.
     run dnf -y install "$url/releases/download/v0.0.1/$name.noarch.rpm"
     expect "$name" 0.0.1
-
-    # The repository as a user adds it: its key, and a .repo file that names it.
-    install -Dm0644 "$www/v1/RPM-GPG-KEY-$name" "/etc/pki/rpm-gpg/RPM-GPG-KEY-$name"
-    cat >"/etc/yum.repos.d/$name.repo" <<EOF
-[$name]
-name=$name
-baseurl=$url/repo/
-enabled=1
-gpgcheck=1
-repo_gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-$name
-auto_import_local_keys=1
-metadata_expire=6h
-EOF
 
     # With no terminal to confirm the key on: as a timer runs it.
     serve "$www" v2
@@ -145,11 +144,6 @@ EOF
 
     run dnf -y downgrade "$name"
     expect "$name" 0.0.1
-    run dnf -y remove "$name"
-    serve "$www" v1
-    run dnf -y --refresh install "$name"
-    expect "$name" 0.0.1
-    serve "$www" v2
     run dnf -y --refresh upgrade "$name"
     expect "$name" 0.0.2
 
