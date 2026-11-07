@@ -275,6 +275,12 @@ def test_indented_code_after_a_heading_is_not_joined(tmp_path: Path, indent: str
     assert notes(tmp_path, body) == body
 
 
+@pytest.mark.parametrize("before", ["```\nfenced\n```", "***"], ids=["closing fence", "rule"])
+def test_indented_code_right_after_a_block_is_not_joined(tmp_path: Path, before: str) -> None:
+    body = f"{before}\n    code a\n    code b\n"
+    assert notes(tmp_path, body) == body
+
+
 @pytest.mark.parametrize(
     ("changelog", "expected"),
     [

@@ -137,8 +137,8 @@ def _with_code_state(lines: Iterable[str]) -> Iterator[tuple[str, bool]]:
     """Yield each line with whether it is code: a fence, its contents or an indented code block.
 
     An indented code block is taken to be any run of lines indented four or more
-    columns that follows a blank line or a heading, a tab reaching the next
-    multiple of four as in CommonMark. A fence marker inside one is code, so it
+    columns that follows a blank line, a heading, a thematic break or a closing
+    fence, a tab reaching the next multiple of four as in CommonMark. A fence marker inside one is code, so it
     opens no fence.
     """
     fence: tuple[str, int] | None = None
@@ -155,7 +155,10 @@ def _with_code_state(lines: Iterable[str]) -> Iterator[tuple[str, bool]]:
             opened = fence
             fence = _next_fence_state(line, fence)
             in_code = opened is not None or fence is not None
-            code_may_start = not in_code and bool(_ATX_HEADING.match(line))
+            closed_fence = opened is not None and fence is None
+            code_may_start = closed_fence or (
+                not in_code and bool(_ATX_HEADING.match(line) or _THEMATIC_BREAK.match(line))
+            )
         yield line, in_code
 
 
