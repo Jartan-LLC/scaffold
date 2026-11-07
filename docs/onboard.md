@@ -120,11 +120,11 @@ which reads fine on GitHub without Sphinx, and this page, which Cleanup deletes.
 
 ## ORG/REPO placeholders
 
-- `.github/ISSUE_TEMPLATE/config.yml` and the `[Unreleased]` link in `CHANGELOG.md`:
-  replace `ORG/REPO` with your org and repo.
-- `.lycheeignore`: delete only the `https://github.com/ORG/REPO` line. Replacing it would
-  make the link check ignore your own repo. Keep every other line; the `file://`
-  advisory-form pattern is permanent.
+- `.github/ISSUE_TEMPLATE/config.yml`, the advisory-form link in `.github/SECURITY.md` and
+  the `[Unreleased]` link in `CHANGELOG.md`: replace `ORG/REPO` with your org and repo.
+- `.lycheeignore`: delete only the `https://github.com/ORG/REPO` line and its comment.
+  Replacing it would make the link check ignore your own repo. Keep every other line,
+  including the advisory-form pattern.
 
 ## Docs site
 
