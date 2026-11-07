@@ -15,7 +15,7 @@ jobs:
   publish:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    environment: ghcr # add required reviewers to gate image publishing (like pypi)
+    environment: ghcr
     env:
       IMAGE_NAME: "" # set (lowercased) by the "Compute lowercase image name" step
     permissions:
@@ -71,6 +71,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable=${{ steps.latest.outputs.take }}
 
+      # Any v* tag publishes without waiting for CI, so a broken tagged commit can ship.
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         id: build
         with:

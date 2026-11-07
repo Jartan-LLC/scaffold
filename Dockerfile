@@ -4,12 +4,13 @@
 # containerized.
 
 # Build stage, not an inline COPY --from: Dependabot only parses FROM lines.
-FROM ghcr.io/astral-sh/uv:0.13.6 AS uv-bin
+FROM ghcr.io/astral-sh/uv:0.13.6@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 AS uv-bin
 
-FROM python:3.12-slim
+# x.y.z, not 3.12-slim: Dependabot can suppress digest-only bumps (dependabot/dependabot-core#15103).
+FROM python:3.12.16-slim@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54
 COPY --from=uv-bin /uv /uvx /bin/
 
-# Unbuffered stdout/stderr so logs aren't lost to block-buffering on a hard crash.
+# Unbuffered stdout, so output reaches docker logs at once and a killed process loses none.
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
