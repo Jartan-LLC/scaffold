@@ -81,9 +81,9 @@ jobs:
       artifact: release-rpm
 
   # Signs the RPM, and on a full release builds the dnf repository's signed metadata for it
-  # and the newest earlier full releases, so dnf downgrade and dnf history undo have the
-  # previous version. A pre-release stays out of the repository: dnf would upgrade every
-  # user to it, since it sorts 2.0.0~rc.1 above 1.1.0.
+  # and the earlier full releases created most recently, so dnf downgrade and dnf history
+  # undo have the previous version. A pre-release stays out of the repository: dnf would
+  # upgrade every user to it, since it sorts 2.0.0~rc.1 above 1.1.0.
   sign:
     needs: [notes, rpm]
     if: needs.notes.outputs.dnf_repo == 'true'
@@ -179,6 +179,8 @@ jobs:
           trap 'gpgconf --kill all; rm -rf -- "$work"' EXIT
           mkdir -m 700 "$GNUPGHOME"
           printf '%s\n' "$RPM_SIGNING_KEY" | gpg --batch --quiet --import
+          # Only the import needs the key; keep it from everything that runs below.
+          unset RPM_SIGNING_KEY
           if ! fingerprint=$(packaging/dnf-repo.sh fingerprint); then
             echo "::error::RPM_SIGNING_KEY must hold one secret key"
             exit 1
@@ -199,7 +201,7 @@ jobs:
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: release-assets
+          name: ${{ needs.notes.outputs.artifact }}
           path: out
           if-no-files-found: error
 
@@ -227,10 +229,13 @@ jobs:
 
   release:
     # A skipped rpm job attaches nothing; a failed rpm or sign job stops the release. While
-    # packaging/dnf.repo exists, it attaches only the sign job's files: when that job didn't
-    # finish, the download fails rather than release the unsigned RPM.
+    # packaging/dnf.repo exists, the RPM comes only from the sign job's files, and only once
+    # that job succeeds, so the unsigned RPM is never released.
     needs: [notes, rpm, sign, attest]
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    if: >-
+      !cancelled() && !contains(needs.*.result, 'failure')
+      && (needs.rpm.result != 'success' || needs.notes.outputs.dnf_repo != 'true'
+      || needs.sign.result == 'success')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
