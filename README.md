@@ -34,7 +34,7 @@ cleanly ([how](docs/onboard.md#not-a-python-project)).
 
 Not for you if you want a minimal template: this one is deliberately complete.
 
-Every file, and how the parts work: [docs/scaffold.md](docs/scaffold.md). To pull in later
-template improvements, see [Syncing template updates](docs/scaffold.md#syncing-template-updates).
+Every file: [What's included](docs/onboard.md#whats-included). How the parts work, and how a
+project pulls in later template improvements: [docs/scaffold.md](docs/scaffold.md).
 
 Scaffold is [MIT-licensed](LICENSE); your project picks its own license during setup.

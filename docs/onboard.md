@@ -1,8 +1,9 @@
 # Setting up the template
 
-Work through the sections below in order. `/onboard` in Claude Code works through the page
-for you. Finish deletes this page; [`scaffold.md`](scaffold.md) covers what stays useful
-afterwards.
+Work through the sections below in order, from Decide to Finish. `/onboard` in Claude Code
+works through the page for you. [What's included](#whats-included), after Finish, lists what
+the template ships. Finish deletes this page; [`scaffold.md`](scaffold.md) covers what stays
+useful afterwards.
 
 ## Decide
 
@@ -18,21 +19,38 @@ An item whose answer needs neither, such as which workflows to keep, says what t
 - [ ] Contacts for conduct reports and security reports, one address or two. Both are
       published, so give addresses you are willing to publish
 - [ ] Which enchantments Features to keep ([Features](#features))
-- [ ] Publishing targets: the PyPI package, the container image, the docs site.
-      [Publishing](scaffold.md#publishing) says what each needs and what to delete for each
-      you drop
-- [ ] Whether each GitHub Release attaches an RPM for Fedora, built from `packaging/rpm.spec`.
-      It fits files that run unchanged on every Fedora release, such as a shell script. A
-      Python package's RPM requires the Python version of the Fedora release that built it,
-      so publish a Python package to PyPI instead. To drop the RPM, delete `packaging/` and
-      `tests/test_rpm_sh.py`: the `rpm` jobs in `ci.yml` and `release.yml` run only while
-      `packaging/rpm.spec` exists
-- [ ] Whether to keep `Dockerfile` (its marker says what goes with it),
+- [ ] Publishing targets: the PyPI package, the container image, the docs site, an RPM for
+      Fedora ([details](#publishing-targets))
+- [ ] Whether to keep `Dockerfile` (its marker says what goes with it, and the
+      `publish-docker.yml` row in [Publishing](scaffold.md#publishing) goes too),
       `.github/workflows/scorecard.yml` (an OpenSSF score; it skips on private repos) and
       `.github/workflows/external-link-check.yml` (a weekly check for broken external links).
       Delete each workflow you don't keep
 - [ ] Optionally: version corrections for `AGENTS.md`, and the supported versions and
       response targets for `.github/SECURITY.md`
+
+### Publishing targets
+
+Keep `release.yml` whatever you publish: it creates a GitHub Release for each `v*` tag, in any
+stack.
+
+- PyPI package: keep `publish-pypi.yml`, and set up its environment in
+  [GitHub settings](#publishing-environments). Its commented tag-vs-version check is optional.
+- Container image: keep `publish-docker.yml`, set up its environment in
+  [GitHub settings](#publishing-environments), and give the `Dockerfile` a real entrypoint.
+- Docs site: for a single version, use GitHub Pages: set Settings > Pages > Source to "GitHub
+  Actions", then rename `.github/workflows/pages.yml.example` to `pages.yml`. For a version
+  per release, use Read the Docs: rename `.readthedocs.yaml.example` to `.readthedocs.yaml`
+  and import the repo there.
+- RPM for Fedora, attached to each GitHub Release: keep `packaging/`. It fits files that run
+  unchanged on every Fedora release, such as a shell script. A Python package's RPM requires
+  the Python version of the Fedora release that built it, so publish a Python package to PyPI
+  instead.
+
+For the PyPI package or the container image, if you drop it, delete its publish workflow and
+its row in [Publishing](scaffold.md#publishing). To drop the RPM, delete `packaging/`,
+`tests/test_rpm_sh.py` and the `rpm.yml` row in Publishing: the `rpm` jobs in `ci.yml` and
+`release.yml` run only while `packaging/rpm.spec` exists.
 
 ## Procedures
 
@@ -61,6 +79,9 @@ Also:
 
 - Declining `claude-code` means declining `codebase-memory-mcp` too, if you added it, and
   declining `liza` means declining `liza-toolchain`.
+- Declining `liza` also means deleting the [Liza](scaffold.md#liza) section of
+  `docs/scaffold.md`; declining only `liza-toolchain`, removing it from that section's first
+  paragraph.
 - To keep a code graph without `liza-toolchain`, declare `codebase-memory-mcp` in its place.
 - A Feature in your VS Code `dev.containers.defaultFeatures` comes back on rebuild, so
   declining it here applies only to contributors who don't set it. Declare `liza` and
@@ -99,15 +120,19 @@ Finish deletes.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
    `check` entries (`docs/scaffold.md`, CI), and the commented `integration-tests` job. In
-   the `changes` job, remove the `python:` line under `outputs` and the `python=true` block,
-   with its comment, in the `diff` step. `lint` stays.
+   the `changes` job, remove the `python:` line under `outputs`. In `ci/changes.py`, remove
+   `_PYTHON_SKIPS`, `_PYTHON_READS` and `_needs_python`; in `outputs()`, the `"python"` in
+   the no-base return and the `if` block that appends it; and the `python` parts of the
+   module and `outputs()` docstrings. `lint` stays.
 5. Keep the `Makefile`: it is the verify entry point in every stack. Point its `lint`, `fix`,
    `typecheck`, `test` and `docs` targets at your stack's commands, and replace the Python
    lines in `check` (the `.[dev,docs]` install, `uv build`, `twine check`, `pip-audit`), so
    `make check` stays the one verify gate.
 6. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
    uv" line for your stack.
-7. Trim the Python parts of `docs/scaffold.md`.
+7. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
+   table, delete the `publish-pypi.yml` row and, if not containerized, the
+   `publish-docker.yml` row.
 
 ### Stack
 
@@ -117,8 +142,10 @@ Finish deletes.
 - The `Makefile`'s `install` target: add your stack's install (for example
   `go mod download`). It runs on a bare host and from `post-create.sh`.
 - `.gitignore` and `.editorconfig`: add your stack's patterns and rules.
-- `.github/workflows/ci.yml` and `.github/dependabot.yml`: prune them to your stack
-  ([CI](scaffold.md#ci)).
+- `.github/workflows/ci.yml`: prune it to your stack. [CI](scaffold.md#ci) says how a job
+  leaves the `check` gate.
+- `.github/dependabot.yml`: remove the ecosystems you don't use, add the ones you need, and
+  adjust `directory` where manifests aren't at the root.
 
 ### License
 
@@ -177,8 +204,17 @@ If `test -n` fails, the file keeps its marker:
 
 The `upstream` remote stays for [syncing](scaffold.md#syncing-template-updates).
 
-If you forked scaffold instead, delete `.scaffold-sync`: the history is shared, so
-`git merge upstream/main` brings in later changes.
+If you forked scaffold instead, the history is shared, so later scaffold changes come in by a
+merge. Delete `.scaffold-sync`, and rewrite
+[Syncing template updates](scaffold.md#syncing-template-updates) as this merge in place of its
+cherry-pick steps. The block is that section's new content, not a step to run now:
+
+```bash
+git remote add upstream https://github.com/Jartan-LLC/scaffold.git  # once per clone
+git fetch upstream
+git checkout -b template-update
+git merge upstream/main   # resolve conflicts, keeping your customizations
+```
 
 ## GitHub settings
 
@@ -192,8 +228,8 @@ If you forked scaffold instead, delete `.scaffold-sync`: the history is shared, 
 - [ ] Auto-merge (Settings > General > Allow auto-merge): Dependabot minor and patch PRs
       merge after CI passes
 - [ ] Discussions (Settings > General > Features): the issue template config links to it
-- [ ] For each publishing target you kept, its `pypi` or `ghcr` environment with required
-      reviewers ([Publishing](scaffold.md#publishing))
+- [ ] For each publishing target you kept, its `pypi` or `ghcr` environment
+      ([details](#publishing-environments))
 
 ### Dependabot labels
 
@@ -205,6 +241,24 @@ gh label create major --color B60205 --description "Major version update" --forc
 gh label create minor --color FBCA04 --description "Minor version update" --force
 gh label create patch --color 0E8A16 --description "Patch version update" --force
 ```
+
+### Publishing environments
+
+`publish-pypi.yml` runs in the `pypi` environment and `publish-docker.yml` in `ghcr`. Create
+the environment of each workflow you kept:
+
+```bash
+gh api -X PUT repos/{owner}/{repo}/environments/pypi
+gh api -X PUT repos/{owner}/{repo}/environments/ghcr
+```
+
+In a public repository, add required reviewers to each (Settings > Environments), so each
+publish waits for a reviewer's approval; a private repository needs GitHub Enterprise for
+them. For `pypi`, also configure
+[PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) for the environment, so no
+token secret is stored. Until it is configured, `publish-pypi.yml` fails on every tag. Creating
+`pypi` also clears the GitHub Actions VS Code extension's "environment `pypi` is not valid"
+warning.
 
 ## Finish
 
@@ -223,3 +277,26 @@ Copy the badge lines from the top of the template README into yours, then:
 - License badge: replace `MIT` in `license-MIT-blue` with your license. shields.io splits the
   badge text on `-`, so write each `-` in the name as `--` (`license-Apache--2.0-blue`).
 - Delete the OpenSSF Scorecard badge if you deleted `scorecard.yml` or the repo is private.
+
+## What's included
+
+| Area | Contents |
+|------|----------|
+| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, and the [enchantments](https://github.com/Jartan-LLC/enchantments) Features: Claude Code, the GitHub CLI login, Liza and its agent toolchain ([Features](#features) drops one). `post-create.sh` runs `make install`, which installs the project's dependencies into the system Python, as CI does: `containerEnv` sets `UV_SYSTEM_PYTHON`, so the container has no project `.venv`. It also installs the ruff version in the ruff hook's `# frozen:` comment, so the ruff extension formats on save as `make lint` does |
+| `.claude/` | Claude Code project files — the `/onboard` command, which onboarding deletes, and `workspace/`, where agents keep plans and other working files, git-ignored |
+| `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates |
+| `pyproject.toml`, `ci/`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use, each with its release files' hashes, so an install rejects a download that doesn't match. The tools' own dependencies are not pinned. `ci/release_notes.py` makes the release notes `release.yml` publishes, and `ci/changes.py` decides which of `ci.yml`'s gated jobs a change runs. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
+| `packaging/` | `rpm.sh` and the spec stub for the RPM each GitHub Release attaches, which `.github/workflows/rpm.yml` builds and installs |
+| `src/`, `tests/` | The package (src layout, PEP 561 typed) and its tests; the template ships a CLI entry point and logging setup |
+| `Makefile`, `.pre-commit-config.yaml` | Task runner (`make install`/`lint`/`fix`/`test`/`check`/`docs`, backed by [uv](https://docs.astral.sh/uv/), installing into the checkout's `.venv`, else the active environment, else the devcontainer's system Python) + the single lint source, whose hooks `make lint` and CI both run, and the source of ruff's and codespell's versions |
+| `docs/`, `.readthedocs.yaml.example` | Sphinx docs site (Markdown via MyST, API reference from docstrings); `make docs` builds it. [Publishing targets](#publishing-targets) says how to publish it |
+| `AGENTS.md` | Instructions every coding agent reads (Claude Code through `CLAUDE.md`): points to the project rules; corrections, verification commands, skill index |
+| `Dockerfile`, `.dockerignore` | Minimal Python image stub — pairs with `publish-docker.yml` |
+| `CHANGELOG.md`, `CONTRIBUTING.md` | Keep-a-Changelog skeleton and a Python contributor guide |
+| `.env.example`, `.prettierrc` | Env-var template and Prettier config (for JS/TS work) |
+| `.editorconfig` | Language-aware formatting — 4-space Python, 2-space JS/TS, tabs for Makefiles |
+| `.gitattributes` | Syntax-aware diffs, LF checkout on every platform |
+| `.gitignore` | Comprehensive patterns for Node, Python, Docker, IDEs, env files, build artifacts |
+| `CLAUDE.md` | Imports `AGENTS.md` for Claude Code; edit `AGENTS.md` instead |
+| `GUARDRAILS.md` | Project rules ranked by how firmly each holds (never / ask first / default / preference) — the tiers Liza agents enforce |
+| `.scaffold-sync` | The scaffold commit this repository has caught up to ([Record the sync point](#record-the-sync-point)) |
