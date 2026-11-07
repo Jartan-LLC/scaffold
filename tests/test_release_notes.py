@@ -190,27 +190,66 @@ def test_hard_break_on_a_joined_line_is_kept(tmp_path: Path) -> None:
 
 def test_block_starts_are_not_joined(tmp_path: Path) -> None:
     body = """\
-        A paragraph
+        A paragraph[^1]
+        [^1]: A footnote.
         > a quote
         > continued
-        <details>
-        <summary>More</summary>
-        </details>
         #### A heading
         Text under it
         that wraps.
         ---
         """
     assert notes(tmp_path, body) == (
-        "A paragraph\n"
+        "A paragraph[^1]\n"
+        "[^1]: A footnote.\n"
         "> a quote\n"
         "> continued\n"
-        "<details>\n"
-        "<summary>More</summary>\n"
-        "</details>\n"
         "#### A heading\n"
         "Text under it that wraps.\n"
         "---\n"
+    )
+
+
+def test_spaced_thematic_breaks_are_not_joined(tmp_path: Path) -> None:
+    body = "A paragraph.\n\n* * *\nText after a rule.\n- - -\nMore text.\n"
+    assert notes(tmp_path, body) == body
+
+
+def test_html_block_lines_are_not_joined(tmp_path: Path) -> None:
+    body = """\
+        <pre>
+        keep one
+        keep two
+
+        keep three
+        keep four
+        </pre>
+        A paragraph after it
+        joins.
+
+        <details>
+        <summary>More</summary>
+        hidden one
+        hidden two
+        </details>
+
+        Text that
+        wraps.
+        """
+    assert notes(tmp_path, body) == (
+        "<pre>\nkeep one\nkeep two\n\nkeep three\nkeep four\n</pre>\n"
+        "A paragraph after it joins.\n"
+        "\n"
+        "<details>\n<summary>More</summary>\nhidden one\nhidden two\n</details>\n"
+        "\n"
+        "Text that wraps.\n"
+    )
+
+
+def test_line_starting_with_an_autolink_is_joined(tmp_path: Path) -> None:
+    body = "- See the guide at\n  <https://example.com/guide> for the\n  details, or ask\n  <team@example.com>.\n"
+    assert notes(tmp_path, body) == (
+        "- See the guide at <https://example.com/guide> for the details, or ask <team@example.com>.\n"
     )
 
 
@@ -299,6 +338,23 @@ DEFINITIONS = """\
 def test_used_link_definitions_are_appended(tmp_path: Path, entry: str) -> None:
     changelog = f"## [1.2.0]\n\n{entry}\n\n## [1.1.0]\n{textwrap.dedent(DEFINITIONS)}"
     assert run(tmp_path, changelog, "1.2.0").stdout == (f"{entry}\n\n[@X]: https://example.com/x\n")
+
+
+def test_definition_shaped_line_in_a_paragraph_is_text(tmp_path: Path) -> None:
+    changelog = """\
+        ## [1.2.0]
+
+        - Item one
+          continues [see]
+          [note]: wrapped text here.
+
+        ## [1.1.0]
+
+        [see]: https://example.com/see
+        """
+    assert run(tmp_path, changelog, "1.2.0").stdout == (
+        "- Item one continues [see] [note]: wrapped text here.\n\n[see]: https://example.com/see\n"
+    )
 
 
 def test_link_definition_in_code_is_not_collected(tmp_path: Path) -> None:

@@ -36,15 +36,16 @@ _LINK_DEFINITION = re.compile(r" {0,3}\[([^\]^][^\]]*)\]:")
 # nothing.
 _BRACKETED = re.compile(r"\[([^\[\]]+)\]")
 # Lines that start a block of their own, so they are never joined onto the line
-# above: list items, headings, quotes, table rows, HTML, link and footnote
-# definitions, and thematic breaks or setext underlines.
+# above: list items, headings, quotes, table rows, link and footnote
+# definitions, and thematic breaks or setext underlines. A link definition
+# can't interrupt a paragraph (CommonMark), so after paragraph text it is text;
+# a footnote definition can (GitHub).
 _BLOCK_START = re.compile(
     r"""\s*(
         ([-*+]|\d{1,9}[.)])(\s|$)
       | \#{1,6}(\s|$)
       | >
       | \|
-      | <
       | \[[^\]]+\]:
       | ([-*_=]\s*){3,}$
       | [-=]+\s*$
@@ -52,6 +53,18 @@ _BLOCK_START = re.compile(
     re.VERBOSE,
 )
 _LIST_ITEM_WITH_TEXT = re.compile(r"\s*([-*+]|\d{1,9}[.)])\s+\S")
+# `* * *` and `- - -` also match a list item, but a thematic break wins.
+_THEMATIC_BREAK = re.compile(r"\s*([-*_])(\s*\1){2,}\s*$")
+# A line starting with `<` and a letter, `/`, `!` or `?` opens an HTML block,
+# kept as written to the next blank line. That is wider than CommonMark's rule,
+# so a paragraph line that starts with an inline tag stays unjoined, but nothing
+# inside HTML is joined. A line starting with an autolink is text.
+_HTML_START = re.compile(r"\s*<[A-Za-z/!?]")
+_AUTOLINK = re.compile(r"\s*<([A-Za-z][A-Za-z0-9+.-]{1,31}:[^\s<>]*|[^\s<>@]+@[^\s<>]+)>")
+# These blocks run to their closing tag, blank lines included.
+_RAW_HTML_START = re.compile(r"\s*<(pre|script|style|textarea)(\s|>|$)", re.IGNORECASE)
+_RAW_HTML_END = re.compile(r"</(pre|script|style|textarea)>", re.IGNORECASE)
+_BLANK = re.compile(r"^\s*$")
 # A GFM table's delimiter row, such as `| --- | :-: |`.
 _TABLE_DELIMITER = re.compile(r"[\s|:-]*-[\s|:-]*")
 _HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
@@ -83,7 +96,7 @@ def section(changelog: str, version: str) -> list[str]:
     """Return the lines of ``version``'s section, without its heading.
 
     The section runs to the next ``## `` heading outside a code block. Link
-    reference definitions outside code are dropped; footnote definitions stay.
+    reference definitions are dropped; footnote definitions stay.
 
     Args:
         changelog: The changelog's text.
@@ -96,13 +109,30 @@ def section(changelog: str, version: str) -> list[str]:
     heading = f"## [{version}]"
     lines: list[str] = []
     in_section = False
-    for line, in_code in _with_code_state(changelog.splitlines()):
+    for line, in_code, definition in _with_definitions(changelog.splitlines()):
         if not in_code and line.startswith("## "):
             in_section = line.startswith(heading)
             continue
-        if in_section and (in_code or not _LINK_DEFINITION.match(line)):
+        if in_section and not definition:
             lines.append(line)
     return lines
+
+
+def _with_definitions(lines: Iterable[str]) -> Iterator[tuple[str, bool, re.Match[str] | None]]:
+    """Yield each line with whether it is code and, if it is a link reference definition, its match.
+
+    A definition can't interrupt a paragraph (CommonMark), so a ``[label]:`` line
+    counts as one only first, or after a blank line, code, a heading or another
+    definition. Elsewhere it may be a wrapped line of text, and dropping it would
+    lose that text.
+    """
+    may_define = True
+    for line, in_code in _with_code_state(lines):
+        definition = _LINK_DEFINITION.match(line) if may_define and not in_code else None
+        may_define = (
+            in_code or definition is not None or not line.strip() or bool(_ATX_HEADING.match(line))
+        )
+        yield line, in_code, definition
 
 
 def _with_code_state(lines: Iterable[str]) -> Iterator[tuple[str, bool]]:
@@ -150,9 +180,10 @@ def _next_fence_state(line: str, fence: tuple[str, int] | None) -> tuple[str, in
 def join_wrapped_lines(lines: list[str]) -> list[str]:
     r"""Join each line that continues a paragraph or list item onto the one above.
 
-    A line is never joined inside a code block or a table, after a blank line,
-    after a hard break (two trailing spaces or a ``\``), or when it starts a
-    block of its own, a table's header row included.
+    A line is never joined inside a code block, an HTML block or a table, after
+    a blank line, after a hard break (two trailing spaces or a ``\``), or when
+    it starts a block of its own, a table's header row included. A quote's lines
+    are never joined either, so a wrapped quote keeps its line breaks.
 
     Args:
         lines: Markdown lines.
@@ -163,18 +194,30 @@ def join_wrapped_lines(lines: list[str]) -> list[str]:
     """
     out: list[str] = []
     joinable = in_table = False
+    html_end: re.Pattern[str] | None = None
     # A table starts at its header row, which can interrupt a paragraph, so it is
     # known only from the delimiter row after it.
     classified = [*_with_code_state(lines), ("", False)]
     for (line, in_code), (next_line, _) in pairwise(classified):
-        if in_code or not line.strip():
+        if (
+            html_end is None
+            and not in_code
+            and _HTML_START.match(line)
+            and not _AUTOLINK.match(line)
+        ):
+            html_end = _RAW_HTML_END if _RAW_HTML_START.match(line) else _BLANK
+        if html_end is not None:
+            if html_end.search(line):
+                html_end = None
+            joinable = in_table = False
+        elif in_code or not line.strip():
             joinable = in_table = False
         elif in_table or (
             "|" in line and "|" in next_line and _TABLE_DELIMITER.fullmatch(next_line)
         ):
             in_table = True
-        elif _BLOCK_START.match(line):
-            joinable = bool(_LIST_ITEM_WITH_TEXT.match(line))
+        elif _BLOCK_START.match(line) and not (joinable and _LINK_DEFINITION.match(line)):
+            joinable = bool(_LIST_ITEM_WITH_TEXT.match(line)) and not _THEMATIC_BREAK.match(line)
         elif joinable and not out[-1].endswith(("  ", "\\")):
             out[-1] = f"{out[-1].rstrip()} {line.lstrip()}"
             continue
@@ -209,9 +252,9 @@ def release_notes(changelog: str, version: str) -> str:
 def _used_definitions(changelog: str, notes: str) -> list[str]:
     """Return the changelog's link reference definitions that ``notes`` may use.
 
-    Definitions inside code are not definitions. Labels match as CommonMark
-    matches them, ignoring case and runs of whitespace, and the first definition
-    of a label wins. They come back in file order.
+    Labels match as CommonMark matches them, ignoring case and runs of
+    whitespace, and the first definition of a label wins. They come back in file
+    order.
     """
     used = {
         _label(text)
@@ -220,8 +263,7 @@ def _used_definitions(changelog: str, notes: str) -> list[str]:
         for text in _BRACKETED.findall(line)
     }
     definitions: dict[str, str] = {}
-    for line, in_code in _with_code_state(changelog.splitlines()):
-        match = None if in_code else _LINK_DEFINITION.match(line)
+    for line, _, match in _with_definitions(changelog.splitlines()):
         if match and _label(match[1]) in used:
             definitions.setdefault(_label(match[1]), line)
     return list(definitions.values())
