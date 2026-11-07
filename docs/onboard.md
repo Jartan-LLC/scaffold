@@ -124,8 +124,9 @@ or type-check those scripts: scaffold does, and its changes to them come in by
    `typecheck`, `test` and `docs` targets at your stack's commands, and replace the Python
    lines in `check` (the `.[dev,docs]` install, `uv build`, `twine check`, `pip-audit`), so
    `make check` stays the one verify gate.
-6. In `ci/requirements.txt`, delete the `twine` and `pip-audit` entries, and rewrite the
-   header comment's lines on the dev/docs extras and `pyproject.toml`.
+6. In `ci/requirements.txt`, delete the `twine` and `pip-audit` entries with their comment
+   lines, and rewrite the header lines that name the audit jobs, the dev/docs extras and
+   `pyproject.toml`.
 7. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
    uv" line for your stack.
 8. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
