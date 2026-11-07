@@ -59,16 +59,18 @@ its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sent
 `RELEASING.md` that names that workflow. To drop the RPM, delete `packaging/`,
 `tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, the `docker` entry for
 `/packaging` in `.github/dependabot.yml`, the `rpm.yml` row in Publishing, and, in
-`RELEASING.md`, the Installing the RPM section and each sentence and list item that opens with
-"while `packaging/rpm.spec` exists" or "while `packaging/dnf.repo` exists". Keep
+`RELEASING.md`, the Installing the RPM and Signing key sections and each sentence and list item
+that opens with "while `packaging/rpm.spec` exists" or "while `packaging/dnf.repo` exists". Keep
 `.github/workflows/rpm.yml` and the RPM jobs in `ci.yml` and `release.yml`: they skip while
 the spec is missing.
 
 To keep the RPM without the dnf repository, as a private repository must, delete
 `packaging/dnf.repo`, `packaging/RPM-GPG-KEY`, `packaging/dnf-repo.sh`,
 `tests/packaging/test_dnf_repo_sh.py`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, the
-spec's lines that make, install and list those two files, with their comments, and each
-sentence and list item in `RELEASING.md` that opens with "while `packaging/dnf.repo` exists".
+spec's lines that make, install and list those two files, with their comments, and, in
+`RELEASING.md`, the Signing key section and each sentence and list item that opens with "while
+`packaging/dnf.repo` exists". Keep the `sign` job in `release.yml`: it skips while
+`packaging/dnf.repo` is missing.
 
 ## Procedures
 
@@ -266,6 +268,9 @@ git merge upstream/main   # resolve conflicts, keeping your customizations
 - [ ] Discussions (Settings > General > Features): the issue template config links to it
 - [ ] For each publishing target you kept, its `pypi` or `ghcr` environment
       ([details](#publishing-environments))
+- [ ] If you kept the dnf repository, its `rpm-signing` environment, with required reviewers
+      and only `v*` tags allowed, and the `RPM_SIGNING_KEY` secret, as `RELEASING.md`'s Setting
+      up the key section says
 
 ### Dependabot labels
 
