@@ -11,5 +11,5 @@ ignores:
   - ".venv" # a worktree's or bare host's venv; its packages ship .md files
   - "docs/_build"
   - ".claude/workspace"
-  - "AGENTS.md" # symlink to CLAUDE.md — lint the target, not the alias
+  - "CLAUDE.md" # only the @AGENTS.md import; no heading by design (MD041)
   - ".github/PULL_REQUEST_TEMPLATE.md" # a fragment; starts with ## by design (MD041)
