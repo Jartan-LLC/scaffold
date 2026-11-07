@@ -37,7 +37,9 @@ stack.
 
 - PyPI package: keep `publish-pypi.yml`, and set up its environment in
   [GitHub settings](#publishing-environments). If the package's version isn't
-  `[project] version` in `pyproject.toml`, repoint `ver=` in the workflow's tag check.
+  `[project] version` in `pyproject.toml`, repoint `ver=` in the workflow's tag check, and
+  name where it is in `RELEASING.md`'s step 3 and the `publish-pypi.yml` row in
+  [Publishing](scaffold.md#publishing).
 - Container image: keep `publish-docker.yml`, set up its environment in
   [GitHub settings](#publishing-environments), and give the `Dockerfile` a real entrypoint.
 - Docs site: for a single version, use GitHub Pages: set Settings > Pages > Source to "GitHub
