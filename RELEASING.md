@@ -11,9 +11,10 @@ is in [Publishing](docs/scaffold.md#publishing).
    [Pre-releases](#pre-releases) says what one publishes.
 2. On a branch from `main`, move the entries under `## [Unreleased]` in `CHANGELOG.md` to a new
    section below it, headed `## [X.Y.Z] - YYYY-MM-DD`. That section becomes the release notes;
-   an entry may wrap across lines, since the notes join them. Then, at the end of the file,
-   replace the `[Unreleased]` link, which before the first release points at `commits/main`,
-   and add a link for the new version:
+   an entry may wrap across lines, since the notes join them. Then replace the `[Unreleased]`
+   link, which before the first release points at `commits/main`, and add a link for the new
+   version. Keep all link definitions at the end of the file, below every section and after a
+   blank line, since one written straight after an entry becomes part of that entry's text:
 
    ```markdown
    [Unreleased]: https://github.com/ORG/REPO/compare/vX.Y.Z...HEAD
@@ -23,7 +24,7 @@ is in [Publishing](docs/scaffold.md#publishing).
 3. On the same branch, set `version = "X.Y.Z"` in `pyproject.toml`. The built package takes
    its version from there, whatever the tag says.
    <!-- TODO(/onboard): if the project isn't Python, name the file that holds its version, or delete this step. -->
-4. Open a pull request with both changes and merge it once its checks pass.
+4. Open a pull request from that branch and merge it once its checks pass.
 5. Wait for CI to pass on the commit the merge made on `main`. A `v*` tag publishes without
    waiting for CI, so tag only a commit whose CI run passed:
 
