@@ -307,20 +307,33 @@ token secret is stored. Until it is configured, `publish-pypi.yml` fails on ever
 warning.
 
 If you kept the dnf repository, `release.yml`'s `sign` job runs in `rpm-signing`, which holds
-the signing key. Create it, open to `v*` tags only:
+the signing key. Create it, open to `v*` tags only, with no bypass for admins:
 
 ```bash
 gh api -X PUT repos/{owner}/{repo}/environments/rpm-signing \
+  -F can_admins_bypass=false \
   -F 'deployment_branch_policy[protected_branches]=false' \
-  -F 'deployment_branch_policy[custom_branch_policies]=true'
+  -F 'deployment_branch_policy[custom_branch_policies]=true' \
+  --jq .can_admins_bypass
 gh api -X POST repos/{owner}/{repo}/environments/rpm-signing/deployment-branch-policies \
   -f name='v*' -f type=tag
 ```
 
-Then add required reviewers to it (Settings > Environments), so no tag gets the key without a
-reviewer's approval. On GitHub Free, Pro and Team, required reviewers need a public repository,
-which the dnf repository needs anyway. Make the first key as
-[Making a key](signing-key.md#making-a-key) says.
+The first command prints the `can_admins_bypass` value GitHub stored, which must be `false`:
+GitHub's REST reference doesn't list the field, and an environment created without it lets
+admins bypass its required reviewers.
+
+Then add required reviewers to it (Settings > Environments), and check that admins still can't
+bypass them:
+
+```bash
+gh api repos/{owner}/{repo}/environments/rpm-signing --jq .can_admins_bypass   # must print false
+```
+
+Every tag's `sign` job then waits for a required reviewer's approval, which may be the person
+who pushed the tag, so a project with one maintainer can still release. On GitHub Free, Pro
+and Team, required reviewers need a public repository, which the dnf repository needs anyway.
+Make the first key as [Making a key](signing-key.md#making-a-key) says.
 
 ## Finish
 
