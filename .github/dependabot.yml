@@ -103,6 +103,17 @@ updates:
     cooldown:
       default-days: 7
 
+  # The Fedora image the RPM jobs run in.
+  - package-ecosystem: "docker"
+    directory: "/packaging"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(deps)"
+    cooldown:
+      default-days: 7
+
   - package-ecosystem: "devcontainers"
     directory: "/"
     schedule:

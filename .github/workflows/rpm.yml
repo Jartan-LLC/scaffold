@@ -18,14 +18,40 @@ on:
 permissions: {}
 
 jobs:
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      ref: ${{ steps.ref.outputs.ref }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: packaging/fedora.Containerfile
+          sparse-checkout-cone-mode: false
+      # An empty ref would run the build on the bare runner, and a tag alone could change
+      # under the build; this check is the pin zizmor can't see through the expression.
+      - id: ref
+        run: |
+          ref=$(sed -n 's/^FROM //p' packaging/fedora.Containerfile)
+          case $ref in
+            *@sha256:*) ;;
+            *)
+              echo "::error::packaging/fedora.Containerfile's FROM line must pin a digest (image@sha256:...)"
+              exit 1
+              ;;
+          esac
+          echo "ref=$ref" >>"$GITHUB_OUTPUT"
+
   build:
+    needs: image
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
-    # Dependabot doesn't update a workflow's container image
-    # (dependabot/dependabot-core#5819): bump this pin by hand, and ci.yml's FEDORA with it.
-    container: fedora:45@sha256:a7d72ba2745b100a3351087472e5ee7b2450af7cf331e7673007e3817612839c
+    container: ${{ needs.image.outputs.ref }} # zizmor: ignore[unpinned-images]
     env:
       VERSION: ${{ inputs.version }}
     steps:

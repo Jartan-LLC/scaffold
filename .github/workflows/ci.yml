@@ -238,13 +238,22 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-    env:
-      # rpm.yml's image. Dependabot doesn't update an image a step runs: bump both by hand.
-      FEDORA: fedora:45@sha256:a7d72ba2745b100a3351087472e5ee7b2450af7cf331e7673007e3817612839c
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - name: Read the Fedora image
+        run: |
+          FEDORA=$(sed -n 's/^FROM //p' packaging/fedora.Containerfile)
+          case $FEDORA in
+            *@sha256:*) ;;
+            *)
+              echo "::error::packaging/fedora.Containerfile's FROM line must pin a digest (image@sha256:...)"
+              exit 1
+              ;;
+          esac
+          echo "FEDORA=$FEDORA" >>"$GITHUB_ENV"
 
       - name: Build the repository
         run: |
