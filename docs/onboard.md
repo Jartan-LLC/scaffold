@@ -28,6 +28,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 - [ ] Enable GitHub Discussions (Settings > General > Features) — issue template config links to it
 - [ ] Enable CodeQL default setup (Settings > Security > Code scanning)
 - [ ] Delete `.github/workflows/scorecard.yml` if you don't want an OpenSSF score (it skips on private repos)
+- [ ] Delete `.github/workflows/external-link-check.yml` if you don't want the weekly check for broken external links
 - [ ] Enable secret scanning with push protection (Settings > Security > Secret Protection)
 - [ ] Configure branch ruleset for `main` — require PR reviews, require CI to pass, block force pushes
 - [ ] Enable auto-merge (Settings > General > Allow auto-merge) — Dependabot minor/patch PRs auto-merge after CI passes

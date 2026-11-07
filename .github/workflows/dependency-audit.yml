@@ -13,9 +13,11 @@ on:
 permissions: {}
 
 # Serialize runs so an overlapping dispatch can't open a duplicate tracking issue.
+# A run in progress finishes; at most one other run waits, and a later run replaces
+# the waiting one.
 concurrency:
   group: dependency-audit
-  cancel-in-progress: false # queue an overlapping run, don't drop it
+  cancel-in-progress: false
 
 env:
   UV_SYSTEM_PYTHON: 1
@@ -64,7 +66,7 @@ jobs:
             exit 1
           fi
 
-      # Created by the run itself, so a fork needs no label setup.
+      # Created by the run itself, so the repo needs no manual label setup.
       - name: Ensure the tracking label
         env:
           GH_TOKEN: ${{ github.token }}
