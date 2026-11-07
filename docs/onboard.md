@@ -135,11 +135,12 @@ uncomment once you add their inputs, carries no marker: it stays true after onbo
    git grep -n 'TODO(/onboard)'
    ```
 
-2. Do what each marker says, then delete the marker. Decide gives every value a marker
-   needs except the optional ones in `.github/SECURITY.md`. With no answer for the supported
-   versions or the response targets, rewrite that marked line to state only the default it
-   gives (for the supported versions, `Report against the latest release.`), and delete the
-   comment with the example table. Never fill in a value nobody gave.
+2. Do what each marker says, then delete the marker. Never fill in a value nobody gave.
+   Decide gives every value the markers need but the optional ones. With no version
+   corrections, resolving the `AGENTS.md` marker deletes its examples. With no supported versions or
+   response targets, rewrite each of those marked lines in `.github/SECURITY.md` to state
+   only the default it gives (for the supported versions, `Report against the latest
+   release.`), and delete the comment with the example table.
 3. Run the grep again. It should print only this page, the marker on its `docs/index.md`
    entry, which Finish deletes, and `.scaffold-sync`, which the next section fills or, in a
    fork, deletes.
@@ -162,7 +163,7 @@ test -n "$sha" && echo "$sha" > .scaffold-sync
 ```
 
 If `test -n` fails, the file keeps its marker. In a shallow clone, run
-`git fetch --unshallow` and try again; otherwise no scaffold commit has the first commit's
+`git fetch --unshallow` and run the block again from the `tree=` line; otherwise no scaffold commit has the first commit's
 tree, so write the scaffold commit you started from into the file by hand. The `upstream`
 remote stays for [syncing](scaffold.md#syncing-template-updates).
 

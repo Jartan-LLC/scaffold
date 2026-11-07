@@ -29,7 +29,7 @@ setup.
 You can still pull in later improvements to the template. How depends on how your repository started.
 
 ```bash
-# Once per clone, either way (onboarding's clone has it already): add the template as an 'upstream' remote
+# Once per clone, either way, unless onboarding added it there: add the template as an 'upstream' remote
 git remote add upstream https://github.com/Jartan-LLC/scaffold.git  # this template's repo
 git fetch upstream
 ```

@@ -23,11 +23,11 @@ Summarize the answers and the changes you will make, the files you will delete i
 
 ### 4. Apply
 
-Work through `docs/onboard.md` in order, from Decide through GitHub settings: carry out what each Decide item says to do with its answer, then each section after it. Use only values the user gave: never invent one. Where a step can't run from inside the container, such as removing a container or a volume for a declined Feature, give the user those steps in their order, ending with the rebuild.
+Work through `docs/onboard.md` in order, from Decide through GitHub settings: carry out what each Decide item says to do with its answer, then each section after it. Use only values the user gave: never invent one. Leave the steps that can't run from inside the container, such as removing a container or a volume for a declined Feature, for the report.
 
 ### 5. Report
 
-List the GitHub settings you could not apply, for the user to set. Name **private vulnerability reporting** (Settings > Security) first: until it is on, the advisory form `.github/SECURITY.md` sends every reporter to does not exist.
+List the GitHub settings you could not apply, for the user to set. Name **private vulnerability reporting** (Settings > Security) first: until it is on, the advisory form `.github/SECURITY.md` sends every reporter to does not exist. Then give the steps you left because they can't run inside the container, in their order, ending with the rebuild.
 
 ### 6. Clean up
 
