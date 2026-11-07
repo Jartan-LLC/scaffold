@@ -47,10 +47,10 @@ packages = ["src/app"]
 
 # Keep the sdist to source + tests + the root conftest.py, so the suite and its
 # fixtures ship consistently — not dev tooling like .github/ or .devcontainer/,
-# nor tests/test_release_notes.py, which needs ci/.
+# nor the tests of ci/'s scripts, which need ci/.
 [tool.hatch.build.targets.sdist]
 include = ["src", "tests", "conftest.py"]
-exclude = ["tests/test_release_notes.py"]
+exclude = ["tests/test_release_notes.py", "tests/test_changes.py"]
 
 [tool.ruff]
 target-version = "py312"

@@ -232,40 +232,11 @@ jobs:
           # reach in a private repo, so push runs check out the whole history. '0' is
           # quoted because a bare 0 is falsy and would give push runs depth 2.
           fetch-depth: ${{ github.event_name == 'push' && '0' || '2' }}
-      # A PR's merge commit has its base as first parent. With no base (a scheduled or
-      # manual run, a new branch, a force push) every gated job runs, rather than risk
-      # skipping a change.
       - id: diff
         env:
           EVENT: ${{ github.event_name }}
           BEFORE: ${{ github.event.before }}
-        run: |
-          case "$EVENT" in
-            pull_request) base=HEAD^1 ;;
-            push) git cat-file -e "$BEFORE^{commit}" 2>/dev/null && base=$BEFORE ;;
-          esac
-          # --no-renames lists a renamed file's old path too, so moving a matched file away
-          # still counts.
-          changed=$([ -z "${base:-}" ] || git diff --no-renames --name-only "$base" HEAD)
-          # What the dev container build needs (post-create.sh reads uv's pin from
-          # ci/requirements.txt) and the .gitignore that verify.sh's clean-status check
-          # depends on. Other dependency manifests are left out on purpose
-          # (docs/scaffold.md, CI).
-          if [ -z "${base:-}" ] \
-              || grep -qE -e '^\.devcontainer/' -e '^\.github/workflows/ci\.yml$' -e '^Makefile$' -e '^\.gitignore$' \
-                -e '^ci/requirements\.txt$' <<<"$changed"; then
-            echo devcontainer=true >>"$GITHUB_OUTPUT"
-          fi
-          # The -v grep lists the paths the Python jobs don't read, and the grep before it
-          # the exceptions inside them that they do: README.md (the package's readme),
-          # Markdown under src/ or tests/, and ci.yml, which defines them. A skipped file
-          # that a Python job comes to use, such as a local action under .github/actions/,
-          # joins the first grep.
-          if [ -z "${base:-}" ] \
-              || grep -qE -e '^README\.md$' -e '^(src|tests)/' -e '^\.github/workflows/ci\.yml$' <<<"$changed" \
-              || grep -qvE -e '\.md$' -e '^docs/' -e '^\.claude/' -e '^\.github/' -e '^\.pre-commit-config\.yaml$' <<<"$changed"; then
-            echo python=true >>"$GITHUB_OUTPUT"
-          fi
+        run: python3 ci/changes.py "$EVENT" "$BEFORE" >>"$GITHUB_OUTPUT"
 
   devcontainer:
     name: Dev container
