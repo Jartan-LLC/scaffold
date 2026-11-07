@@ -1,7 +1,7 @@
 # Releasing
 
-How to cut a release from `main`. What each publishing target needs before its first release
-is in [Publishing](docs/scaffold.md#publishing).
+How to cut a release from `main`. What a tag publishes, workflow by workflow, is in
+[Publishing](docs/scaffold.md#publishing).
 
 ## Cut a release
 
