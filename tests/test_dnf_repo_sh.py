@@ -6,10 +6,11 @@ its name, version and signing key: ``-`` for none as rpm 6 reports it, ``-4``
 for none as rpm 4 does (passing the check), ``bad`` for a bad signature and
 ``damaged`` for an unsigned package whose digests don't match. The stub
 `rpmkeys` prints the RPM's path before its checks, as the real one does. A key
-file holds one key per line. The stub `createrepo_c` writes a primary.xml that
-lists each package's location, and the stub `gpg` writes the signing key into
-the signature and lists a key file's keys, failing as the real one does on an
-empty file. ci.yml's dnf-repo job runs the real tools.
+file holds one key per line, each optionally followed by ``rvk:`` and the
+fingerprint of its designated revoker. The stub `createrepo_c` writes a
+primary.xml that lists each package's location, and the stub `gpg` writes the
+signing key into the signature and lists a key file's keys, failing as the real
+one does on an empty file. ci.yml's dnf-repo job runs the real tools.
 """
 
 import io
@@ -95,7 +96,10 @@ if "--show-keys" in args:
     if not keys:
         sys.exit("gpg: no valid OpenPGP data found.")
     for key in keys:
-        print(f"fpr:::::::::{key}:")  # codespell:ignore fpr
+        if key.startswith("rvk:"):
+            print(f"rvk:::1::::::{key[4:]}:80:")
+        else:
+            print(f"fpr:::::::::{key}:")  # codespell:ignore fpr
     sys.exit(0)
 signer = args[args.index("--local-user") + 1]
 open(args[args.index("--output") + 1], "w").write(signer)
@@ -429,10 +433,17 @@ def test_metadata_fails_on_a_missing_input(
     assert not (tmp_path / "out").exists()
 
 
+@pytest.mark.parametrize(
+    "keys",
+    [
+        pytest.param(f"{OTHER}\n", id="another key"),
+        pytest.param(f"{OTHER} rvk:{SIGNER}\n", id="another key the signing key may revoke"),
+    ],
+)
 def test_metadata_fails_when_the_key_file_lacks_the_signing_key(
-    env: dict[str, str], tmp_path: Path, keyfile: Path
+    env: dict[str, str], tmp_path: Path, keyfile: Path, keys: str
 ) -> None:
-    keyfile.write_text(f"{OTHER}\n", encoding="utf-8")
+    keyfile.write_text(keys, encoding="utf-8")
     add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", OTHER)
     result = metadata(env, tmp_path, keyfile)
     assert result.returncode == 1

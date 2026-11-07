@@ -65,11 +65,13 @@ metadata() (
     check_fingerprint "$fingerprint"
     [[ -f $keyfile ]] || die "no such key file: $keyfile"
     # Users check repomd.xml against KEYFILE: signed by another key, dnf skips the
-    # repository with only a warning. gpg lists fingerprints in uppercase.
+    # repository with only a warning. gpg lists fingerprints in uppercase, and lists a key's
+    # designated revoker by fingerprint too, though the file needn't hold that key.
     local keys
     keys=$(gpg --batch --with-colons --show-keys -- "$keyfile" 2>&1) ||
         die "can't read the keys in $keyfile: $keys"
-    [[ $keys == *":$(printf '%s' "$fingerprint" | tr a-f A-F):"* ]] ||
+    awk -F: -v key="$(printf '%s' "$fingerprint" | tr a-f A-F)" \
+        '$1 == "fpr" && $10 == key { found = 1 } END { exit !found }' <<<"$keys" || # codespell:ignore fpr
         die "$keyfile doesn't hold the key $fingerprint"
     [[ $url == */ ]] || die "the URL must end in /: $url"
     [[ -z $previous || -f $previous ]] || die "no such bundle: $previous"
