@@ -5,14 +5,15 @@
 # ($GNUPGHOME), which must have no passphrase.
 #
 # Usage:
-#   packaging/dnf-repo.sh sign FINGERPRINT RPM
-#     Signs RPM in place with the key FINGERPRINT.
+#   packaging/dnf-repo.sh sign FINGERPRINT KEYFILE RPM
+#     Signs RPM in place with the key FINGERPRINT, which must be a primary key in KEYFILE.
 #   packaging/dnf-repo.sh metadata FINGERPRINT KEYFILE URL RPMDIR OUTDIR [PREVIOUS]
 #     Indexes RPMDIR/vX.Y.Z/NAME.noarch.rpm for each release, with each package's
 #     location URL as URL, which ends in /, then vX.Y.Z/NAME.noarch.rpm. Leaves out an
 #     unsigned RPM, with a warning. Writes OUTDIR/NAME-dnf-repo.tar.gz, holding repodata/
 #     with repomd.xml signed by FINGERPRINT, and KEYFILE as RPM-GPG-KEY-NAME, and prints
-#     its path. PREVIOUS is the bundle this replaces, if any.
+#     its path. PREVIOUS is the bundle this replaces, if any. FINGERPRINT must be a primary
+#     key in KEYFILE.
 #   packaging/dnf-repo.sh prune KEYFILE RPMDIR
 #     Deletes each RPMDIR/vX.Y.Z/NAME.noarch.rpm signed by a key not in KEYFILE, with a
 #     warning, so metadata, which fails on one, can index the rest: an earlier release's RPM
@@ -26,7 +27,7 @@ die() {
 }
 
 usage() {
-    die "usage: packaging/dnf-repo.sh sign FINGERPRINT RPM
+    die "usage: packaging/dnf-repo.sh sign FINGERPRINT KEYFILE RPM
        packaging/dnf-repo.sh metadata FINGERPRINT KEYFILE URL RPMDIR OUTDIR [PREVIOUS]
        packaging/dnf-repo.sh prune KEYFILE RPMDIR"
 }
@@ -36,12 +37,30 @@ check_fingerprint() {
     [[ $1 =~ ^[0-9A-Fa-f]{40}$ ]] || die "not a key fingerprint (40 hex digits): $1"
 }
 
+# Users trust only the keys the package installs from key file $2: dnf skips a repository
+# whose repomd.xml another key signed, with only a warning.
+check_key() {
+    [[ -f $2 ]] || die "no such key file: $2"
+    local keys
+    keys=$(gpg --batch --with-colons --show-keys -- "$2" 2>&1) ||
+        die "can't read the keys in $2: $keys"
+    # gpg lists a primary key's fingerprint, in uppercase, in the first fingerprint record
+    # after its pub record. The others are its subkeys', and the rvk records before it name
+    # designated revokers, which the file needn't hold.
+    awk -F: -v key="$(printf '%s' "$1" | tr a-f A-F)" '
+        $1 == "pub" { p = 1; next }
+        p && $1 == "fpr" { if ($10 == key) found = 1; p = 0 } # codespell:ignore fpr
+        END { exit !found }' <<<"$keys" ||
+        die "$2 doesn't hold the key $1"
+}
+
 sign() {
-    (($# == 2)) || usage
+    (($# == 3)) || usage
     check_fingerprint "$1"
-    [[ -f $2 ]] || die "no such RPM: $2"
+    check_key "$1" "$2"
+    [[ -f $3 ]] || die "no such RPM: $3"
     # rpm 6 reads _openpgp_sign_id, rpm 4 _gpg_name.
-    rpmsign --addsign --define "_openpgp_sign_id $1" --define "_gpg_name $1" -- "$2" >&2
+    rpmsign --addsign --define "_openpgp_sign_id $1" --define "_gpg_name $1" -- "$3" >&2
 }
 
 # Imports the keys in key file $2 into a new keyring database $1.
@@ -85,16 +104,7 @@ metadata() (
     (($# == 5 || $# == 6)) || usage
     local fingerprint=$1 keyfile=$2 url=$3 rpmdir=$4 outdir=$5 previous=${6:-}
     check_fingerprint "$fingerprint"
-    [[ -f $keyfile ]] || die "no such key file: $keyfile"
-    # Users check repomd.xml against KEYFILE: signed by another key, dnf skips the
-    # repository with only a warning. gpg lists fingerprints in uppercase, and lists a key's
-    # designated revoker by fingerprint too, though the file needn't hold that key.
-    local keys
-    keys=$(gpg --batch --with-colons --show-keys -- "$keyfile" 2>&1) ||
-        die "can't read the keys in $keyfile: $keys"
-    awk -F: -v key="$(printf '%s' "$fingerprint" | tr a-f A-F)" \
-        '$1 == "fpr" && $10 == key { found = 1 } END { exit !found }' <<<"$keys" || # codespell:ignore fpr
-        die "$keyfile doesn't hold the key $fingerprint"
+    check_key "$fingerprint" "$keyfile"
     [[ $url == */ ]] || die "the URL must end in /: $url"
     [[ -z $previous || -f $previous ]] || die "no such bundle: $previous"
 
@@ -118,6 +128,7 @@ metadata() (
         [[ $tag == "v$version" ]] || die "$rpm is version $version, not ${tag#v}"
         sig=$(signature "$rpm" "$work/keyring")
         case $sig in
+            signed) ;;
             unsigned)
                 # Releases made before the project signed its RPMs.
                 printf 'dnf-repo.sh: warning: leaving out %s: it is not signed\n' "$rpm" >&2
@@ -125,6 +136,7 @@ metadata() (
                 ;;
             # More likely a wrong key file than an earlier release, which prune leaves out.
             "other key") die "$rpm is signed by a key not in the key file" ;;
+            *) die "unexpected signature state: $sig" ;;
         esac
         # The name goes into the bundle's file names.
         [[ $pkg =~ ^[A-Za-z0-9._+-]+$ ]] || die "$rpm has a name dnf-repo.sh can't use: $pkg"
@@ -173,11 +185,15 @@ prune() (
     shopt -s nullglob
     for rpm in "$rpmdir"/*/*.rpm; do
         sig=$(signature "$rpm" "$work/keyring")
-        if [[ $sig == "other key" ]]; then
-            printf 'dnf-repo.sh: warning: leaving out %s: it is signed by a key not in %s\n' \
-                "$rpm" "$keyfile" >&2
-            rm -- "$rpm"
-        fi
+        case $sig in
+            signed | unsigned) ;;
+            "other key")
+                printf 'dnf-repo.sh: warning: leaving out %s: it is signed by a key not in %s\n' \
+                    "$rpm" "$keyfile" >&2
+                rm -- "$rpm"
+                ;;
+            *) die "unexpected signature state: $sig" ;;
+        esac
     done
 )
 

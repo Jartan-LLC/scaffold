@@ -170,26 +170,18 @@ jobs:
           trap 'gpgconf --kill all; rm -rf -- "$work"' EXIT
           mkdir -m 700 "$GNUPGHOME"
           printf '%s\n' "$RPM_SIGNING_KEY" | gpg --batch --quiet --import
-          # Prints the fingerprint of each primary key gpg lists, from the record after its
-          # sec or pub record, not a subkey's.
-          primaries() {
-            awk -F: '$1 == "sec" || $1 == "pub" { p = 1; next } p && $1 == "fpr" { print $10; p = 0 }' # codespell:ignore fpr
-          }
-          fingerprint=$(gpg --batch --with-colons --list-secret-keys | primaries)
+          # Each secret primary key's fingerprint, from the record after its sec record, not a
+          # subkey's.
+          fingerprint=$(gpg --batch --with-colons --list-secret-keys |
+            awk -F: '$1 == "sec" { p = 1; next } p && $1 == "fpr" { print $10; p = 0 }') # codespell:ignore fpr
           if [[ ! $fingerprint =~ ^[0-9A-F]{40}$ ]]; then
             echo "::error::RPM_SIGNING_KEY must hold one secret key"
-            exit 1
-          fi
-          # Users trust only the keys the package installs from this file.
-          if ! gpg --batch --with-colons --show-keys packaging/RPM-GPG-KEY | primaries |
-            grep -xF -- "$fingerprint" >/dev/null; then
-            echo "::error::packaging/RPM-GPG-KEY doesn't hold the public key of RPM_SIGNING_KEY, $fingerprint"
             exit 1
           fi
 
           rpms=(rpm/*.noarch.rpm)
           rpm=${rpms[0]}
-          packaging/dnf-repo.sh sign "$fingerprint" "$rpm"
+          packaging/dnf-repo.sh sign "$fingerprint" packaging/RPM-GPG-KEY "$rpm"
           mkdir out
           cp -- "$rpm" out/
           [[ $PRERELEASE == false ]] || exit 0

@@ -116,7 +116,7 @@ release's dnf repository metadata, with the key in the `RPM_SIGNING_KEY` secret 
 the keys in it, so the job refuses to sign with a key that file doesn't hold. Without the
 secret, the job fails and the tag gets no GitHub Release.
 
-<!-- TODO(/onboard): in this section's commands, replace ORG/REPO with the GitHub org and repo, and NAME with Name in packaging/rpm.spec. -->
+<!-- TODO(/onboard): in this section's commands, replace ORG/REPO with the GitHub org and repo, NAME with Name in packaging/rpm.spec, and ADDRESS with the key's contact email address. -->
 
 ### Setting up the key
 

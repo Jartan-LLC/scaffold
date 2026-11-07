@@ -269,8 +269,8 @@ git merge upstream/main   # resolve conflicts, keeping your customizations
 - [ ] For each publishing target you kept, its `pypi` or `ghcr` environment
       ([details](#publishing-environments))
 - [ ] If you kept the dnf repository, its `rpm-signing` environment, with required reviewers
-      and only `v*` tags allowed, and the `RPM_SIGNING_KEY` secret, as `RELEASING.md`'s Setting
-      up the key section says
+      and only `v*` tags allowed, the `RPM_SIGNING_KEY` secret, and the key's fingerprint in the
+      README, as `RELEASING.md`'s Setting up the key section says
 
 ### Dependabot labels
 

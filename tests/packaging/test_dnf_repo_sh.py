@@ -4,14 +4,16 @@ The script runs with stub `rpm`, `rpmkeys`, `rpmsign`, `createrepo_c` and `gpg`
 first on `PATH`, so no rpm tools are needed. A stub RPM is a text file holding
 its name, version and signing key: ``-`` for none as rpm 6 reports it, ``-4``
 for none as rpm 4 does (passing the check), ``bad`` for a bad signature,
-``damaged`` for an unsigned package whose digests don't match, and a key and
-``-damaged`` for a package that key signed whose digests don't match. The stub
-`rpmkeys` prints the RPM's path before its checks, as the real one does. A key
-file holds one key per line, each optionally followed by ``rvk:`` and the
-fingerprint of its designated revoker. The stub `createrepo_c` writes a
-primary.xml that lists each package's location, and the stub `gpg` writes the
-signing key into the signature and lists a key file's keys, failing as the real
-one does on an empty file. ci.yml's dnf-repo job runs the real tools.
+``damaged`` for an unsigned package whose digests don't match, a key and
+``-damaged`` for a package that key signed whose digests don't match, and a key
+and ``+bad`` for a package that key signed that also has a bad signature. The
+stub `rpmkeys` prints the RPM's path before its checks, as the real one does. A
+key file holds one primary key per line, each optionally followed by ``rvk:``
+and the fingerprint of its designated revoker, or ``sub:`` and the fingerprint
+of a subkey. The stub `createrepo_c` writes a primary.xml that lists each
+package's location, and the stub `gpg` writes the signing key into the
+signature and lists a key file's keys in the real one's order, failing as it
+does on an empty file. ci.yml's dnf-repo job runs the real tools.
 """
 
 import io
@@ -30,7 +32,7 @@ SIGNER = "0123456789ABCDEF0123456789ABCDEF01234567"
 OTHER = "89ABCDEF0123456789ABCDEF0123456789ABCDEF"
 URL = "https://github.com/ORG/REPO/releases/download/"
 USAGE = """\
-dnf-repo.sh: usage: packaging/dnf-repo.sh sign FINGERPRINT RPM
+dnf-repo.sh: usage: packaging/dnf-repo.sh sign FINGERPRINT KEYFILE RPM
        packaging/dnf-repo.sh metadata FINGERPRINT KEYFILE URL RPMDIR OUTDIR [PREVIOUS]
        packaging/dnf-repo.sh prune KEYFILE RPMDIR
 """
@@ -69,6 +71,8 @@ if signer not in known:
     print(f"    Header OpenPGP V4 RSA/SHA512 signature, key ID {signer}: NOKEY")
     if signer.endswith("damaged"):
         print("    Payload SHA256 digest: BAD")
+    if signer.endswith("+bad"):
+        print("    Header OpenPGP V4 RSA/SHA512 signature, key fingerprint: abc: BAD")
     sys.exit(1)
 print(f"    Header OpenPGP V4 RSA/SHA512 signature, key fingerprint: {signer}: OK")
 """,
@@ -96,14 +100,19 @@ hrefs = sorted(prefix + str(p.relative_to(packages)) for p in packages.rglob("*.
 import sys
 args = sys.argv[1:]
 if "--show-keys" in args:
-    keys = open(args[-1]).read().split()
-    if not keys:
+    lines = [line.split() for line in open(args[-1]) if line.strip()]
+    if not lines:
         sys.exit("gpg: no valid OpenPGP data found.")
-    for key in keys:
-        if key.startswith("rvk:"):
-            print(f"rvk:::1::::::{key[4:]}:80:")
-        else:
-            print(f"fpr:::::::::{key}:")  # codespell:ignore fpr
+    for primary, *extras in lines:
+        print("pub:-:4096:1:0123456789ABCDEF:1700000000:::-:::scSC::::::23::0:")
+        for extra in extras:
+            if extra.startswith("rvk:"):
+                print(f"rvk:::1::::::{extra[4:]}:80:")
+        print(f"fpr:::::::::{primary}:")  # codespell:ignore fpr
+        for extra in extras:
+            if extra.startswith("sub:"):
+                print("sub:-:4096:1:89ABCDEF01234567:1700000000::::::s::::::23:")
+                print(f"fpr:::::::::{extra[4:]}:")  # codespell:ignore fpr
     sys.exit(0)
 signer = args[args.index("--local-user") + 1]
 open(args[args.index("--output") + 1], "w").write(signer)
@@ -175,8 +184,8 @@ def bundle_files(path: Path) -> dict[str, str]:
     [
         pytest.param([], id="no mode"),
         pytest.param(["publish"], id="unknown mode"),
-        pytest.param(["sign", SIGNER], id="sign without RPM"),
-        pytest.param(["sign", SIGNER, "a.rpm", "b.rpm"], id="sign with two RPMs"),
+        pytest.param(["sign", SIGNER, "KEY"], id="sign without RPM"),
+        pytest.param(["sign", SIGNER, "KEY", "a.rpm", "b.rpm"], id="sign with two RPMs"),
         pytest.param(["metadata", SIGNER, "KEY", URL, "rpms"], id="metadata without OUTDIR"),
         pytest.param(
             ["metadata", SIGNER, "KEY", URL, "rpms", "out", "prev", "x"], id="metadata, extra"
@@ -199,21 +208,23 @@ def test_a_key_is_named_by_its_full_fingerprint(
     env: dict[str, str], tmp_path: Path, keyfile: Path, mode: str, fingerprint: str
 ) -> None:
     rpm = add_rpm(tmp_path / "rpms", "v1.0.0", "1.0.0", "-")
-    args = [rpm] if mode == "sign" else [keyfile, URL, tmp_path / "rpms", tmp_path / "out"]
+    args = [keyfile, rpm] if mode == "sign" else [keyfile, URL, tmp_path / "rpms", tmp_path / "out"]
     result = run(env, mode, fingerprint, *args)
     assert result.returncode == 1
     assert result.stderr == f"dnf-repo.sh: not a key fingerprint (40 hex digits): {fingerprint}\n"
 
 
-def test_sign_signs_the_rpm_in_place_with_the_key(env: dict[str, str], tmp_path: Path) -> None:
+def test_sign_signs_the_rpm_in_place_with_the_key(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
     rpm = add_rpm(tmp_path, "v1.0.0rc1", "1.0.0~rc1", "-")
-    result = run(env, "sign", SIGNER, rpm)
+    result = run(env, "sign", SIGNER, keyfile, rpm)
     assert result.returncode == 0, result.stderr
     assert rpm.read_text(encoding="utf-8") == f"app 1.0.0~rc1 {SIGNER}"
 
 
-def test_sign_fails_on_a_missing_rpm(env: dict[str, str], tmp_path: Path) -> None:
-    result = run(env, "sign", SIGNER, tmp_path / "missing.rpm")
+def test_sign_fails_on_a_missing_rpm(env: dict[str, str], tmp_path: Path, keyfile: Path) -> None:
+    result = run(env, "sign", SIGNER, keyfile, tmp_path / "missing.rpm")
     assert result.returncode == 1
     assert result.stderr == f"dnf-repo.sh: no such RPM: {tmp_path / 'missing.rpm'}\n"
 
@@ -272,7 +283,7 @@ def test_metadata_fails_on_an_rpm_signed_by_another_key(
     assert not (tmp_path / "out").exists()
 
 
-@pytest.mark.parametrize("signer", ["bad", f"{SIGNER}-damaged", f"{OTHER}-damaged"])
+@pytest.mark.parametrize("signer", ["bad", f"{SIGNER}-damaged", f"{OTHER}-damaged", f"{OTHER}+bad"])
 def test_metadata_fails_on_a_bad_signature_or_a_damaged_signed_rpm(
     env: dict[str, str], tmp_path: Path, keyfile: Path, signer: str
 ) -> None:
@@ -448,34 +459,47 @@ def test_metadata_fails_on_a_missing_input(
     assert not (tmp_path / "out").exists()
 
 
+def sign_or_metadata(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, mode: str, rpm: Path
+) -> subprocess.CompletedProcess[str]:
+    if mode == "sign":
+        return run(env, "sign", SIGNER, keyfile, rpm)
+    return metadata(env, tmp_path, keyfile)
+
+
+@pytest.mark.parametrize("mode", ["sign", "metadata"])
 @pytest.mark.parametrize(
     "keys",
     [
         pytest.param(f"{OTHER}\n", id="another key"),
         pytest.param(f"{OTHER} rvk:{SIGNER}\n", id="another key the signing key may revoke"),
+        pytest.param(f"{OTHER} sub:{SIGNER}\n", id="the signing key as another key's subkey"),
     ],
 )
-def test_metadata_fails_when_the_key_file_lacks_the_signing_key(
-    env: dict[str, str], tmp_path: Path, keyfile: Path, keys: str
+def test_the_key_file_must_hold_the_signing_key_as_a_primary_key(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, mode: str, keys: str
 ) -> None:
     keyfile.write_text(keys, encoding="utf-8")
-    add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", OTHER)
-    result = metadata(env, tmp_path, keyfile)
+    rpm = add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", OTHER)
+    result = sign_or_metadata(env, tmp_path, keyfile, mode, rpm)
     assert result.returncode == 1
     assert result.stderr == f"dnf-repo.sh: {keyfile} doesn't hold the key {SIGNER}\n"
+    assert rpm.read_text(encoding="utf-8") == f"app 1.1.0 {OTHER}"
     assert not (tmp_path / "out").exists()
 
 
-def test_metadata_fails_with_gpgs_error_when_gpg_cant_read_the_key_file(
-    env: dict[str, str], tmp_path: Path, keyfile: Path
+@pytest.mark.parametrize("mode", ["sign", "metadata"])
+def test_a_key_file_gpg_cant_read_fails_with_gpgs_error(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, mode: str
 ) -> None:
     keyfile.write_text("", encoding="utf-8")
-    add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", SIGNER)
-    result = metadata(env, tmp_path, keyfile)
+    rpm = add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", "-")
+    result = sign_or_metadata(env, tmp_path, keyfile, mode, rpm)
     assert result.returncode == 1
     assert result.stderr == (
         f"dnf-repo.sh: can't read the keys in {keyfile}: gpg: no valid OpenPGP data found.\n"
     )
+    assert rpm.read_text(encoding="utf-8") == "app 1.1.0 -"
     assert not (tmp_path / "out").exists()
 
 
@@ -517,6 +541,11 @@ def test_prune_deletes_only_rpms_signed_by_another_key(
             f"{OTHER}-damaged", "has a bad signature, or is damaged", id="damaged, other key"
         ),
         pytest.param("bad", "has a bad signature, or is damaged", id="bad signature"),
+        pytest.param(
+            f"{OTHER}+bad",
+            "has a bad signature, or is damaged",
+            id="bad signature beside another key's",
+        ),
     ],
 )
 def test_prune_fails_on_a_damaged_rpm_or_a_bad_signature(
