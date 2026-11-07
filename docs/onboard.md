@@ -59,20 +59,20 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
 `RELEASING.md` that names that workflow. To drop the RPM, delete `packaging/`,
-`tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, the `docker` entry for
-`/packaging` in `.github/dependabot.yml`, the `rpm.yml` row in Publishing, and, in
-`RELEASING.md`, the Installing the RPM and Signing key sections and each sentence and list item
-that opens with "while `packaging/rpm.spec` exists" or "while `packaging/dnf.repo` exists". Keep
-`.github/workflows/rpm.yml` and the RPM jobs in `ci.yml` and `release.yml`: they skip while
-the spec is missing.
+`tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, `docs/signing-key.md` and
+its entry in `docs/index.md`, the `docker` entry for `/packaging` in `.github/dependabot.yml`,
+the `rpm.yml` row in Publishing, and, in `RELEASING.md`, the Installing the RPM section and each
+sentence and list item that opens with "while `packaging/rpm.spec` exists" or "while
+`packaging/dnf.repo` exists". Keep `.github/workflows/rpm.yml` and the RPM jobs in `ci.yml` and
+`release.yml`: they skip while the spec is missing.
 
 To keep the RPM without the dnf repository, as a private repository must, delete
 `packaging/dnf.repo`, `packaging/RPM-GPG-KEY`, `packaging/dnf-repo.sh`,
-`tests/packaging/test_dnf_repo_sh.py`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, the
-spec's lines that make, install and list those two files, with their comments, and, in
-`RELEASING.md`, the Signing key section and each sentence and list item that opens with "while
-`packaging/dnf.repo` exists". Keep the `sign` job in `release.yml`: it skips while
-`packaging/dnf.repo` is missing.
+`tests/packaging/test_dnf_repo_sh.py`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`,
+`docs/signing-key.md` and its entry in `docs/index.md`, the spec's lines that make, install and
+list those two files, with their comments, and, in `RELEASING.md`, each sentence and list item that
+opens with "while `packaging/dnf.repo` exists". Keep the `sign` job in `release.yml`: it skips
+while `packaging/dnf.repo` is missing.
 
 ## Procedures
 
@@ -129,8 +129,8 @@ Rename the `app` stub to your import name:
 ### Not a Python project
 
 This deletes the docs site, and with it some markers, so it runs before [Markers](#markers).
-Keep `docs/scaffold.md`, which reads fine on GitHub without Sphinx, and this page, which
-Finish deletes.
+Keep `docs/scaffold.md` and `docs/signing-key.md`, which read fine on GitHub without Sphinx,
+and this page, which Finish deletes.
 
 Keep `ci/`. `ci.yml`'s `changes` job runs `ci/changes.py`, `release.yml` runs
 `ci/release_notes.py` and `publish-docker.yml` runs `ci/versions.py`, all on the runner's
@@ -140,11 +140,11 @@ them as they are. `ci/changes.py` still describes the `python` and `test` jobs a
 `python` output that nothing reads.
 
 1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
-2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md` and
-   this page, `.readthedocs.yaml.example`, `.github/workflows/pages.yml.example`,
-   `.github/workflows/publish-pypi.yml` and `.github/workflows/dependency-audit.yml`. If
-   not containerized, also `Dockerfile`, `.dockerignore`,
-   `.github/workflows/publish-docker.yml` and the commented `docker` job in
+2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md`,
+   `signing-key.md` and this page, `.readthedocs.yaml.example`,
+   `.github/workflows/pages.yml.example`, `.github/workflows/publish-pypi.yml` and
+   `.github/workflows/dependency-audit.yml`. If not containerized, also `Dockerfile`,
+   `.dockerignore`, `.github/workflows/publish-docker.yml` and the commented `docker` job in
    `.github/workflows/ci.yml`.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
@@ -270,9 +270,8 @@ git merge upstream/main   # resolve conflicts, keeping your customizations
 - [ ] Discussions (Settings > General > Features): the issue template config links to it
 - [ ] For each publishing target you kept, its `pypi` or `ghcr` environment
       ([details](#publishing-environments))
-- [ ] If you kept the dnf repository, its `rpm-signing` environment, with required reviewers
-      and only `v*` tags allowed, and the `RPM_SIGNING_KEY` secret, as `RELEASING.md`'s Setting
-      up the key section says
+- [ ] If you kept the dnf repository, its `rpm-signing` environment and the `RPM_SIGNING_KEY`
+      secret ([details](#publishing-environments))
 
 ### Dependabot labels
 
@@ -302,6 +301,22 @@ them. For `pypi`, also configure
 token secret is stored. Until it is configured, `publish-pypi.yml` fails on every tag. Creating
 `pypi` also clears the GitHub Actions VS Code extension's "environment `pypi` is not valid"
 warning.
+
+If you kept the dnf repository, `release.yml`'s `sign` job runs in `rpm-signing`, which holds
+the signing key. Create it, open to `v*` tags only:
+
+```bash
+gh api -X PUT repos/{owner}/{repo}/environments/rpm-signing \
+  -F 'deployment_branch_policy[protected_branches]=false' \
+  -F 'deployment_branch_policy[custom_branch_policies]=true'
+gh api -X POST repos/{owner}/{repo}/environments/rpm-signing/deployment-branch-policies \
+  -f name='v*' -f type=tag
+```
+
+Then add required reviewers to it (Settings > Environments), so no tag gets the key without a
+reviewer's approval. On GitHub Free, Pro and Team, required reviewers need a public repository,
+which the dnf repository needs anyway. Make the first key as
+[Making a key](signing-key.md#making-a-key) says.
 
 ## Finish
 

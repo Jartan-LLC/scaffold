@@ -166,7 +166,7 @@ jobs:
           RPM_SIGNING_KEY: ${{ secrets.RPM_SIGNING_KEY }}
         run: |
           if [[ -z $RPM_SIGNING_KEY ]]; then
-            echo "::error::The rpm-signing environment has no RPM_SIGNING_KEY secret. Set it up as RELEASING.md's Signing key section says, or delete packaging/dnf.repo to release the RPM unsigned, with no dnf repository."
+            echo "::error::The rpm-signing environment has no RPM_SIGNING_KEY secret. Make the key as docs/signing-key.md says, or delete packaging/dnf.repo to release the RPM unsigned, with no dnf repository."
             exit 1
           fi
           case "$PRERELEASE" in
