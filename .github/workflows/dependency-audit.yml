@@ -1,6 +1,6 @@
 name: Dependency Audit
 
-# Weekly pip-audit of the environment ci.yml's audit job installs: the project's
+# Weekly pip-audit of the environment ci.yml's python job installs: the project's
 # dependencies and the gate tools. The PR-time audit is advisory, so findings are tracked
 # here: they open (or update) one issue, and a clean run closes it. A tool, install or
 # network error fails the run and leaves the issue alone.
@@ -42,7 +42,7 @@ jobs:
         with:
           python-version-file: .python-version
 
-      # No uv cache, unlike ci.yml's audit job: a weekly run gains little from one.
+      # No uv cache, unlike ci.yml's python job: a weekly run gains little from one.
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version-file: ci/requirements.txt
