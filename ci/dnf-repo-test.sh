@@ -98,6 +98,14 @@ build() {
     "$root/packaging/dnf-repo.sh" prune "$work/RPM-GPG-KEY" "$work/pruned"
     [[ ! -e $work/pruned/v0.0.3/$name.noarch.rpm ]] ||
         die "dnf-repo.sh prune kept a package signed by another key"
+    # A damaged one fails prune and stays, so the release fails on it.
+    local damaged=$work/damaged/v0.0.3/$name.noarch.rpm
+    mkdir -p "$work/damaged/v0.0.3"
+    cp "$work/in-other/v0.0.3/$name.noarch.rpm" "$damaged"
+    printf 'XXXXXXXX' |
+        dd of="$damaged" bs=1 seek=$(($(stat -c %s "$damaged") - 200)) conv=notrunc status=none
+    refused 'has a bad signature, or is damaged' prune "$work/RPM-GPG-KEY" "$work/damaged"
+    [[ -e $damaged ]] || die "dnf-repo.sh prune deleted a damaged package"
 
     # Signed metadata that lists an unsigned package, which gpgcheck refuses.
     mkdir "$www/unsigned"
