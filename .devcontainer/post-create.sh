@@ -5,12 +5,14 @@ set -u
 
 echo "Setting up development environment..."
 
-# Pinned from ci/requirements.txt so the container matches CI, and bootstrapped
-# with pip because that is what the python devcontainer feature ships.
+# Pinned and hash-checked from ci/requirements.txt so the container matches CI, and
+# bootstrapped with pip because that is what the python devcontainer feature ships.
+# uv's entry runs from its `uv==` line to the first line with no trailing backslash, its
+# last hash. uv has no dependencies, so --no-deps loses nothing.
 echo "Installing uv..."
-uv_pin=$(sed -n 's/^\(uv==[^[:space:]]*\).*/\1/p' ci/requirements.txt 2>/dev/null | head -1)
-if [ -n "$uv_pin" ]; then
-    pip install "$uv_pin" || echo "Warning: uv install failed ($uv_pin)" >&2
+uv_req=$(sed -n '/^uv==/,/[^\\]$/p' ci/requirements.txt 2>/dev/null)
+if [ -n "$uv_req" ]; then
+    pip install --require-hashes --no-deps -r <(printf '%s\n' "$uv_req") || echo "Warning: uv install failed (${uv_req%% *})" >&2
 else
     echo "Warning: no pinned uv in ci/requirements.txt; Python installs below will fail" >&2
 fi
