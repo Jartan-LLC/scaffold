@@ -33,3 +33,7 @@ supported Python and builds the dev container when a change touches its inputs.
 - `>>>` examples in docstrings run as tests, so keep them executable and their
   expected output exact — the suite fails when one drifts from the code.
 - Report security issues privately via [SECURITY.md](.github/SECURITY.md), not a public issue.
+
+## Maintaining
+
+To cut a release, follow [RELEASING.md](RELEASING.md).
