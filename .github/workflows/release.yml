@@ -12,7 +12,46 @@ concurrency:
 permissions: {}
 
 jobs:
+  # The notes job reads the tagged checkout with a read-only token; only the
+  # release job, which runs no repository code, holds the write token.
+  notes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read # checkout
+    outputs:
+      source: ${{ steps.notes.outputs.source }}
+      notes: ${{ steps.notes.outputs.notes }}
+      prerelease: ${{ steps.notes.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The script prints nothing when the tag has no notes in CHANGELOG.md and
+      # says why on stderr; this step then falls back to generated notes. It also
+      # says whether the tag is a pre-release, under PEP 440 or SemVer.
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          prerelease=$(python3 ci/release_notes.py --prerelease "$version")
+          echo "prerelease=$prerelease" >>"$GITHUB_OUTPUT"
+          notes="$RUNNER_TEMP/notes.md"
+          why="$RUNNER_TEMP/why"
+          python3 ci/release_notes.py "$version" CHANGELOG.md >"$notes" 2>"$why" \
+            || { cat "$why" >&2; exit 1; }
+          if [ -s "$notes" ]; then
+            delimiter="EOF_$(openssl rand -hex 16)"
+            { echo "notes<<$delimiter"; cat "$notes"; echo "$delimiter"; } >>"$GITHUB_OUTPUT"
+            echo "source=changelog" >>"$GITHUB_OUTPUT"
+          else
+            echo "::warning::$(<"$why"); using generated release notes for $GITHUB_REF_NAME"
+            echo "source=generated" >>"$GITHUB_OUTPUT"
+          fi
+
   release:
+    needs: notes
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -25,6 +64,27 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          NOTES_SOURCE: ${{ needs.notes.outputs.source }}
+          PRERELEASE: ${{ needs.notes.outputs.prerelease }}
+          # Linux caps one environment variable at 128 KiB, so a section longer
+          # than that fails this step, on a re-run too.
+          NOTES: ${{ needs.notes.outputs.notes }}
         run: |
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            exit 0
+          fi
+          case "$NOTES_SOURCE" in
+            changelog)
+              [ -n "$NOTES" ] || { echo "::error::The notes job passed no notes"; exit 1; }
+              printf '%s\n' "$NOTES" >"$RUNNER_TEMP/notes.md"
+              args=(--notes-file "$RUNNER_TEMP/notes.md")
+              ;;
+            generated) args=(--generate-notes) ;;
+            *) echo "::error::The notes job set no notes source"; exit 1 ;;
+          esac
+          case "$PRERELEASE" in
+            true) args+=(--prerelease) ;;
+            false) ;;
+            *) echo "::error::The notes job did not say whether this is a pre-release"; exit 1 ;;
+          esac
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" "${args[@]}" --verify-tag

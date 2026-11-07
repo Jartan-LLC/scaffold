@@ -46,9 +46,11 @@ docs = [
 packages = ["src/app"]
 
 # Keep the sdist to source + tests + the root conftest.py, so the suite and its
-# fixtures ship consistently — not dev tooling like .github/ or .devcontainer/.
+# fixtures ship consistently — not dev tooling like .github/ or .devcontainer/,
+# nor tests/test_release_notes.py, which needs ci/.
 [tool.hatch.build.targets.sdist]
 include = ["src", "tests", "conftest.py"]
+exclude = ["tests/test_release_notes.py"]
 
 [tool.ruff]
 target-version = "py312"
@@ -109,12 +111,12 @@ testpaths = ["tests", "src"]
 addopts = "--strict-markers --strict-config --doctest-modules"
 xfail_strict = true
 markers = [
-    "unit: fast in-process test with no external services",
+    "unit: fast test with no external services",
     "integration: needs the docker-compose stack (see the commented integration-tests job in ci.yml)",
 ]
 
 [tool.pyright]
-include = ["src", "tests", "conftest.py"]
+include = ["src", "tests", "conftest.py", "ci"]
 pythonVersion = "3.12"
 # "strict" is the most thorough; drop to "standard" (pyright's default) if
 # untyped third-party deps get noisy.
