@@ -108,6 +108,8 @@ Keep `ci/`. `ci.yml`'s `changes` job runs `ci/changes.py` and `release.yml` runs
 `ci/release_notes.py`, both on the runner's `python3`. This repository doesn't test, lint
 or type-check those scripts: scaffold does, and its changes to them come in by
 [syncing](scaffold.md#syncing-template-updates), so leave them as they are.
+`ci/changes.py` still describes the `python` and `test` jobs and prints a `python` output
+that nothing reads.
 
 1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
 2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md` and
@@ -125,8 +127,8 @@ or type-check those scripts: scaffold does, and its changes to them come in by
    lines in `check` (the `.[dev,docs]` install, `uv build`, `twine check`, `pip-audit`), so
    `make check` stays the one verify gate.
 6. In `ci/requirements.txt`, delete the `twine` and `pip-audit` entries with their comment
-   lines, and rewrite the header lines that name the audit jobs, the dev/docs extras and
-   `pyproject.toml`.
+   lines, "build frontend" from the `uv` comment, and, from the header, the reason the
+   tools' own dependencies aren't pinned and the mention of `pyproject.toml`'s extras.
 7. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
    uv" line for your stack.
 8. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
@@ -160,6 +162,8 @@ carries a `TODO(/onboard): <what to do>` marker, is changed by a procedure above
 a file onboarding deletes or replaces (this page, `.claude/commands/onboard.md`, `README.md`
 and the license files). Text that waits on project code, such as the `ci.yml` jobs to
 uncomment once you add their inputs, carries no marker: it stays true after onboarding.
+In a project that isn't Python, `ci/changes.py` keeps its lines on the Python jobs
+([Not a Python project](#not-a-python-project)).
 
 1. List the markers:
 
