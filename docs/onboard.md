@@ -21,7 +21,8 @@ An item whose answer needs neither, such as which workflows to keep, says what t
 - [ ] Which enchantments Features to keep ([Features](#features))
 - [ ] Publishing targets: the PyPI package, the container image, the docs site
       ([details](#publishing-targets))
-- [ ] Whether to keep `Dockerfile` (its marker says what goes with it),
+- [ ] Whether to keep `Dockerfile` (its marker says what goes with it, and the
+      `publish-docker.yml` row in [Publishing](scaffold.md#publishing) goes too),
       `.github/workflows/scorecard.yml` (an OpenSSF score; it skips on private repos) and
       `.github/workflows/external-link-check.yml` (a weekly check for broken external links).
       Delete each workflow you don't keep
@@ -73,7 +74,8 @@ Also:
 - Declining `claude-code` means declining `codebase-memory-mcp` too, if you added it, and
   declining `liza` means declining `liza-toolchain`.
 - Declining `liza` also means deleting the [Liza](scaffold.md#liza) section of
-  `docs/scaffold.md`.
+  `docs/scaffold.md`; declining only `liza-toolchain`, removing it from that section's first
+  paragraph.
 - To keep a code graph without `liza-toolchain`, declare `codebase-memory-mcp` in its place.
 - A Feature in your VS Code `dev.containers.defaultFeatures` comes back on rebuild, so
   declining it here applies only to contributors who don't set it. Declare `liza` and
@@ -120,7 +122,9 @@ Finish deletes.
    `make check` stays the one verify gate.
 6. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
    uv" line for your stack.
-7. Trim the Python parts of `docs/scaffold.md`.
+7. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
+   table, delete the `publish-pypi.yml` row and, if not containerized, the
+   `publish-docker.yml` row.
 
 ### Stack
 
