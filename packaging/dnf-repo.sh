@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Signs RPMs, and builds the signed dnf repository metadata for RPMs a GitHub Release holds.
-# Needs rpmsign, rpmkeys, createrepo_c, gpg and tar, as the Fedora container in ci.yml's
+# Needs rpm, rpmsign, rpmkeys, createrepo_c, gpg and tar, as the Fedora container in ci.yml's
 # dnf-repo job has. gpg signs with the secret key FINGERPRINT from its keyring
 # ($GNUPGHOME), which must have no passphrase.
 #
@@ -34,7 +34,8 @@ sign() {
     (($# == 2)) || usage
     check_fingerprint "$1"
     [[ -f $2 ]] || die "no such RPM: $2"
-    rpmsign --addsign --define "_openpgp_sign_id $1" -- "$2" >&2
+    # rpm 6 reads _openpgp_sign_id, rpm 4 _gpg_name.
+    rpmsign --addsign --define "_openpgp_sign_id $1" --define "_gpg_name $1" -- "$2" >&2
 }
 
 # Prints "signed" when RPM $1 has signatures and each verifies with a key in the keyring
@@ -61,6 +62,10 @@ metadata() {
     local fingerprint=$1 keyfile=$2 url=$3 rpmdir=$4 outdir=$5 previous=${6:-}
     check_fingerprint "$fingerprint"
     [[ -f $keyfile ]] || die "no such key file: $keyfile"
+    # Users check repomd.xml against KEYFILE: signed by another key, dnf skips the
+    # repository, and under skip_if_unavailable says nothing.
+    [[ $(gpg --batch --with-colons --show-keys -- "$keyfile" 2>/dev/null) == \
+        *":${fingerprint^^}:"* ]] || die "$keyfile doesn't hold the key $fingerprint"
     [[ $url == */ ]] || die "the URL must end in /: $url"
     [[ -z $previous || -f $previous ]] || die "no such bundle: $previous"
 
@@ -81,14 +86,17 @@ metadata() {
         # it sorts 2.0.0~rc.1 above 1.1.0.
         [[ $version != *"~"* ]] || die "$rpm is a pre-release ($version)"
         [[ $tag == "v$version" ]] || die "$rpm is version $version, not ${tag#v}"
-        [[ -z $name || $name == "${nv%% *}" ]] || die "$rpm is not a package of $name"
-        name=${nv%% *}
         sig=$(signature "$rpm" "$work/keyring")
         if [[ $sig == unsigned ]]; then
             # Releases made before the project signed its RPMs.
             printf 'dnf-repo.sh: warning: leaving out %s: it is not signed\n' "$rpm" >&2
             continue
         fi
+        # The name goes into the bundle's file names.
+        [[ ${nv%% *} =~ ^[A-Za-z0-9._+-]+$ ]] ||
+            die "$rpm has a name dnf-repo.sh can't use: ${nv%% *}"
+        [[ -z $name || $name == "${nv%% *}" ]] || die "$rpm is not a package of $name"
+        name=${nv%% *}
         mkdir -p "$work/packages/$tag"
         cp -- "$rpm" "$work/packages/$tag/"
         count=$((count + 1))
@@ -102,10 +110,12 @@ metadata() {
         # A CDN can go on serving the previous repomd.xml for a while; the files it names
         # must still be there, or dnf gets a 404 and skips the repository.
         mkdir "$work/previous"
-        tar -xzf "$previous" -C "$work/previous" repodata/repomd.xml
+        tar -xzf "$previous" -C "$work/previous" repodata/repomd.xml ||
+            die "$previous has no repodata/repomd.xml"
         while IFS= read -r file; do
             [[ -e $repodata/$file ]] ||
-                tar -xzf "$previous" -C "$work/bundle" "repodata/$file"
+                tar -xzf "$previous" -C "$work/bundle" "repodata/$file" ||
+                die "$previous has no repodata/$file, which its repomd.xml names"
         done < <(sed -n 's|.*<location href="repodata/\([^"/]*\)".*|\1|p' \
             "$work/previous/repodata/repomd.xml")
     fi

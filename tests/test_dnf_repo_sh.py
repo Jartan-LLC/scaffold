@@ -5,9 +5,11 @@ first on `PATH`, so no rpm tools are needed. A stub RPM is a text file holding
 its name, version and signing key (``-`` for none, ``bad`` for a bad
 signature); a key file holds one key per line. The stub `createrepo_c` writes a
 primary.xml that lists each package's location, and the stub `gpg` writes the
-signing key into the signature. ci.yml's dnf-repo job runs the real tools.
+signing key into the signature and lists a key file's keys. ci.yml's dnf-repo
+job runs the real tools.
 """
 
+import io
 import os
 import subprocess
 import sys
@@ -57,7 +59,10 @@ print(f"    Header OpenPGP V4 RSA/SHA512 signature, key fingerprint: {signer}: O
 """,
     "rpmsign": """\
 import sys
-signer = next(a.split()[1] for a in sys.argv if a.startswith("_openpgp_sign_id "))
+macros = dict(a.split() for a in sys.argv if a.startswith("_"))
+signer = macros["_openpgp_sign_id"]
+if macros["_gpg_name"] != signer:
+    sys.exit(1)
 name, version, _ = open(sys.argv[-1]).read().split()
 open(sys.argv[-1], "w").write(f"{name} {version} {signer}")
 """,
@@ -75,6 +80,10 @@ hrefs = sorted(prefix + str(p.relative_to(packages)) for p in packages.rglob("*.
     "gpg": """\
 import sys
 args = sys.argv[1:]
+if "--show-keys" in args:
+    for key in open(args[-1]).read().split():
+        print(f"fpr:::::::::{key}:")  # codespell:ignore fpr
+    sys.exit(0)
 signer = args[args.index("--local-user") + 1]
 open(args[args.index("--output") + 1], "w").write(signer)
 """,
@@ -118,6 +127,16 @@ def metadata(
     return run(
         env, "metadata", SIGNER, keyfile, URL, tmp_path / "rpms", tmp_path / "out", *previous
     )
+
+
+def write_bundle(path: Path, files: dict[str, str]) -> Path:
+    with tarfile.open(path, "w:gz") as tar:
+        for name, text in files.items():
+            data = text.encode()
+            member = tarfile.TarInfo(name)
+            member.size = len(data)
+            tar.addfile(member, io.BytesIO(data))
+    return path
 
 
 def bundle_files(path: Path) -> dict[str, str]:
@@ -251,6 +270,27 @@ def test_metadata_refuses_two_package_names(
     assert result.stderr == f"dnf-repo.sh: {rpm} is not a package of app\n"
 
 
+def test_metadata_refuses_a_name_it_cannot_put_in_a_file_name(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    rpm = add_rpm(tmp_path / "rpms", "v1.0.0", "1.0.0", SIGNER)
+    rpm.write_text(f"../app 1.0.0 {SIGNER}", encoding="utf-8")
+    result = metadata(env, tmp_path, keyfile)
+    assert result.returncode == 1
+    assert result.stderr == f"dnf-repo.sh: {rpm} has a name dnf-repo.sh can't use: ../app\n"
+    assert not (tmp_path / "out").exists()
+
+
+def test_metadata_takes_the_name_from_signed_rpms_only(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    add_rpm(tmp_path / "rpms", "v1.0.0", "1.0.0", "-", name="old")
+    add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", SIGNER)
+    result = metadata(env, tmp_path, keyfile)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == f"{tmp_path / 'out' / 'app-dnf-repo.tar.gz'}\n"
+
+
 def test_metadata_fails_with_no_signed_rpm(
     env: dict[str, str], tmp_path: Path, keyfile: Path
 ) -> None:
@@ -274,17 +314,15 @@ def test_metadata_needs_a_url_that_ends_in_a_slash(
 def test_metadata_keeps_the_files_the_previous_repomd_names(
     env: dict[str, str], tmp_path: Path, keyfile: Path
 ) -> None:
-    previous = tmp_path / "previous.tar.gz"
-    with tarfile.open(previous, "w:gz") as tar:
-        for name, text in {
+    previous = write_bundle(
+        tmp_path / "previous.tar.gz",
+        {
             "repodata/repomd.xml": '<location href="repodata/old-primary.xml"/>\n',
             "repodata/repomd.xml.asc": "old signature",
             "repodata/old-primary.xml": "old primary",
             "repodata/older-primary.xml": "kept by the bundle before",
-        }.items():
-            source = tmp_path / "source"
-            source.write_text(text, encoding="utf-8")
-            tar.add(source, arcname=name)
+        },
+    )
     add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", SIGNER)
     result = metadata(env, tmp_path, keyfile, previous)
     assert result.returncode == 0, result.stderr
@@ -293,3 +331,66 @@ def test_metadata_keeps_the_files_the_previous_repomd_names(
     assert "repodata/older-primary.xml" not in files
     assert files["repodata/repomd.xml"] == '<location href="repodata/new-primary.xml"/>\n'
     assert files["repodata/repomd.xml.asc"] == SIGNER
+
+
+@pytest.mark.parametrize(
+    ("files", "error"),
+    [
+        pytest.param(
+            {"repodata/primary.xml": ""}, "has no repodata/repomd.xml", id="no repomd.xml"
+        ),
+        pytest.param(
+            {"repodata/repomd.xml": '<location href="repodata/old-primary.xml"/>\n'},
+            "has no repodata/old-primary.xml, which its repomd.xml names",
+            id="a file repomd.xml names is missing",
+        ),
+    ],
+)
+def test_metadata_fails_on_an_incomplete_previous_bundle(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, files: dict[str, str], error: str
+) -> None:
+    previous = write_bundle(tmp_path / "previous.tar.gz", files)
+    add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", SIGNER)
+    result = metadata(env, tmp_path, keyfile, previous)
+    assert result.returncode == 1
+    assert result.stderr.endswith(f"dnf-repo.sh: {previous} {error}\n")
+    assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize("missing", ["keyfile", "previous"])
+def test_metadata_fails_on_a_missing_input(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, missing: str
+) -> None:
+    add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", SIGNER)
+    path = tmp_path / "missing"
+    if missing == "keyfile":
+        result = metadata(env, tmp_path, path)
+        error = f"no such key file: {path}"
+    else:
+        result = metadata(env, tmp_path, keyfile, path)
+        error = f"no such bundle: {path}"
+    assert result.returncode == 1
+    assert result.stderr == f"dnf-repo.sh: {error}\n"
+    assert not (tmp_path / "out").exists()
+
+
+def test_metadata_fails_when_the_key_file_lacks_the_signing_key(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    keyfile.write_text(f"{OTHER}\n", encoding="utf-8")
+    add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", OTHER)
+    result = metadata(env, tmp_path, keyfile)
+    assert result.returncode == 1
+    assert result.stderr == f"dnf-repo.sh: {keyfile} doesn't hold the key {SIGNER}\n"
+    assert not (tmp_path / "out").exists()
+
+
+def test_metadata_fails_on_a_file_that_is_not_an_rpm(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    rpm = add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", SIGNER)
+    rpm.write_text("not an rpm at all", encoding="utf-8")
+    result = metadata(env, tmp_path, keyfile)
+    assert result.returncode == 1
+    assert result.stderr.endswith(f"dnf-repo.sh: not an RPM: {rpm}\n")
+    assert not (tmp_path / "out").exists()

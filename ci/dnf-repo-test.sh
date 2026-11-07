@@ -17,7 +17,11 @@ set -euo pipefail
 
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 readonly root
+# ci.yml's dnf-repo job starts ci/dnf_repo_server.py on this port.
 readonly url=http://127.0.0.1:8000
+# Set by build, for its EXIT trap, and by run, for check.
+work=''
+log=''
 
 die() {
     printf 'dnf-repo-test.sh: %s\n' "$*" >&2
@@ -109,7 +113,7 @@ check() {
     local i
     for i in 1 2 3 4 5 6 7 8 9 10; do
         curl -fs -o /dev/null "$url/v1/repodata/repomd.xml" && break
-        ((i < 10)) || die "the server did not start"
+        ((i < 10)) || die "nothing answers at $url, where ci/dnf_repo_server.py should serve"
         sleep 1
     done
     rpm -q tzdata >/dev/null || die "tzdata is not installed, so the Obsoletes check can't run"
@@ -132,36 +136,36 @@ metadata_expire=6h
 EOF
 
     # With no terminal to confirm the key on: as a timer runs it.
-    serve v2
+    serve "$www" v2
     run dnf --repo="$name" automatic --installupdates </dev/null
     expect "$name" 0.0.2
 
     run dnf -y downgrade "$name"
     expect "$name" 0.0.1
     run dnf -y remove "$name"
-    serve v1
+    serve "$www" v1
     run dnf -y --refresh install "$name"
     expect "$name" 0.0.1
-    serve v2
+    serve "$www" v2
     run dnf -y --refresh upgrade "$name"
     expect "$name" 0.0.2
 
     # Fedora sets skip_if_unavailable, so dnf exits 0 when it skips the repository: each
     # check below reads what is installed, not dnf's exit status.
-    serve unsigned
+    serve "$www" unsigned
     run dnf -y --refresh upgrade "$name" || true
     expect "$name" 0.0.2
     grep -q 'The package is not signed.' "$log" || die "dnf did not refuse the unsigned package"
 
     run dnf -y downgrade "$name"
     expect "$name" 0.0.1
-    serve tampered
+    serve "$www" tampered
     run dnf -y --refresh upgrade "$name" || true
     expect "$name" 0.0.1
     grep -q 'repomd.xml GPG signature verification error: Bad PGP signature' "$log" ||
         die "dnf did not skip the tampered repository"
 
-    serve obsoletes
+    serve "$www" obsoletes
     run dnf -y --refresh upgrade "$name" || true
     rpm -q tzdata >/dev/null || die "the injected Obsoletes removed tzdata"
     expect "$name" 0.0.1
@@ -169,10 +173,10 @@ EOF
         die "dnf did not skip the repository with the injected Obsoletes"
 }
 
-# Serves the scenario $1 as the repository.
+# Serves the scenario $2 under WWW $1 as the repository.
 serve() {
-    ln -sfn "$1" "$www/repo"
-    printf '== the repository is now %s\n' "$1"
+    ln -sfn "$2" "$1/repo"
+    printf '== the repository is now %s\n' "$2"
 }
 
 # Runs a command, showing its output and keeping it in $log for the checks to read.

@@ -249,9 +249,10 @@ jobs:
       - name: Build the repository
         run: |
           docker run --rm -v "$PWD:/src" -w /src "$FEDORA" bash -c \
-            'dnf -y install git-core rpm-build createrepo_c rpm-sign gnupg2 && ci/dnf-repo-test.sh build www'
+            'dnf -y install git-core rpm-build createrepo_c rpm-sign gnupg2 zstd && ci/dnf-repo-test.sh build www'
 
-      # auto_import_local_keys needs dnf5 5.4.7, newer than the image's.
+      # auto_import_local_keys needs dnf5 5.4.7, newer than the image's. The port is the
+      # one ci/dnf-repo-test.sh's url names.
       - name: Install from the repository
         run: |
           python3 ci/dnf_repo_server.py www 8000 &
