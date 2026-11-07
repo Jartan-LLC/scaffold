@@ -1,8 +1,7 @@
-"""Command-line entry point: ``python -m app``.
-
-Replace this with your project's real CLI (or delete it, and the Dockerfile CMD
-and the commented docker CI job, if the project isn't a command-line tool).
-"""
+# TODO(/onboard): if the project has no command-line interface, delete this module,
+# its automodule entry in docs/reference.md, tests/test_smoke.py, which runs it,
+# and the Dockerfile CMD hint.
+"""Command-line entry point: ``python -m app``."""
 
 from __future__ import annotations
 
@@ -25,7 +24,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     Returns:
         Process exit code (0 on success).
     """
-    parser = argparse.ArgumentParser(prog="app", description="TODO: describe your CLI.")
+    parser = argparse.ArgumentParser(
+        prog="app", description="TODO(/onboard): the CLI's one-line description."
+    )
     parser.add_argument(
         "--log-format", choices=("plain", "json"), default="plain", help="Log output format."
     )
@@ -33,8 +34,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     setup_logging(level=logging.DEBUG if args.verbose else logging.INFO, fmt=args.log_format)
-    logger.info("app started")
-    sys.stdout.write("Hello from app. Replace src/app/__main__.py with your CLI.\n")
+    logger.info("%s started", parser.prog)
+    sys.stdout.write(f"Hello from {parser.prog}.\n")
     return 0
 
 

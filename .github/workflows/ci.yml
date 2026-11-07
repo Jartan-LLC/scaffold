@@ -100,7 +100,7 @@ jobs:
           enable-cache: true
 
       # The full environment `make check` audits: package deps plus the dev/docs/CI
-      # tools, not just the (currently empty) declared deps.
+      # tools, not just the declared deps.
       - id: install
         run: uv pip install -e '.[dev,docs]' -r ci/requirements.txt
       - run: pyright
@@ -171,7 +171,7 @@ jobs:
           enable-cache: true
 
       # Install so the docs toolchain and the package's runtime deps are importable
-      # by autodoc (the stub's are all stdlib).
+      # by autodoc.
       - run: uv pip install -e '.[docs]'
       - run: sphinx-build -W -b html docs docs/_build/html
 
@@ -179,7 +179,6 @@ jobs:
   # artifact. Uncomment once you add a docker-compose.test.yml (service `app`) and a
   # Dockerfile test target, and add `pytest-cov` to the dev extras. Then add
   # `integration-tests` to the `check` job's needs + results below.
-  # TODO(rename): `--cov=app` (and the `app` service/paths) track the package name.
   # integration-tests:
   #   runs-on: ubuntu-24.04
   #   timeout-minutes: 20
@@ -206,9 +205,9 @@ jobs:
   #       if: always()
   #       run: docker compose -f docker-compose.test.yml down -v
 
-  # Docker build + smoke test. The shipped Dockerfile builds as-is; give it a real
-  # entrypoint, then uncomment (pairs with publish-docker.yml). Swap `--help` for a
-  # /health curl if it's a server. Add `docker` to the `check` job below when enabling.
+  # Docker build + smoke test (pairs with publish-docker.yml). Uncomment once the
+  # Dockerfile has a start command. Swap `--help` for a /health curl if it's a server.
+  # Add `docker` to the `check` job below when enabling.
   # docker:
   #   runs-on: ubuntu-24.04
   #   timeout-minutes: 10

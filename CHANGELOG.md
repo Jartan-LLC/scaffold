@@ -8,5 +8,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 <!-- Add ### Added / ### Changed / ### Fixed sections here as you make changes. -->
-<!-- Update ORG/REPO (or let /onboard do it). -->
+<!-- TODO(/onboard): replace ORG/REPO with the GitHub org and repo. -->
 [Unreleased]: https://github.com/ORG/REPO/commits/main

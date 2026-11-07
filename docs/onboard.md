@@ -12,14 +12,12 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 - [ ] Adapt the devcontainer and the `Makefile`'s `install` target to your stack ([details](#devcontainer))
 - [ ] Keep or decline each enchantments Feature ([details](#devcontainer))
 - [ ] Add your stack's patterns to `.gitignore` and rules to `.editorconfig`
-- [ ] Set owners in `.github/CODEOWNERS`
-- [ ] Set the security and conduct contacts, and enable private vulnerability reporting ([details](#security-and-conduct-contacts))
-- [ ] Replace the `ORG/REPO` placeholders, except in `.lycheeignore`, where you delete the line ([details](#orgrepo-placeholders))
+- [ ] Enable private vulnerability reporting (Settings > Security): until it is on, the advisory form `SECURITY.md` links to does not exist
 - [ ] Rename the Python package ([details](#python-package)), or tear down Python ([details](#not-a-python-project))
 - [ ] Replace `tests/test_smoke.py` with real tests
 - [ ] Prune `.github/workflows/ci.yml` and `.github/dependabot.yml` to your stack ([details](scaffold.md#ci))
-- [ ] Update the docs site ([details](#docs-site))
 - [ ] Set your license: keep `LICENSE` (MIT) with your own year and name, or replace it with one of the `LICENSE.*` templates (filling in `[year]` and `[fullname]`), then delete the `LICENSE.*` files
+- [ ] Resolve the `TODO(/onboard)` markers ([details](#markers))
 
 ### Recommended
 
@@ -36,7 +34,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 ### Cleanup
 
 - [ ] Replace `README.md` with your own, carrying over its badges adjusted for your repo ([details](#readme-badges))
-- [ ] Delete this page and its entry in `docs/index.md`
+- [ ] Delete this page, and its entry in `docs/index.md` with the marker above it
 - [ ] Delete `.claude/commands/onboard.md`
 
 ## Project instructions
@@ -78,25 +76,29 @@ Rename the `app` stub to your import name:
 3. Update the imports: `from app.log import …` in `src/app/__main__.py` and
    `tests/test_log.py`, `from app.__main__ import …` in `tests/test_smoke.py`.
 4. Update the `python -m app` references: `prog=` and the module docstring in `__main__.py`
-   (or replace that stub), and the `Dockerfile` `CMD` hint.
-5. Update the docs (Docs site, below).
+   (or replace that stub), and the `Dockerfile` `CMD` hint. Also update `--cov=app` in
+   `ci.yml`'s commented `integration-tests` job.
+5. Resolve the markers in `docs/getting-started.md` and `docs/reference.md`. The strict docs
+   build fails while `reference.md` names `app`.
 
 ## Not a Python project
 
-Do this after the other Required items: it deletes the docs site. Keep `docs/scaffold.md`,
-which reads fine on GitHub without Sphinx, and this page, which Cleanup deletes.
+Do this before resolving the markers, after every other Required item: it deletes the docs
+site, and with it some markers. Keep `docs/scaffold.md`, which reads fine on GitHub without
+Sphinx, and this page, which Cleanup deletes.
 
 1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
 2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md` and this page,
    `.readthedocs.yaml.example`,
    `.github/workflows/pages.yml.example`, `.github/workflows/publish-pypi.yml` and
    `.github/workflows/dependency-audit.yml`. If not containerized, also `Dockerfile`,
-   `.dockerignore` and `.github/workflows/publish-docker.yml`.
+   `.dockerignore`, `.github/workflows/publish-docker.yml` and the commented `docker` job in
+   `.github/workflows/ci.yml`.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
-   `check` entries (`docs/scaffold.md`, CI). In the `changes` job, remove the `python:` line
-   under `outputs` and the `python=true` block, with its comment, in the `diff` step. `lint`
-   stays.
+   `check` entries (`docs/scaffold.md`, CI), and the commented `integration-tests` job. In
+   the `changes` job, remove the `python:` line under `outputs` and the `python=true` block,
+   with its comment, in the `diff` step. `lint` stays.
 5. Keep the `Makefile`: it is the verify entry point in every stack. Point its `lint`, `fix`,
    `typecheck`, `test` and `docs` targets at your stack's commands, and replace the Python
    lines in `check` (the `.[dev,docs]` install, `uv build`, `twine check`, `pip-audit`), so
@@ -105,34 +107,25 @@ which reads fine on GitHub without Sphinx, and this page, which Cleanup deletes.
    uv" line for your stack.
 7. Trim the Python parts of `docs/scaffold.md`.
 
-## Security and conduct contacts
+## Markers
 
-- `.github/SECURITY.md`: set the private security contact. It is published, and it is the
-  reporter's only channel when the advisory form is unavailable. Write it in angle
-  brackets (`<security@example.org>`); a bare address fails markdownlint. Then delete the
-  `unconfigured-contact` block: both markers, the paragraph between them and the blank
-  line after the closing marker; keep the paragraph that follows, which stays true once a
-  contact is set. Set the supported versions (replacing the commented table hint) and the
-  response targets.
-- Enable private vulnerability reporting (Settings > Security). Until it is on, the advisory
-  form `SECURITY.md` links to does not exist.
-- `.github/CODE_OF_CONDUCT.md`: replace `[INSERT CONTACT METHOD]`.
+Every line the template ships is true both in the template and in a project made from it,
+carries a `TODO(/onboard): <what to do>` marker, or sits in a file onboarding deletes or
+replaces (this page, `.claude/commands/onboard.md`, `README.md` and the license files). Text
+that waits on project code, such as the `ci.yml` jobs to uncomment once you add their inputs,
+carries no marker: it stays true after onboarding.
 
-## ORG/REPO placeholders
+1. List the markers:
 
-- `.github/ISSUE_TEMPLATE/config.yml`, the advisory-form link in `.github/SECURITY.md` and
-  the `[Unreleased]` link in `CHANGELOG.md`: replace `ORG/REPO` with your org and repo.
-- `.lycheeignore`: delete only the `https://github.com/ORG/REPO` line and its comment.
-  Replacing it would make the link check ignore your own repo. Keep every other line,
-  including the advisory-form pattern.
+   ```bash
+   git grep -n 'TODO(/onboard)'
+   ```
 
-## Docs site
-
-- `conf.py`: set `project`, `author` and `project_copyright`.
-- `index.md`: write the landing page, replacing `# Project Docs` and its `TODO(/onboard)`.
-- `getting-started.md`: update the `pip install app` line.
-- `reference.md`: after the package rename, update the `automodule` names. The docs build
-  fails while they point at `app`.
+2. Do what each marker says, then delete the marker.
+3. Run the grep again. Apart from this page and the marker on its `docs/index.md` entry,
+   which Cleanup deletes, what it still prints is template text left in the project. Leave a
+   marker only while you have no answer for it, such as the response targets in
+   `.github/SECURITY.md`.
 
 ## Dependabot labels
 

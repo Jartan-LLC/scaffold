@@ -1,8 +1,4 @@
-"""Smoke test. Replace with real tests.
-
-Exists so `pytest` is green (exit 0, not exit 5 "no tests collected") on a fresh
-template, and proves the package imports and its CLI entry point runs.
-"""
+"""Smoke test: the package imports and its command-line entry point runs."""
 
 import pytest
 
