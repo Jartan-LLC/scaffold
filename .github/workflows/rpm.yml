@@ -76,7 +76,7 @@ jobs:
             name=$(rpm -qp --qf '%{NAME}' "$RPM")
             for path in "/etc/yum.repos.d/$name.repo" "/etc/pki/rpm-gpg/RPM-GPG-KEY-$name"; do
               if [[ $(rpm -qf --qf '%{NAME}' "$path") != "$name" ]]; then
-                echo "::error::the RPM doesn't install $path, which packaging/rpm.spec installs while packaging/dnf.repo exists"
+                echo "::error::the RPM doesn't install $path, which packaging/rpm.spec must install while packaging/dnf.repo exists"
                 exit 1
               fi
             done
