@@ -2,7 +2,7 @@
 # macros there too.
 # TODO(/onboard): the package name. Each release attaches the RPM as NAME.noarch.rpm.
 Name:           app
-# packaging/rpm.sh defines tag_version from the release tag.
+# packaging/rpm.sh defines tag_version from its VERSION argument.
 Version:        %{tag_version}
 # One package for every Fedora release, so no dist suffix.
 Release:        1

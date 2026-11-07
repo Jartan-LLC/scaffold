@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the RPM of the commit checked out, as VERSION, from packaging/rpm.spec at that
 # commit, into OUTDIR/NAME.noarch.rpm (NAME is the spec's Name), and prints that path.
-# Needs git and rpmbuild, as .github/workflows/rpm.yml's Fedora container has.
+# Needs git, rpmspec and rpmbuild, as .github/workflows/rpm.yml's Fedora container has.
 # Usage: packaging/rpm.sh VERSION OUTDIR
 set -euo pipefail
 

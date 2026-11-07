@@ -32,7 +32,8 @@ An item whose answer needs neither, such as which workflows to keep, says what t
 ### Publishing targets
 
 Keep `release.yml` whatever you publish: it creates a GitHub Release for each `v*` tag, in any
-stack.
+stack. While you keep the RPM, it does so only for the tag forms the `rpm.yml` row in
+[Publishing](scaffold.md#publishing) lists.
 
 - PyPI package: keep `publish-pypi.yml`, and set up its environment in
   [GitHub settings](#publishing-environments). Its commented tag-vs-version check is optional.
@@ -117,7 +118,8 @@ Finish deletes.
    `.github/workflows/publish-pypi.yml` and `.github/workflows/dependency-audit.yml`. If
    not containerized, also `Dockerfile`, `.dockerignore`,
    `.github/workflows/publish-docker.yml` and the commented `docker` job in
-   `.github/workflows/ci.yml`.
+   `.github/workflows/ci.yml`. Deleting `tests/` also deletes `tests/test_rpm_sh.py`, the
+   test of `packaging/rpm.sh`'s version check.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
    `check` entries (`docs/scaffold.md`, CI), and the commented `integration-tests` job. In
