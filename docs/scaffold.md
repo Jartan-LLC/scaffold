@@ -29,7 +29,7 @@ setup.
 You can still pull in later improvements to the template. How depends on how your repository started.
 
 ```bash
-# One-time, either way: add the template as an 'upstream' remote
+# Once per clone, either way (onboarding's clone has it already): add the template as an 'upstream' remote
 git remote add upstream https://github.com/Jartan-LLC/scaffold.git  # this template's repo
 git fetch upstream
 ```
@@ -38,7 +38,8 @@ git fetch upstream
 fresh, so there is nothing to merge: `git merge upstream/main` stops at `fatal: refusing to merge
 unrelated histories`. Port changes by hand instead, and keep the newest upstream commit you have
 dealt with — ported or deliberately skipped — in `.scaffold-sync` at your repository root.
-Onboarding records there the template commit your repository was created from:
+Onboarding recorded there the template commit your repository was created from, so a
+first sync starts from it:
 
 ```bash
 git log --oneline --reverse "$(cat .scaffold-sync)"..upstream/main  # not yet dealt with, oldest first

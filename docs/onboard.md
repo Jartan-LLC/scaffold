@@ -36,8 +36,9 @@ Run these in order. Each runs on the files the one before it left.
 2. [ ] [Rename the Python package](#python-package), or [tear down Python](#not-a-python-project)
 3. [ ] [Stack](#stack)
 4. [ ] [License](#license)
-5. [ ] Tests (Python): replace `tests/test_smoke.py`, which only checks that the CLI stub
-       runs, with tests of your code
+5. [ ] Tests (Python): add tests of your code. `tests/test_smoke.py` only checks that the
+       CLI stub runs. Replace it, unless the project has no CLI: then the `__main__.py`
+       marker deletes it
 
 ### Features
 
@@ -124,9 +125,9 @@ reserved, for private or closed-source work. A license not among the templates r
 
 Every line the template ships is true both in the template and in a project made from it,
 carries a `TODO(/onboard): <what to do>` marker, is changed by a procedure above, or sits in
-a file onboarding deletes or replaces (this page, `.claude/commands/onboard.md`, `README.md` and the license files). Text
-that waits on project code, such as the `ci.yml` jobs to uncomment once you add their inputs,
-carries no marker: it stays true after onboarding.
+a file onboarding deletes or replaces (this page, `.claude/commands/onboard.md`, `README.md`
+and the license files). Text that waits on project code, such as the `ci.yml` jobs to
+uncomment once you add their inputs, carries no marker: it stays true after onboarding.
 
 1. List the markers:
 
@@ -135,11 +136,13 @@ carries no marker: it stays true after onboarding.
    ```
 
 2. Do what each marker says, then delete the marker. Decide gives every value a marker
-   needs except the optional ones: with no answer for the supported versions or response
-   targets in `.github/SECURITY.md`, rewrite the marked line to state only the default it
-   gives (`Report against the latest release.`). Never fill in a value nobody gave.
+   needs except the optional ones in `.github/SECURITY.md`. With no answer for the supported
+   versions or the response targets, rewrite that marked line to state only the default it
+   gives (for the supported versions, `Report against the latest release.`), and delete the
+   comment with the example table. Never fill in a value nobody gave.
 3. Run the grep again. It should print only this page, the marker on its `docs/index.md`
-   entry, which Finish deletes, and `.scaffold-sync`, which the next section fills.
+   entry, which Finish deletes, and `.scaffold-sync`, which the next section fills or, in a
+   fork, deletes.
 
 ## Record the sync point
 
@@ -161,8 +164,7 @@ test -n "$sha" && echo "$sha" > .scaffold-sync
 If `test -n` fails, the file keeps its marker. In a shallow clone, run
 `git fetch --unshallow` and try again; otherwise no scaffold commit has the first commit's
 tree, so write the scaffold commit you started from into the file by hand. The `upstream`
-remote stays for [syncing](scaffold.md#syncing-template-updates), so skip its one-time
-`git remote add` there.
+remote stays for [syncing](scaffold.md#syncing-template-updates).
 
 If you forked scaffold instead, delete `.scaffold-sync`: the history is shared, so
 `git merge upstream/main` brings in later changes.
