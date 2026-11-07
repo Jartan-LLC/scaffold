@@ -66,14 +66,16 @@ them. If a Python job comes to use a file in a skipped path, such as a local act
 The `rpm` job runs on every change while `packaging/rpm.spec` exists: it builds the RPM,
 running the spec's `%check`, and installs it in Fedora. While `packaging/dnf.repo` exists, it
 also checks that the package installed the `.repo` file and key the spec makes from that file
-and `packaging/RPM-GPG-KEY`. The `dnf-repo` job also runs on every change, while both
-`packaging/rpm.spec` and `packaging/dnf.repo` exist: it builds RPMs of several releases with a
-throwaway key in place of `packaging/RPM-GPG-KEY` and the job's server as the `.repo` file's
-`baseurl`, signs all but the last with that key, and builds the dnf repository of them with
-`packaging/dnf-repo.sh`. Then, in a fresh Fedora container, it installs the first release from
-its URL and checks that `dnf` upgrades and downgrades from the repository the package defines,
-and that it refuses an unsigned package and skips the repository when someone without the key
-changes its metadata.
+and `packaging/RPM-GPG-KEY`.
+
+The `dnf-repo` job runs on every change while both `packaging/rpm.spec` and
+`packaging/dnf.repo` exist: it builds RPMs of several releases with a throwaway key in place of
+`packaging/RPM-GPG-KEY` and the job's server as the `.repo` file's `baseurl`, signs all but the
+last with that key, and builds the dnf repository of them with `packaging/dnf-repo.sh`. Then,
+in a fresh Fedora container, it installs the first release from its URL and checks that `dnf`
+upgrades and downgrades from the repository the package defines, and that it refuses an
+unsigned package and skips the repository when someone without the key changes its metadata or
+signs it with another key.
 
 The dev container job runs only when a change touches one of its build inputs, which
 `_DEVCONTAINER_INPUTS` in `ci/changes.py` lists. `pyproject.toml`, `package.json` and pnpm's

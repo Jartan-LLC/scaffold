@@ -48,9 +48,10 @@ build() {
     mkdir -p "$www/assets"
 
     # rpm.sh builds the commit checked out, so the packages come from a commit on HEAD, in a
-    # clone that leaves the checkout as it is.
+    # clone that leaves the checkout as it is. The checkout belongs to the runner's user, not
+    # this container's root, and git checks the owner of its .git directory.
     local src=$work/src
-    git -c safe.directory="$root" -c advice.detachedHead=false clone --quiet -- "$root" "$src"
+    git -c safe.directory="$root/.git" -c advice.detachedHead=false clone --quiet -- "$root" "$src"
     cp "$work/RPM-GPG-KEY" "$src/packaging/RPM-GPG-KEY"
     sed -i "s|^baseurl=.*|baseurl=$url/repo/|" "$src/packaging/dnf.repo"
     grep -qx "baseurl=$url/repo/" "$src/packaging/dnf.repo" ||
@@ -108,6 +109,14 @@ build() {
             >"$work/primary.xml"
     grep -q 'name="tzdata"' "$work/primary.xml" || die "no Obsoletes injected"
     modifyrepo_c --mdtype=primary "$work/primary.xml" "$www/obsoletes/repodata" >/dev/null
+
+    # Someone who controls the site and holds another key: the metadata and the package are
+    # validly signed by it, and the site serves it as the repository's key.
+    mkdir "$www/otherkey"
+    cp -R "$work/in-other/v0.0.3" "$www/otherkey/"
+    createrepo_c --quiet "$www/otherkey"
+    gpg --batch --armor --detach-sign --local-user "$other" "$www/otherkey/repodata/repomd.xml"
+    gpg --armor --export "$other" >"$www/otherkey/RPM-GPG-KEY-$name"
 }
 
 # Builds the bundle of the RPMs in RPMDIR, signed by FINGERPRINT, into OUTDIR as a release
@@ -168,6 +177,12 @@ check() {
     expect "$name" 0.0.1
     grep -q 'repomd.xml GPG signature verification error: Bad PGP signature' "$log" ||
         die "dnf did not skip the repository with the injected Obsoletes"
+
+    serve "$www" otherkey
+    run dnf -y --refresh upgrade "$name" || true
+    expect "$name" 0.0.1
+    grep -q 'repomd.xml GPG signature verification error: Signing key not found' "$log" ||
+        die "dnf did not skip the repository signed by another key"
 }
 
 # Serves the scenario $2 under WWW $1 as the repository.

@@ -20,8 +20,8 @@ An item whose answer needs neither, such as which workflows to keep, says what t
       published, so give addresses you are willing to publish
 - [ ] Which enchantments Features to keep ([Features](#features))
 - [ ] Publishing targets: the PyPI package, the container image, the docs site, an RPM for
-      Fedora, with or without a dnf repository, and, with a dnf repository, the public key
-      that signs it ([details](#publishing-targets))
+      Fedora, with or without a dnf repository (with one, also the public key that signs it)
+      ([details](#publishing-targets))
 - [ ] Whether to keep `Dockerfile` (its marker says what goes with it, and the
       `publish-docker.yml` row in [Publishing](scaffold.md#publishing) and the sentences
       naming it in `RELEASING.md` go too),
@@ -66,7 +66,8 @@ its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sent
 `packaging/rpm.spec` is missing. `ci.yml`'s `dnf-repo` job skips then too.
 
 To keep the RPM without the dnf repository, delete `packaging/dnf.repo`,
-`packaging/RPM-GPG-KEY`, `ci/dnf-repo-test.sh` and `ci/dnf_repo_server.py`, the lines in
+`packaging/RPM-GPG-KEY`, `packaging/dnf-repo.sh`, `tests/packaging/test_dnf_repo_sh.py`,
+`ci/dnf-repo-test.sh` and `ci/dnf_repo_server.py`, the lines in
 `packaging/rpm.spec` that install the first two and list them under `%files`, with their
 comments, and each sentence and list item in `RELEASING.md` that opens with "while
 `packaging/dnf.repo` exists". `ci.yml`'s `dnf-repo` job skips while `packaging/dnf.repo` is
