@@ -12,12 +12,7 @@
       "moby": false
     },
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/desktop-lite:1": {
-      "password": "changeme",
-      "webPort": "6080"
-    },
     "ghcr.io/jartan-llc/enchantments/claude-code:1": {},
-    "ghcr.io/jartan-llc/enchantments/grimoire:1": {},
     "ghcr.io/jartan-llc/enchantments/liza:1": {},
     "ghcr.io/jartan-llc/enchantments/liza-toolchain:1": {},
     "ghcr.io/jartan-llc/enchantments/gh-config:1": {}
@@ -26,12 +21,6 @@
     "HOST_PROJECT_PATH": "${localWorkspaceFolder}",
     "CONTAINER_WORKSPACE_FOLDER": "${containerWorkspaceFolder}",
     "UV_SYSTEM_PYTHON": "1"
-  },
-  "forwardPorts": [6080],
-  "portsAttributes": {
-    "6080": {
-      "label": "Desktop"
-    }
   },
   "customizations": {
     "vscode": {
@@ -43,6 +32,7 @@
         "GitHub.vscode-github-actions",
         "GitHub.vscode-pull-request-github",
         "ms-azuretools.vscode-docker",
+        "ms-vscode.makefile-tools",
         "esbenp.prettier-vscode",
         "DavidAnson.vscode-markdownlint",
         "eamodio.gitlens"

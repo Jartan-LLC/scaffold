@@ -266,7 +266,7 @@ jobs:
           # --no-renames lists a renamed file's old path too, so moving a matched file away
           # still counts.
           changed=$([ -z "${base:-}" ] || git diff --no-renames --name-only "$base" HEAD)
-          # Everything the dev container build reads, make install's manifests included, and
+          # Everything the dev container build needs, make install's manifests included, and
           # the .gitignore that verify.sh's clean-status check depends on.
           if [ -z "${base:-}" ] \
               || grep -qE -e '^\.devcontainer/' -e '^\.github/workflows/ci\.yml$' -e '^Makefile$' -e '^\.gitignore$' \

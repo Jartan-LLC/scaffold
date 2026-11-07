@@ -1,10 +1,5 @@
 {
   "features": {
-    "ghcr.io/devcontainers/features/desktop-lite:1": {
-      "version": "1.2.10",
-      "resolved": "ghcr.io/devcontainers/features/desktop-lite@sha256:3cfd1ed97b027614f3a56d53183d20ebf29e9c36ac58a3d669edf39890e3aec3",
-      "integrity": "sha256:3cfd1ed97b027614f3a56d53183d20ebf29e9c36ac58a3d669edf39890e3aec3"
-    },
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "version": "1.10.1",
       "resolved": "ghcr.io/devcontainers/features/docker-outside-of-docker@sha256:698f5900fac471e046c6e9d4333fec88c0e8d952c713494fa0712dce80baeca0",
@@ -34,11 +29,6 @@
       "version": "1.1.0",
       "resolved": "ghcr.io/jartan-llc/enchantments/gh-config@sha256:6502c7a8c7b6a0b38bbd720d6df3d75db883c62fe5ea82e3628222addefdb443",
       "integrity": "sha256:6502c7a8c7b6a0b38bbd720d6df3d75db883c62fe5ea82e3628222addefdb443"
-    },
-    "ghcr.io/jartan-llc/enchantments/grimoire:1": {
-      "version": "1.0.2",
-      "resolved": "ghcr.io/jartan-llc/enchantments/grimoire@sha256:6728fa1748468664e7d87921e58945dfbaea3bc68833cab84043dce4d0889e26",
-      "integrity": "sha256:6728fa1748468664e7d87921e58945dfbaea3bc68833cab84043dce4d0889e26"
     },
     "ghcr.io/jartan-llc/enchantments/liza-toolchain:1": {
       "version": "1.6.0",
