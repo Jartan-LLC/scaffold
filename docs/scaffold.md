@@ -112,12 +112,15 @@ uncomment them there, with no `check` change needed.
 The `changes` job skips `typecheck`, `test`, `build` and `audit` when every changed file is
 Markdown, `.pre-commit-config.yaml`, or under `docs/`, `.claude/` or `.github/`. A change to
 `README.md`, `.github/workflows/ci.yml` or anything under `src/` or `tests/` always runs
-them. The dev container job runs only when a change touches one of its build inputs, which
-the `changes` job's `diff` step in `ci.yml` lists; dependency manifests are not among them.
-Scheduled and manual runs run every job, so a manifest change that breaks only the dev
-container build shows at the weekly run, not on its PR. A push to `main` that skips the
-Python jobs doesn't check the dev extras, which resolve at run time; the weekly run or the
-next PR that runs those jobs does.
+them. If a Python job comes to use a file in a skipped path, such as a local action under
+`.github/actions/`, add it to that list in the `changes` job's `diff` step in `ci.yml`.
+The dev container job runs only when a change touches one of its build inputs, which the
+`diff` step lists. `pyproject.toml`, `package.json` and pnpm's lockfile and config are not
+among them; `ci/requirements.txt` is, because `post-create.sh` reads uv's pin from it.
+Scheduled and manual runs run every job, so a `pyproject.toml` or Node manifest change that
+breaks only the dev container build shows at the weekly run, not on its PR. A push to
+`main` that skips the Python jobs doesn't check the dev extras, which resolve at run time;
+the weekly run or the next PR that runs those jobs does.
 
 In `.github/dependabot.yml`, remove the ecosystems you don't use, add the ones you need,
 and adjust `directory` where manifests aren't at the root.

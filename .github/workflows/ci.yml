@@ -277,7 +277,8 @@ jobs:
           changed=$([ -z "${base:-}" ] || git diff --no-renames --name-only "$base" HEAD)
           # The dev container build's own inputs (post-create.sh reads uv's pin from
           # ci/requirements.txt) and the .gitignore that verify.sh's clean-status check
-          # depends on. Dependency manifests are left out on purpose (docs/scaffold.md, CI).
+          # depends on. Other dependency manifests are left out on purpose
+          # (docs/scaffold.md, CI).
           if [ -z "${base:-}" ] \
               || grep -qE -e '^\.devcontainer/' -e '^\.github/workflows/ci\.yml$' -e '^Makefile$' -e '^\.gitignore$' \
                 -e '^ci/requirements\.txt$' <<<"$changed"; then
@@ -285,7 +286,8 @@ jobs:
           fi
           # The Python jobs read no docs/, .claude/, .github/, .pre-commit-config.yaml or
           # Markdown, except README.md (the package's readme), anything under src/ or tests/,
-          # and ci.yml, which defines them.
+          # and ci.yml, which defines them. A skipped file that a Python job comes to use,
+          # such as a local action under .github/actions/, joins ci.yml in the first grep.
           if [ -z "${base:-}" ] \
               || grep -qE -e '^README\.md$' -e '^(src|tests)/' -e '^\.github/workflows/ci\.yml$' <<<"$changed" \
               || grep -qvE -e '\.md$' -e '^docs/' -e '^\.claude/' -e '^\.github/' -e '^\.pre-commit-config\.yaml$' <<<"$changed"; then
