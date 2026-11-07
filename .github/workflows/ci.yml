@@ -78,6 +78,8 @@ jobs:
       # - run: pnpm exec prettier --check .
 
   typecheck:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -98,6 +100,8 @@ jobs:
       - run: pyright
 
   test:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
@@ -124,6 +128,8 @@ jobs:
       - run: pytest -m "not integration"
 
   build:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -149,6 +155,8 @@ jobs:
   # fail and `check` deliberately does not gate on it. dependency-audit.yml tracks
   # findings in an issue.
   audit:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     continue-on-error: true
@@ -243,6 +251,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       devcontainer: ${{ steps.diff.outputs.devcontainer }}
+      python: ${{ steps.diff.outputs.python }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -252,8 +261,8 @@ jobs:
           # quoted because a bare 0 is falsy and would give push runs depth 2.
           fetch-depth: ${{ github.event_name == 'push' && '0' || '2' }}
       # A PR's merge commit has its base as first parent. With no base (a scheduled or
-      # manual run, a new branch, a force push) the dev container job runs, rather than
-      # risk skipping a change.
+      # manual run, a new branch, a force push) every gated job runs, rather than risk
+      # skipping a change.
       - id: diff
         env:
           EVENT: ${{ github.event_name }}
@@ -266,12 +275,22 @@ jobs:
           # --no-renames lists a renamed file's old path too, so moving a matched file away
           # still counts.
           changed=$([ -z "${base:-}" ] || git diff --no-renames --name-only "$base" HEAD)
-          # Everything the dev container build reads, make install's manifests included, and
-          # the .gitignore that verify.sh's clean-status check depends on.
+          # The dev container build's own inputs (post-create.sh reads uv's pin from
+          # ci/requirements.txt) and the .gitignore that verify.sh's clean-status check
+          # depends on. Dependency manifests are left out: the Python jobs, and lint's Node
+          # steps once uncommented, install them, and the weekly run catches a manifest
+          # change that breaks only the dev container.
           if [ -z "${base:-}" ] \
               || grep -qE -e '^\.devcontainer/' -e '^\.github/workflows/ci\.yml$' -e '^Makefile$' -e '^\.gitignore$' \
-                -e '(^|/)(pyproject\.toml|requirements\.txt|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|\.npmrc)$' <<<"$changed"; then
+                -e '^ci/requirements\.txt$' <<<"$changed"; then
             echo devcontainer=true >>"$GITHUB_OUTPUT"
+          fi
+          # The Python jobs read no docs/, .claude/ or Markdown, except README.md (the
+          # package's readme) and anything under src/ or tests/.
+          if [ -z "${base:-}" ] \
+              || grep -qE -e '^README\.md$' -e '^(src|tests)/' <<<"$changed" \
+              || grep -qvE -e '\.md$' -e '^docs/' -e '^\.claude/' <<<"$changed"; then
+            echo python=true >>"$GITHUB_OUTPUT"
           fi
 
   devcontainer:
