@@ -63,9 +63,10 @@ metadata() {
     check_fingerprint "$fingerprint"
     [[ -f $keyfile ]] || die "no such key file: $keyfile"
     # Users check repomd.xml against KEYFILE: signed by another key, dnf skips the
-    # repository, and under skip_if_unavailable says nothing.
+    # repository with only a warning. gpg lists fingerprints in uppercase.
     [[ $(gpg --batch --with-colons --show-keys -- "$keyfile" 2>/dev/null) == \
-        *":${fingerprint^^}:"* ]] || die "$keyfile doesn't hold the key $fingerprint"
+        *":$(printf '%s' "$fingerprint" | tr a-f A-F):"* ]] ||
+        die "$keyfile doesn't hold the key $fingerprint"
     [[ $url == */ ]] || die "the URL must end in /: $url"
     [[ -z $previous || -f $previous ]] || die "no such bundle: $previous"
 
