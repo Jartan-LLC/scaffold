@@ -51,6 +51,10 @@ How to cut a release from `main`. The workflows a tag runs are listed in
    The tag is `v` and the version exactly as the changelog heading writes it: the release and
    publish workflows run on `v*` tags, and `release.yml` takes the notes from `## [X.Y.Z]`.
 
+   While `packaging/dnf.repo` exists, a full release's dnf repository bundle leaves out an
+   earlier release whose `release.yml` run hadn't created its GitHub Release when this run's
+   `sign` job listed the releases; the next full release's bundle has it again.
+
 ## After the tag
 
 The tag starts `release.yml`, `publish-pypi.yml` and `publish-docker.yml`. While
@@ -109,6 +113,10 @@ gh attestation verify NAME.noarch.rpm --repo ORG/REPO
 sudo dnf install ./NAME.noarch.rpm
 ```
 
+While `packaging/dnf.repo` exists, the key that signs the RPMs and the dnf repository has the
+fingerprint `FINGERPRINT`; `gpg --show-keys /etc/pki/rpm-gpg/RPM-GPG-KEY-NAME` prints the
+fingerprints of the keys the package installed.
+
 ## Signing key
 
 While `packaging/dnf.repo` exists, `release.yml`'s `sign` job signs each RPM, and each full
@@ -163,7 +171,9 @@ Before the first release:
    (`gpgconf --kill gpg-agent; rm -rf "$GNUPGHOME"`). It holds the secret key, and the
    revocation certificate gpg wrote to `openpgp-revocs.d/FINGERPRINT.rev`, which
    [If the key leaks](#if-the-key-leaks) needs.
-5. Publish the fingerprint in the README, so users can check the key the package installs.
+5. Replace `FINGERPRINT` in [Installing the RPM](#installing-the-rpm), and in your README's
+   copy of that section, with the key's fingerprint, so users can check the key the package
+   installs.
 
 ### Rotating the key
 
@@ -180,7 +190,8 @@ two releases at least:
 
    Commit the file through a pull request, and release as usual: the old key still signs.
 2. At least 3 months and 2 releases later, switch the secret to the new key, from its offline
-   copy, and publish the new fingerprint in the README:
+   copy, and write the new fingerprint in place of the old one in
+   [Installing the RPM](#installing-the-rpm) and your README:
 
    ```bash
    GNUPGHOME=<the new key's copy> gpg --armor --export-secret-keys NEW_FINGERPRINT |

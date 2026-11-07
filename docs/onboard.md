@@ -49,10 +49,10 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
   per release, use Read the Docs: rename `.readthedocs.yaml.example` to `.readthedocs.yaml`
   and import the repo there.
 - RPM for Fedora, attached to each GitHub Release: for files that run unchanged on every
-  Fedora release, such as a shell script, keep `packaging/`, and copy the commands in
-  `RELEASING.md`'s Installing the RPM section into your README. For a Python package, publish
-  to PyPI instead. A dnf repository lets users get new releases with `dnf upgrade`; a private
-  repository can't publish one, because dnf can't fetch its Release assets.
+  Fedora release, such as a shell script, keep `packaging/`, and copy `RELEASING.md`'s
+  Installing the RPM section into your README. For a Python package, publish to PyPI instead.
+  A dnf repository lets users get new releases with `dnf upgrade`; a private repository can't
+  publish one, because dnf can't fetch its Release assets.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
@@ -269,8 +269,8 @@ git merge upstream/main   # resolve conflicts, keeping your customizations
 - [ ] For each publishing target you kept, its `pypi` or `ghcr` environment
       ([details](#publishing-environments))
 - [ ] If you kept the dnf repository, its `rpm-signing` environment, with required reviewers
-      and only `v*` tags allowed, the `RPM_SIGNING_KEY` secret, and the key's fingerprint in the
-      README, as `RELEASING.md`'s Setting up the key section says
+      and only `v*` tags allowed, and the `RPM_SIGNING_KEY` secret, as `RELEASING.md`'s Setting
+      up the key section says
 
 ### Dependabot labels
 

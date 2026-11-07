@@ -117,6 +117,17 @@ jobs:
           name: release-rpm
           path: rpm
 
+      - name: Find the RPM
+        run: |
+          shopt -s nullglob
+          rpms=(rpm/*.noarch.rpm)
+          if ((${#rpms[@]} != 1)); then
+            echo "::error::The release-rpm artifact holds ${#rpms[@]} noarch RPMs, not 1"
+            exit 1
+          fi
+          echo "RPM=${rpms[0]}" >>"$GITHUB_ENV"
+          echo "NAME=$(basename "${rpms[0]}" .noarch.rpm)" >>"$GITHUB_ENV"
+
       # The latest release's bundle is the one Pages serves until this one replaces it: a
       # client that read its repomd.xml just before the deploy fetches the files it names
       # just after, so the new bundle keeps them.
@@ -134,21 +145,19 @@ jobs:
               --jq 'any(.assets[]; .name == env.ASSET)') || exit 1
             [[ $found == true ]]
           }
-          rpms=(rpm/*.noarch.rpm)
-          name=$(basename "${rpms[0]}" .noarch.rpm)
           # A re-run finds this tag's own release, if the first run created it.
           tags=$(gh release list --exclude-drafts --exclude-pre-releases \
             --limit "$((KEEP + 1))" --json tagName \
             --jq '[.[].tagName | select(. != env.GITHUB_REF_NAME)][:(env.KEEP | tonumber)][]')
           for tag in $tags; do
-            if has_asset "$tag" "$name.noarch.rpm"; then
-              gh release download "$tag" --pattern "$name.noarch.rpm" --dir "releases/$tag"
+            if has_asset "$tag" "$NAME.noarch.rpm"; then
+              gh release download "$tag" --pattern "$NAME.noarch.rpm" --dir "releases/$tag"
             fi
           done
           if [[ -n $tags ]]; then
             latest=$(gh release view --json tagName --jq .tagName)
-            if has_asset "$latest" "$name-dnf-repo.tar.gz"; then
-              gh release download "$latest" --pattern "$name-dnf-repo.tar.gz" --dir previous
+            if has_asset "$latest" "$NAME-dnf-repo.tar.gz"; then
+              gh release download "$latest" --pattern "$NAME-dnf-repo.tar.gz" --dir previous
             fi
           fi
 
@@ -175,15 +184,13 @@ jobs:
             exit 1
           fi
 
-          rpms=(rpm/*.noarch.rpm)
-          rpm=${rpms[0]}
-          packaging/dnf-repo.sh sign "$fingerprint" packaging/RPM-GPG-KEY "$rpm"
+          packaging/dnf-repo.sh sign "$fingerprint" packaging/RPM-GPG-KEY "$RPM"
           mkdir out
-          cp -- "$rpm" out/
+          cp -- "$RPM" out/
           [[ $PRERELEASE == false ]] || exit 0
 
           mkdir -p "releases/$GITHUB_REF_NAME"
-          cp -- "$rpm" "releases/$GITHUB_REF_NAME/"
+          cp -- "$RPM" "releases/$GITHUB_REF_NAME/"
           packaging/dnf-repo.sh prune packaging/RPM-GPG-KEY releases
           shopt -s nullglob
           previous=(previous/*.tar.gz)
