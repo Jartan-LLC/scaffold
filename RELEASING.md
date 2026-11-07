@@ -8,7 +8,9 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 1. Choose the version, written `X.Y.Z` below, a pre-release suffix included. Write a
    pre-release as `1.2.0-rc.1` (or `-alpha.1`, `-beta.1`), not `1.2.0rc1`:
    `publish-docker.yml` tags images only from SemVer versions. [Pre-releases](#pre-releases)
-   says what one publishes.
+   says what one publishes. While `packaging/rpm.spec` exists, use a version in a form the
+   `rpm.yml` row in [Publishing](docs/scaffold.md#publishing) lists: any other tag gets no
+   GitHub Release.
 2. On a branch from `main`, move the entries under `## [Unreleased]` in `CHANGELOG.md` to a new
    section below it, headed `## [X.Y.Z] - YYYY-MM-DD`. That section becomes the release notes;
    an entry may wrap across lines, since the notes join them. Then replace the `[Unreleased]`
@@ -55,7 +57,10 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 
 ## After the tag
 
-The tag starts `release.yml`, `publish-pypi.yml` and `publish-docker.yml`.
+The tag starts `release.yml`, `publish-pypi.yml` and `publish-docker.yml`. While
+`packaging/rpm.spec` exists, `release.yml` first builds the RPM from the tag, installs it and,
+in a public repository, attests it, then creates the Release with `NAME.noarch.rpm` attached,
+`NAME` being `Name` in `packaging/rpm.spec`. If that build fails, the tag gets no Release.
 
 1. Approve the `publish-pypi.yml` and `publish-docker.yml` runs: open each from
    `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits for this only when
@@ -68,7 +73,7 @@ The tag starts `release.yml`, `publish-pypi.yml` and `publish-docker.yml`.
 
 3. Check the notes with `gh release view vX.Y.Z`. If the `release.yml` run warns that it used
    generated notes, `CHANGELOG.md` had nothing under `## [X.Y.Z]` at the tag; the warning says
-   why.
+   why. While `packaging/rpm.spec` exists, check that it lists `NAME.noarch.rpm` too.
 
 ## Pre-releases
 
@@ -77,4 +82,26 @@ For a tag with a pre-release version, such as `v1.2.0-rc.1`:
 - `release.yml` creates a GitHub pre-release, which GitHub never marks Latest;
 - `publish-pypi.yml` publishes a PyPI pre-release, with the version normalized (`1.2.0rc1`);
 - `publish-docker.yml` tags the image `1.2.0-rc.1` only, leaving `1.2` and `latest` where
-  they were.
+  they were;
+- while `packaging/rpm.spec` exists, the RPM's version is `1.2.0~rc.1`, which `dnf` upgrades in
+  place to `1.2.0`.
+
+## Installing the RPM
+
+<!-- TODO(/onboard): replace ORG/REPO in the commands below with the GitHub org and repo. -->
+
+Users install the RPM, and later upgrade it in place, with:
+
+```bash
+sudo dnf install https://github.com/ORG/REPO/releases/latest/download/NAME.noarch.rpm
+```
+
+The package is unsigned, so `dnf` prints `Warning: skipped OpenPGP checks for 1 package`. In a
+public repository, to check that a release built it, download it and verify its attestation
+before installing it:
+
+```bash
+gh release download --repo ORG/REPO --pattern NAME.noarch.rpm
+gh attestation verify NAME.noarch.rpm --repo ORG/REPO
+sudo dnf install ./NAME.noarch.rpm
+```
