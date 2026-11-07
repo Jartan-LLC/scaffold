@@ -145,8 +145,8 @@ that nothing reads.
 9. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
    table, delete the `publish-pypi.yml` row and, if not containerized, the
    `publish-docker.yml` row.
-8. In `RELEASING.md`, delete or rewrite each sentence that names `publish-pypi.yml` and, if
-   not containerized, `publish-docker.yml`.
+10. In `RELEASING.md`, delete or rewrite each sentence that names `publish-pypi.yml` and,
+    if not containerized, `publish-docker.yml`.
 
 ### Stack
 
