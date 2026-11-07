@@ -218,12 +218,24 @@ jobs:
   #     - run: docker build -t app:ci .
   #     - run: docker run --rm app:ci --help
 
+  # The RPM a release attaches, built from this commit with its %check, then installed.
+  rpm:
+    needs: changes
+    if: needs.changes.outputs.rpm == 'true'
+    permissions:
+      contents: read
+    # actionlint rejects the $/ form zizmor asks for (rhysd/actionlint#711).
+    uses: ./.github/workflows/rpm.yml # zizmor: ignore[self-repository]
+    with:
+      version: 0.0.0-ci
+
   changes:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       devcontainer: ${{ steps.diff.outputs.devcontainer }}
       python: ${{ steps.diff.outputs.python }}
+      rpm: ${{ steps.packaging.outputs.rpm }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -232,6 +244,12 @@ jobs:
           # reach in a private repo, so push runs check out the whole history. '0' is
           # quoted because a bare 0 is falsy and would give push runs depth 2.
           fetch-depth: ${{ github.event_name == 'push' && '0' || '2' }}
+      # The rpm job runs on every change while the project ships an RPM.
+      - id: packaging
+        run: |
+          if [ -f packaging/rpm.spec ]; then
+            echo "rpm=true" >>"$GITHUB_OUTPUT"
+          fi
       # A PR's merge commit has its base as first parent. With no base (a scheduled or
       # manual run, a new branch, a force push) every gated job runs, rather than risk
       # skipping a change.
@@ -296,12 +314,12 @@ jobs:
     if: always()
     # When you uncomment integration-tests / docker above, add them to BOTH the
     # needs list and the results array below.
-    needs: [lint, python, test, docs, changes, devcontainer]
+    needs: [lint, python, test, docs, rpm, changes, devcontainer]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - run: |
-          results=("${{ needs.lint.result }}" "${{ needs.python.result }}" "${{ needs.test.result }}" "${{ needs.docs.result }}" "${{ needs.changes.result }}" "${{ needs.devcontainer.result }}")
+          results=("${{ needs.lint.result }}" "${{ needs.python.result }}" "${{ needs.test.result }}" "${{ needs.docs.result }}" "${{ needs.rpm.result }}" "${{ needs.changes.result }}" "${{ needs.devcontainer.result }}")
           for r in "${results[@]}"; do
             if [[ "$r" != "success" && "$r" != "skipped" ]]; then
               echo "Check failed: $r"

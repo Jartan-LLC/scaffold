@@ -12,8 +12,8 @@ concurrency:
 permissions: {}
 
 jobs:
-  # The notes job reads the tagged checkout with a read-only token; only the
-  # release job, which runs no repository code, holds the write token.
+  # The notes and rpm jobs read the tagged checkout with a read-only token; only the
+  # attest and release jobs, which run no repository code, hold write tokens.
   notes:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -23,6 +23,7 @@ jobs:
       source: ${{ steps.notes.outputs.source }}
       notes: ${{ steps.notes.outputs.notes }}
       prerelease: ${{ steps.notes.outputs.prerelease }}
+      rpm: ${{ steps.packaging.outputs.rpm }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -50,13 +51,55 @@ jobs:
             echo "source=generated" >>"$GITHUB_OUTPUT"
           fi
 
-  release:
+      # Each release attaches an RPM while the project ships one.
+      - id: packaging
+        run: |
+          if [ -f packaging/rpm.spec ]; then
+            echo "rpm=true" >>"$GITHUB_OUTPUT"
+          fi
+
+  rpm:
     needs: notes
+    if: needs.notes.outputs.rpm == 'true'
+    permissions:
+      contents: read
+    # actionlint rejects the $/ form zizmor asks for (rhysd/actionlint#711).
+    uses: ./.github/workflows/rpm.yml # zizmor: ignore[self-repository]
+    with:
+      version: ${{ github.ref_name }}
+      artifact: release-rpm
+
+  attest:
+    needs: rpm
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-rpm
+          path: assets
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: assets/*
+
+  release:
+    # A skipped rpm job attaches nothing; a failed one stops the release.
+    needs: [notes, rpm, attest]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
+      - if: needs.rpm.result == 'success'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-rpm
+          path: assets
+
       # No checkout needed: gh talks to the API and resolves the repo from
       # GH_REPO. The view-or-create guard keeps re-runs on the same tag
       # idempotent instead of failing with "release already exists".
@@ -87,4 +130,7 @@ jobs:
             false) ;;
             *) echo "::error::The notes job did not say whether this is a pre-release"; exit 1 ;;
           esac
-          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" "${args[@]}" --verify-tag
+          # With files, gh creates a draft, uploads them, then publishes it, and deletes
+          # the draft if an upload fails.
+          shopt -s nullglob
+          gh release create "$GITHUB_REF_NAME" assets/* --title "$GITHUB_REF_NAME" "${args[@]}" --verify-tag
