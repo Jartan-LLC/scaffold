@@ -1,4 +1,4 @@
-"""Tests for `.github/scripts/release_notes.py`, which `release.yml` runs on each tag.
+"""Tests for `ci/release_notes.py`, which `release.yml` runs on each tag.
 
 The script runs as the workflow runs it, a subprocess given a version and a
 changelog path, so each test checks what the release would publish.
@@ -13,7 +13,7 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-SCRIPT = Path(__file__).resolve().parents[1] / ".github" / "scripts" / "release_notes.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "ci" / "release_notes.py"
 
 
 def run(tmp_path: Path, changelog: str | None, version: str) -> subprocess.CompletedProcess[str]:

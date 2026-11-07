@@ -35,11 +35,11 @@ jobs:
         id: notes
         run: |
           version="${GITHUB_REF_NAME#v}"
-          prerelease=$(python3 .github/scripts/release_notes.py --prerelease "$version")
+          prerelease=$(python3 ci/release_notes.py --prerelease "$version")
           echo "prerelease=$prerelease" >>"$GITHUB_OUTPUT"
           notes="$RUNNER_TEMP/notes.md"
           why="$RUNNER_TEMP/why"
-          python3 .github/scripts/release_notes.py "$version" CHANGELOG.md >"$notes" 2>"$why" \
+          python3 ci/release_notes.py "$version" CHANGELOG.md >"$notes" 2>"$why" \
             || { cat "$why" >&2; exit 1; }
           if [ -s "$notes" ]; then
             delimiter="EOF_$(openssl rand -hex 16)"

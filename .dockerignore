@@ -4,6 +4,7 @@
 .gitattributes
 .editorconfig
 .github
+ci
 
 # Dev environment
 .devcontainer

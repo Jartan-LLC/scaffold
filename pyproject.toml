@@ -46,7 +46,7 @@ packages = ["src/app"]
 
 # Keep the sdist to source + tests + the root conftest.py, so the suite and its
 # fixtures ship consistently — not dev tooling like .github/ or .devcontainer/,
-# nor tests/test_release_notes.py, which needs .github/scripts/.
+# nor tests/test_release_notes.py, which needs ci/.
 [tool.hatch.build.targets.sdist]
 include = ["src", "tests", "conftest.py"]
 exclude = ["tests/test_release_notes.py"]
@@ -116,7 +116,7 @@ markers = [
 ]
 
 [tool.pyright]
-include = ["src", "tests", "conftest.py"]
+include = ["src", "tests", "conftest.py", "ci"]
 pythonVersion = "3.12"
 # "strict" is the most thorough; drop to "standard" (pyright's default) if
 # untyped third-party deps get noisy.
