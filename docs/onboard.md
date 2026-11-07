@@ -96,9 +96,9 @@ which reads fine on GitHub without Sphinx, and this page, which Cleanup deletes.
    `.dockerignore` and `.github/workflows/publish-docker.yml`.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
-   `check` entries (`docs/scaffold.md`, CI). In the `changes` job,
-   remove the `python:` line under `outputs` and the `python=true` block, with its comment,
-   in the `diff` step. `lint` stays.
+   `check` entries (`docs/scaffold.md`, CI). In the `changes` job, remove the `python:` line
+   under `outputs` and the `python=true` block, with its comment, in the `diff` step. `lint`
+   stays.
 5. Keep the `Makefile`: it is the verify entry point in every stack. Point its `lint`, `fix`,
    `typecheck`, `test` and `docs` targets at your stack's commands, and replace the Python
    lines in `check` (the `.[dev,docs]` install, `uv build`, `twine check`, `pip-audit`), so

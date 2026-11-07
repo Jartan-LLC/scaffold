@@ -105,16 +105,18 @@ the rest of the run: checkpoints, the operator session, logs.
 
 `ci.yml`'s `lint`, `python`, `test` and `docs` jobs gate the `check` aggregator. `python`
 runs pyright, builds and checks the package, and runs pip-audit, which is advisory: its
-failure doesn't fail the job. Removing a gating job also means removing its
-`check.needs` and results entries. To add the `docker` or `integration-tests` job,
-uncomment it and add it to both. The Node checks are commented steps inside `lint`:
-uncomment them there, with no `check` change needed.
+failure doesn't fail the job, and shows on the PR as a warning annotation on the `python`
+check. Removing a gating job also means removing its `check.needs` and results entries. To
+add the `docker` or `integration-tests` job, uncomment it and add it to both. The Node
+checks are commented steps inside `lint`: uncomment them there, with no `check` change
+needed.
 
-The `changes` job skips `python` and `test` when every changed file is
-Markdown, `.pre-commit-config.yaml`, or under `docs/`, `.claude/` or `.github/`. A change to
+The `changes` job skips `python` and `test` when every changed file is Markdown,
+`.pre-commit-config.yaml`, or under `docs/`, `.claude/` or `.github/`. A change to
 `README.md`, `.github/workflows/ci.yml` or anything under `src/` or `tests/` always runs
 them. If a Python job comes to use a file in a skipped path, such as a local action under
 `.github/actions/`, add it to that list in the `changes` job's `diff` step in `ci.yml`.
+
 The dev container job runs only when a change touches one of its build inputs, which the
 `diff` step lists. `pyproject.toml`, `package.json` and pnpm's lockfile and config are not
 among them; `ci/requirements.txt` is, because `post-create.sh` reads uv's pin from it.
@@ -127,13 +129,13 @@ In `.github/dependabot.yml`, remove the ecosystems you don't use, add the ones y
 and adjust `directory` where manifests aren't at the root.
 
 A private repository pays for Actions minutes, and GitHub bills each job as at least one
-minute. Two levers are yours to pull:
+minute. Two levers cut those minutes:
 
 - Each Dependabot PR runs CI. Set `interval: "monthly"` in each `updates` entry of
   `.github/dependabot.yml` whose PRs should batch a month of updates instead of a week.
-- `ci.yml` runs on pull requests and pushes to `main`, not on other pushed branches, and a
-  new push to a PR cancels the run before it, which still bills the minutes it used. Run
-  review rounds on the pushed branch, and open the PR once they are done.
+- CI doesn't run on a pushed branch other than `main` until it has a PR, and each push to
+  a PR cancels the run before it, which still bills the minutes it used. A review needs no
+  PR, so finish review rounds on the pushed branch before opening the PR.
 
 ## Publishing
 
