@@ -27,19 +27,21 @@ jobs:
         with:
           persist-credentials: false
 
-      # The script prints nothing when the tag has no notes in CHANGELOG.md, and
-      # this step then falls back to generated notes.
+      # The script prints nothing when the tag has no notes in CHANGELOG.md and
+      # says why on stderr; this step then falls back to generated notes.
       - name: Extract release notes from CHANGELOG.md
         id: notes
         run: |
           notes="$RUNNER_TEMP/notes.md"
-          python3 .github/scripts/release_notes.py "${GITHUB_REF_NAME#v}" CHANGELOG.md >"$notes"
+          why="$RUNNER_TEMP/why"
+          python3 .github/scripts/release_notes.py "${GITHUB_REF_NAME#v}" CHANGELOG.md >"$notes" 2>"$why" \
+            || { cat "$why" >&2; exit 1; }
           if [ -s "$notes" ]; then
             delimiter="EOF_$(openssl rand -hex 16)"
             { echo "notes<<$delimiter"; cat "$notes"; echo "$delimiter"; } >>"$GITHUB_OUTPUT"
             echo "source=changelog" >>"$GITHUB_OUTPUT"
           else
-            echo "::warning::No release notes for $GITHUB_REF_NAME in CHANGELOG.md; using generated release notes"
+            echo "::warning::$(<"$why"); using generated release notes for $GITHUB_REF_NAME"
             echo "source=generated" >>"$GITHUB_OUTPUT"
           fi
 

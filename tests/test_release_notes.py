@@ -214,13 +214,25 @@ def test_block_starts_are_not_joined(tmp_path: Path) -> None:
     )
 
 
-def test_indented_code_block_is_not_joined(tmp_path: Path) -> None:
-    body = "Example:\n\n    first line\n    second line\n\n    after a blank\n\nText.\n"
+# A tab indents to the next multiple of four columns, as in CommonMark.
+CODE_INDENTS = [
+    pytest.param("    ", id="four spaces"),
+    pytest.param("\t", id="tab"),
+    pytest.param("  \t", id="spaces then tab"),
+]
+
+
+@pytest.mark.parametrize("indent", CODE_INDENTS)
+def test_indented_code_block_is_not_joined(tmp_path: Path, indent: str) -> None:
+    body = (
+        f"Example:\n\n{indent}first line\n{indent}second line\n\n{indent}after a blank\n\nText.\n"
+    )
     assert notes(tmp_path, body) == body
 
 
-def test_indented_code_after_a_heading_is_not_joined(tmp_path: Path) -> None:
-    body = "### Usage\n    first line\n    second line\n"
+@pytest.mark.parametrize("indent", CODE_INDENTS)
+def test_indented_code_after_a_heading_is_not_joined(tmp_path: Path, indent: str) -> None:
+    body = f"### Usage\n{indent}first line\n{indent}second line\n"
     assert notes(tmp_path, body) == body
 
 
@@ -283,15 +295,18 @@ def test_tag_matches_only_its_own_heading(tmp_path: Path, version: str) -> None:
     assert run(tmp_path, changelog, version).stdout == f"- From {version}.\n"
 
 
+NO_SECTION = "{path} has nothing under '## [1.2.0]'"
+
+
 @pytest.mark.parametrize(
     ("changelog", "reason"),
     [
-        pytest.param(None, "No ", id="no changelog"),
-        pytest.param("## [1.1.0]\n\n- Other.\n", "has nothing under '## [1.2.0]'", id="no section"),
-        pytest.param("## [1.2.0]\n\n## [1.1.0]\n\n- Other.\n", "has nothing", id="empty section"),
+        pytest.param(None, "No {path}", id="no changelog"),
+        pytest.param("## [1.1.0]\n\n- Other.\n", NO_SECTION, id="no section"),
+        pytest.param("## [1.2.0]\n\n## [1.1.0]\n\n- Other.\n", NO_SECTION, id="empty section"),
         pytest.param(
             "## [1.2.0]\n\n<!-- Add entries here. -->\n<!--\nmulti-line\n-->\n",
-            "has nothing",
+            NO_SECTION,
             id="comments only",
         ),
     ],
@@ -301,7 +316,7 @@ def test_no_notes_prints_nothing_and_says_why(
 ) -> None:
     result = run(tmp_path, changelog, "1.2.0")
     assert result.stdout == ""
-    assert reason in result.stderr
+    assert result.stderr == reason.format(path=tmp_path / "CHANGELOG.md") + "\n"
 
 
 def test_changelog_defaults_to_the_working_directory(tmp_path: Path) -> None:

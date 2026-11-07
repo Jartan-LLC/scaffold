@@ -81,13 +81,15 @@ def _with_code_state(lines: Iterable[str]) -> Iterator[tuple[str, bool]]:
     """Yield each line with whether it is code: a fence, its contents or an indented code block.
 
     An indented code block is taken to be any run of lines indented four or more
-    spaces that follows a blank line or a heading. A fence marker inside one is
-    code, so it opens no fence.
+    columns that follows a blank line or a heading, a tab reaching the next
+    multiple of four as in CommonMark. A fence marker inside one is code, so it
+    opens no fence.
     """
     fence: tuple[str, int] | None = None
     code_may_start = True
     for line in lines:
-        indent = len(line) - len(line.lstrip(" "))
+        expanded = line.expandtabs(4)
+        indent = len(expanded) - len(expanded.lstrip(" "))
         if not line.strip():
             in_code = fence is not None
             code_may_start = True
