@@ -4,44 +4,31 @@ description: Set up this template for your project
 
 # Onboard
 
-Configure this template repo for a new project.
+Set up this repository for a new project by applying `docs/onboard.md`. That page says what
+changes and in what order; this command says how to run it with the user.
 
 ## Process
 
 ### 1. Prerequisites
 
-Check `gh auth status`. If not authenticated, tell the user to run `gh auth login` before continuing — onboarding uses `gh` commands for repo configuration.
+Check `gh auth status`. If not authenticated, tell the user to run `gh auth login` before continuing: the GitHub settings steps use `gh`.
 
-### 2. Read `docs/onboard.md`
+### 2. Interview
 
-Its checklist is the source of truth for what needs to change, and its sections detail each item (`docs/scaffold.md` covers the parts that stay, such as Liza, CI and publishing).
+Read `docs/onboard.md`. Ask the user its Decide list in a single message. Say that the conduct and security contacts are published, so they should give addresses they are willing to publish.
 
-### 3. Interview
+### 3. Confirm
 
-Ask the user in a single message for: project name, one-line description, primary language/framework, deployment target, GitHub org/repo, GitHub username, author/full name (for `LICENSE` + `docs/conf.py`), the Python package/import name if Python (for the `src/app` rename), contacts for conduct and security reports (one address, or two if they differ), noting that both are published publicly, so they should give addresses they are willing to publish, build/test/lint commands, license (MIT, Apache-2.0, proprietary, etc.), any version corrections for training data, and which of the enchantments Features in `.devcontainer/devcontainer.json` to keep (`docs/onboard.md`, Devcontainer).
+Summarize the answers and the changes you will make, the files you will delete included. Wait for the user to confirm before proceeding.
 
-### 4. Confirm
+### 4. Apply
 
-Summarize what you understood and what changes you'll make. Wait for the user to confirm before proceeding.
+Work through `docs/onboard.md` in order, from Procedures through GitHub settings. Use only values the user gave: never invent one. Where a step can't run from inside the container, such as removing a container or a volume for a declined Feature, give the user those steps in their order, ending with the rebuild.
 
-### 5. Apply
+### 5. Report
 
-Work through every Required checklist item that can be automated, following `docs/onboard.md` and `docs/scaffold.md` for how and the interview for the values. Also:
+List the GitHub settings you could not apply, for the user to set. Name **private vulnerability reporting** (Settings > Security) first: until it is on, the advisory form `.github/SECURITY.md` sends every reporter to does not exist.
 
-- Replace the template README with a project README, carrying over its badges adjusted for the project (`docs/onboard.md`, README badges)
-- License: `LICENSE` is MIT with the template's copyright line. For MIT, set the user's year and name in it; otherwise replace it with the chosen `LICENSE.<type>` (`LICENSE.proprietary` is all rights reserved, for private or closed-source work), or with a license not among the templates. Delete the `LICENSE.*` templates either way
-- Point the `Makefile` at the interview's commands, keeping `make check` as the gate (a Python project's shipped targets already match; for another stack, `docs/onboard.md`, Not a Python project). If the verify command changes, update the Verify section of `AGENTS.md`
-- Markers: resolve the markers as `docs/onboard.md`, Markers, says, after the package rename or the non-Python teardown. In `SECURITY.md`, always set the contact; set supported versions and response targets only if the user gave them, and otherwise leave their markers: a timing commitment the user never chose is worse than an unset field with a stated default
-- Features: for each enchantments Feature the user declines, follow `docs/onboard.md`, Devcontainer: run the in-clone steps of its Removal section while it's still declared, remove its entry and its lockfile key, then give the user the rest of its Removal steps in their order (removing the container, then a volume), ending with the rebuild
-- Create the Dependabot `major`/`minor`/`patch` labels (`docs/onboard.md`, Dependabot labels)
-- Once every item is done, delete `docs/onboard.md` and, unless the non-Python teardown removed `docs/index.md`, its entry there and the marker above it
+### 6. Clean up
 
-For questions the user didn't have answers to (e.g., version corrections, verify commands), leave the placeholder comments in place — they are written so that Claude will fill them in naturally when the information is discovered during normal development. Only replace placeholders that have actual answers.
-
-### 6. Manual Steps
-
-Present both the Required items that need manual action (enabling private vulnerability reporting) and the Recommended checklist items that require manual action in GitHub Settings. Call out **private vulnerability reporting** (Settings > Security) by name: until it is on, the advisory form `.github/SECURITY.md` sends every reporter to does not exist.
-
-### 7. Cleanup
-
-Ask the user if they want to delete this command file (`.claude/commands/onboard.md`). If yes, delete it.
+Do the page's Finish steps, which delete this command file with the page.
