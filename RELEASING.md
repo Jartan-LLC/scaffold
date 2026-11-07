@@ -111,6 +111,8 @@ gh attestation verify NAME.noarch.rpm --repo ORG/REPO
 sudo dnf install ./NAME.noarch.rpm
 ```
 
+<!-- TODO(/onboard): while packaging/dnf.repo exists, replace FINGERPRINT below with the signing key's fingerprint once you make it, as step 4 of docs/signing-key.md's Making a key says. -->
+
 While `packaging/dnf.repo` exists, the key that signs the RPMs and the dnf repository has the
 fingerprint `FINGERPRINT`; `gpg --show-keys /etc/pki/rpm-gpg/RPM-GPG-KEY-NAME` prints the
 fingerprints of the keys the package installed.
