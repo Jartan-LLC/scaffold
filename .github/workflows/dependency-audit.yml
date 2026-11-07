@@ -13,9 +13,11 @@ on:
 permissions: {}
 
 # Serialize runs so an overlapping dispatch can't open a duplicate tracking issue.
+# A run in progress finishes; at most one other run waits, and a later run replaces
+# the waiting one.
 concurrency:
   group: dependency-audit
-  cancel-in-progress: false # a new run waits; a newer one replaces the waiting one
+  cancel-in-progress: false
 
 env:
   UV_SYSTEM_PYTHON: 1

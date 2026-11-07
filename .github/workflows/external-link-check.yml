@@ -14,9 +14,11 @@ permissions: {}
 
 # Serialize runs so a manual dispatch overlapping the weekly run can't both clear the
 # find-issue step and each open a duplicate tracking issue.
+# A run in progress finishes; at most one other run waits, and a later run replaces
+# the waiting one.
 concurrency:
   group: external-link-check
-  cancel-in-progress: false # a new run waits; a newer one replaces the waiting one
+  cancel-in-progress: false
 
 jobs:
   link-check:
