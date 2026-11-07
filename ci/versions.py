@@ -15,6 +15,7 @@ so the workflows need nothing but the runner's ``python3``.
 import re
 import sys
 from collections.abc import Iterable
+from typing import NamedTuple
 
 # PEP 440's own pattern (its Appendix B), without the leading `v` the tag loses.
 _PEP_440 = re.compile(
@@ -35,8 +36,41 @@ _SEMVER = re.compile(
     r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
     r"(?:\+[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*)?"
 )
+# The characters and length Docker allows in an image tag.
+_DOCKER_TAG = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}")
 
 type ReleaseKey = tuple[int, tuple[int, ...], int]
+
+
+class _Version(NamedTuple):
+    prerelease: bool
+    # Leaves out the pre-release and development parts, so it orders releases only.
+    key: ReleaseKey
+
+
+def _read(version: str) -> _Version | None:
+    """Read ``version`` as PEP 440, else as SemVer, as PyPI reads a version both accept.
+
+    Args:
+        version: The version without the tag's leading ``v``.
+
+    Returns:
+        Whether it is a pre-release, and its key; None for a string that is no
+        version.
+    """
+    if pep_440 := _PEP_440.fullmatch(version):
+        prerelease = bool(pep_440["pre"] or pep_440["dev"])
+        epoch = int(pep_440["epoch"] or 0)
+        numbers = [int(n) for n in pep_440["release"].split(".")]
+        post = -1 if pep_440["post"] is None else int(pep_440["post_n1"] or pep_440["post_n2"] or 0)
+    elif semver := _SEMVER.fullmatch(version):
+        prerelease = bool(semver["prerelease"])
+        epoch, numbers, post = 0, [int(n) for n in semver.groups()[:3]], -1
+    else:
+        return None
+    while len(numbers) > 1 and numbers[-1] == 0:
+        numbers.pop()
+    return _Version(prerelease, (epoch, tuple(numbers), post))
 
 
 def is_prerelease(version: str) -> bool:
@@ -52,10 +86,8 @@ def is_prerelease(version: str) -> bool:
         True for a PEP 440 pre-release or development release (``1.2.0rc1``,
         ``1.2.0.dev3``) or a SemVer pre-release (``1.2.0-alpha.1``).
     """
-    if pep_440 := _PEP_440.fullmatch(version):
-        return bool(pep_440["pre"] or pep_440["dev"])
-    semver = _SEMVER.fullmatch(version)
-    return bool(semver and semver["prerelease"])
+    read = _read(version)
+    return read is not None and read.prerelease
 
 
 def release_key(version: str) -> ReleaseKey | None:
@@ -72,19 +104,8 @@ def release_key(version: str) -> ReleaseKey | None:
         post-release number or -1; None for a pre-release or a string that is
         no version.
     """
-    if is_prerelease(version):
-        return None
-    if pep_440 := _PEP_440.fullmatch(version):
-        epoch = int(pep_440["epoch"] or 0)
-        numbers = [int(n) for n in pep_440["release"].split(".")]
-        post = -1 if pep_440["post"] is None else int(pep_440["post_n1"] or pep_440["post_n2"] or 0)
-    elif semver := _SEMVER.fullmatch(version):
-        epoch, numbers, post = 0, [int(n) for n in semver.groups()[:3]], -1
-    else:
-        return None
-    while len(numbers) > 1 and numbers[-1] == 0:
-        numbers.pop()
-    return epoch, tuple(numbers), post
+    read = _read(version)
+    return None if read is None or read.prerelease else read.key
 
 
 def image_tags(version: str, tags: Iterable[str]) -> dict[str, str]:
@@ -101,19 +122,27 @@ def image_tags(version: str, tags: Iterable[str]) -> dict[str, str]:
         ``true`` when no tag is a higher release.
 
     Raises:
-        ValueError: ``version`` is neither a PEP 440 nor a SemVer version.
+        ValueError: ``version`` is neither a PEP 440 nor a SemVer version, or
+            makes no valid Docker tag (an epoch's ``!``).
     """
-    if not (_PEP_440.fullmatch(version) or _SEMVER.fullmatch(version)):
+    read = _read(version)
+    if read is None:
         raise ValueError(f"v{version} is neither a PEP 440 nor a SemVer version")
     # A Docker tag can't hold a `+`, so the build metadata or local part goes.
-    tag = version.partition("+")[0]
-    key = release_key(version)
-    if key is None:
-        return {"version": tag, "minor": "", "latest": "false"}
-    keys = (release_key(tag.removeprefix("v")) for tag in tags)
-    highest = max((k for k in keys if k is not None), default=key)
-    major, minor = (*key[1], 0)[:2]
-    return {"version": tag, "minor": f"{major}.{minor}", "latest": str(key >= highest).lower()}
+    docker_version = version.partition("+")[0]
+    # metadata-action would replace a character a tag can't hold, pushing another name.
+    if not _DOCKER_TAG.fullmatch(docker_version):
+        raise ValueError(f"v{version} makes no valid Docker tag")
+    if read.prerelease:
+        return {"version": docker_version, "minor": "", "latest": "false"}
+    keys = (release_key(name.removeprefix("v")) for name in tags)
+    highest = max((k for k in keys if k is not None), default=read.key)
+    major, minor = (*read.key[1], 0)[:2]
+    return {
+        "version": docker_version,
+        "minor": f"{major}.{minor}",
+        "latest": str(read.key >= highest).lower(),
+    }
 
 
 def main(argv: list[str]) -> int:
@@ -124,7 +153,8 @@ def main(argv: list[str]) -> int:
 
     Returns:
         The exit status: 0; 1 when the version is no PEP 440 or SemVer
-        version, with nothing printed; 2 for bad arguments.
+        version or makes no valid Docker tag, with nothing printed; 2 for bad
+        arguments.
     """
     match argv:
         case ["--image-tags", version]:
@@ -137,7 +167,7 @@ def main(argv: list[str]) -> int:
             sys.stderr.write("usage: versions.py --image-tags VERSION\n")
             return 2
     if outputs["latest"] == "false":
-        why = "is a pre-release" if not outputs["minor"] else "is not the highest release"
+        why = "is a pre-release" if is_prerelease(version) else "is not the highest release"
         sys.stderr.write(f"::notice::v{version} {why}; leaving :latest alone\n")
     sys.stdout.writelines(f"{name}={value}\n" for name, value in outputs.items())
     return 0

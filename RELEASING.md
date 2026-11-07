@@ -84,8 +84,8 @@ For a tag with a pre-release version, such as `v1.2.0-rc.1`:
 - `publish-pypi.yml` publishes a PyPI pre-release, with the version normalized (`1.2.0rc1`);
 - while `packaging/rpm.spec` exists, the RPM's version is `1.2.0~rc.1`, which `dnf` upgrades in
   place to `1.2.0`;
-- `publish-docker.yml` tags the image `1.2.0-rc.1` only, leaving `1.2` and `latest` where
-  they were.
+- `publish-docker.yml` tags the image only with the version as the tag writes it
+  (`1.2.0-rc.1`, or `1.2.0rc1` for `v1.2.0rc1`), leaving `1.2` and `latest` where they were.
 
 ## Installing the RPM
 

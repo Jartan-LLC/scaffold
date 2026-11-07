@@ -164,6 +164,18 @@ def test_non_version_fails_with_nothing_printed(version: str) -> None:
     )
 
 
+# An epoch's `!`, and a version longer than a tag's 128 characters.
+@pytest.mark.parametrize("version", ["1!2.0.0", "1" + ".0" * 64])
+def test_version_no_docker_tag_fails_with_nothing_printed(version: str) -> None:
+    result = run("--image-tags", version, tags="v1.0.0\n")
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert (
+        result.stderr
+        == f"::error::v{version} makes no valid Docker tag, so the image gets no tags\n"
+    )
+
+
 @pytest.mark.parametrize("args", [[], ["1.2.0"], ["--image-tags"], ["--image-tags", "1", "2"]])
 def test_bad_arguments_exit_2_with_usage(args: list[str]) -> None:
     result = run(*args)
