@@ -21,8 +21,8 @@ loads them into every session:
 
 ## Verify
 
-Run `make check` before declaring work done — it runs every CI check (lint,
-typecheck, test, build, audit, docs):
+Run `make check` before declaring work done — it runs CI's lint, typecheck, test, build
+and docs checks, and the advisory dependency audit:
 
 ```bash
 make check

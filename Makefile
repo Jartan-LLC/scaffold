@@ -47,7 +47,7 @@ install:  ## Install every tracked Python and Node manifest, then wire the pre-c
 	elif [ -n "$$(git config core.hooksPath)" ]; then echo "core.hooksPath is set; skipping pre-commit install"; \
 	else pre-commit install; fi
 
-lint:  ## Lint all files via pre-commit (ruff, codespell, shellcheck, markdownlint, lychee, actionlint, zizmor, hygiene)
+lint:  ## Lint all files via pre-commit
 	pre-commit run --all-files
 
 # A hook run that rewrites files exits 1; the rerun passes unless a finding or error remains.
@@ -67,7 +67,7 @@ test-integration:  ## Run only integration-marked tests
 docs:  ## Build the docs site, warnings-as-errors
 	sphinx-build -W -b html docs docs/_build/html
 
-check:  ## Run every CI check (lint, typecheck, test, build, audit, docs)
+check:  ## Run CI's lint, typecheck, test, build and docs checks, and the advisory audit
 	$(MAKE) lint typecheck test
 	uv build
 	python -m twine check dist/*
