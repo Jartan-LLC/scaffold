@@ -6,7 +6,9 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 ## Cut a release
 
 1. Choose the version, written `X.Y.Z` below, a pre-release suffix included. Write a
-   pre-release as `1.2.0rc1`. [Pre-releases](#pre-releases) says what one publishes.
+   pre-release as `1.2.0-alpha.N`, `1.2.0-beta.N` or `1.2.0-rc.N`: the workflows read a version
+   as PEP 440 first, which reads other SemVer suffixes differently, such as `1.2.0-1` as a full
+   release. [Pre-releases](#pre-releases) says what one publishes.
 2. On a branch from `main`, move the entries under `## [Unreleased]` in `CHANGELOG.md` to a new
    section below it, headed `## [X.Y.Z] - YYYY-MM-DD`. That section becomes the release notes;
    an entry may wrap across lines, since the notes join them. Then replace the `[Unreleased]`
@@ -74,13 +76,13 @@ on the `release.yml` run creates it.
 
 ## Pre-releases
 
-For a tag with a pre-release version, such as `v1.2.0rc1`:
+For a tag with a pre-release version, such as `v1.2.0-rc.1`:
 
 - `release.yml` creates a GitHub pre-release, which GitHub never marks Latest;
-- `publish-pypi.yml` publishes a PyPI pre-release;
-- while `packaging/rpm.spec` exists, the RPM's version is `1.2.0~rc1`, which `dnf` upgrades in
+- `publish-pypi.yml` publishes a PyPI pre-release, with the version normalized (`1.2.0rc1`);
+- while `packaging/rpm.spec` exists, the RPM's version is `1.2.0~rc.1`, which `dnf` upgrades in
   place to `1.2.0`;
-- `publish-docker.yml` tags the image `1.2.0rc1` only, leaving `1.2` and `latest` where they
+- `publish-docker.yml` tags the image `1.2.0-rc.1` only, leaving `1.2` and `latest` where they
   were.
 
 ## Installing the RPM
