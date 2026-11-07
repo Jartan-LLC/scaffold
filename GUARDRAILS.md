@@ -35,8 +35,8 @@ rules for every agent, and imports it for Claude Code; Liza agents also enforce 
 - Don't wrap things the underlying library already expresses clearly.
 - Don't speculate about fixes — investigate first, then propose.
 - Don't hardcode derived counts in comments — they drift silently.
-- Comments state only the load-bearing why. Commit messages, PR titles and PR descriptions
-  follow the Conventions in `CONTRIBUTING.md`.
+- Comments state only the load-bearing why.
+- Commit messages, PR titles and PR descriptions follow the Conventions in `CONTRIBUTING.md`.
 
 ## Tier 3 (Preferences)
 <!-- Degraded gracefully. Kept when empty: the heading is what prompts adding a preference
