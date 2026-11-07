@@ -124,8 +124,8 @@ that nothing reads.
    the `changes` job, remove the `python:` line under `outputs`. `lint` stays.
 5. Keep the `Makefile`: it is the verify entry point in every stack. Point its `lint`, `fix`,
    `typecheck`, `test` and `docs` targets at your stack's commands, and replace the Python
-   lines in `check` (the `.[dev,docs]` install, `uv build`, `twine check`, `pip-audit`), so
-   `make check` stays the one verify gate.
+   lines in `check` (`uv build`, `twine check`, `pip-audit`), so `make check` stays the one
+   verify gate.
 6. In `ci/requirements.txt`, delete the `twine` and `pip-audit` entries with their comment
    lines, "build frontend" from the `uv` comment, and, from the header, the reason the
    tools' own dependencies aren't pinned and the mention of `pyproject.toml`'s extras.
