@@ -9,10 +9,10 @@
 #     Signs RPM in place with the key FINGERPRINT.
 #   packaging/dnf-repo.sh metadata FINGERPRINT KEYFILE URL RPMDIR OUTDIR [PREVIOUS]
 #     Indexes RPMDIR/vX.Y.Z/NAME.noarch.rpm for each release, with each package's
-#     location URL as URL, which ends in /, then vX.Y.Z/NAME.noarch.rpm. Writes
-#     OUTDIR/NAME-dnf-repo.tar.gz, holding repodata/ with repomd.xml signed by
-#     FINGERPRINT, and KEYFILE as RPM-GPG-KEY-NAME, and prints its path. PREVIOUS is the
-#     bundle this replaces, if any.
+#     location URL as URL, which ends in /, then vX.Y.Z/NAME.noarch.rpm. Leaves out an
+#     unsigned RPM, with a warning. Writes OUTDIR/NAME-dnf-repo.tar.gz, holding repodata/
+#     with repomd.xml signed by FINGERPRINT, and KEYFILE as RPM-GPG-KEY-NAME, and prints
+#     its path. PREVIOUS is the bundle this replaces, if any.
 set -euo pipefail
 
 die() {
