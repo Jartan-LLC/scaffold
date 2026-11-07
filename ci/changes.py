@@ -71,11 +71,13 @@ def outputs(changed: Sequence[str] | None) -> list[str]:
     names: list[str] = []
     if any(_matches(path, _DEVCONTAINER_INPUTS) for path in changed):
         names.append("devcontainer")
-    if not changed or any(
-        _matches(path, _PYTHON_READS) or not _matches(path, _PYTHON_SKIPS) for path in changed
-    ):
+    if not changed or any(_needs_python(path) for path in changed):
         names.append("python")
     return names
+
+
+def _needs_python(path: str) -> bool:
+    return _matches(path, _PYTHON_READS) or not _matches(path, _PYTHON_SKIPS)
 
 
 def _matches(path: str, patterns: Sequence[str]) -> bool:

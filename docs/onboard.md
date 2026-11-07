@@ -94,9 +94,9 @@ Finish deletes.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
    `check` entries (`docs/scaffold.md`, CI), and the commented `integration-tests` job. In
    the `changes` job, remove the `python:` line under `outputs`. In `ci/changes.py`, remove
-   `_PYTHON_SKIPS` and `_PYTHON_READS`; in `outputs()`, the `"python"` in the no-base return
-   and the `if` block that appends it; and the docstring lines about the Python jobs. `lint`
-   stays.
+   `_PYTHON_SKIPS`, `_PYTHON_READS` and `_needs_python`; in `outputs()`, the `"python"` in
+   the no-base return and the `if` block that appends it; and the `python` parts of the
+   module and `outputs()` docstrings. `lint` stays.
 5. Keep the `Makefile`: it is the verify entry point in every stack. Point its `lint`, `fix`,
    `typecheck`, `test` and `docs` targets at your stack's commands, and replace the Python
    lines in `check` (the `.[dev,docs]` install, `uv build`, `twine check`, `pip-audit`), so
