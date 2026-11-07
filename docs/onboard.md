@@ -1,8 +1,7 @@
 # Setting up the template
 
-Work through the sections below in order. Each holds one kind of item: decisions,
-procedures, markers, the sync point, GitHub settings, then the finishing steps. `/onboard`
-in Claude Code works through the page for you. Finish deletes this page;
+Work through the sections below in order. `/onboard` in Claude Code works through the page
+for you. Finish deletes this page;
 [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 
 ## Decide
@@ -10,11 +9,12 @@ in Claude Code works through the page for you. Finish deletes this page;
 Settle these first: the steps below take their values from the answers. Where an answer
 needs no procedure, its item says what to do with it.
 
-- [ ] Project name and one-line description; for Python, the distribution and import names
+- [ ] Project name and one-line description; for Python, the distribution and import names,
+      and whether it has a command-line interface
 - [ ] GitHub org and repo, and the code owners
 - [ ] Stack: language and framework, deployment target, and the lint, test and build commands
       if it isn't Python
-- [ ] License, and the copyright holder's name ([License](#license))
+- [ ] License, and the author and copyright holder ([License](#license))
 - [ ] Contacts for conduct reports and security reports, one address or two. Both are
       published, so give addresses you are willing to publish
 - [ ] Which enchantments Features to keep ([Features](#features))
@@ -36,8 +36,8 @@ Run these in order. Each runs on the files the one before it left.
 2. [ ] [Rename the Python package](#python-package), or [tear down Python](#not-a-python-project)
 3. [ ] [Stack](#stack)
 4. [ ] [License](#license)
-5. [ ] Tests: replace `tests/test_smoke.py`, which only checks that the CLI stub runs, with
-       tests of your code
+5. [ ] Tests (Python): replace `tests/test_smoke.py`, which only checks that the CLI stub
+       runs, with tests of your code
 
 ### Features
 
@@ -123,8 +123,8 @@ reserved, for private or closed-source work. A license not among the templates r
 ## Markers
 
 Every line the template ships is true both in the template and in a project made from it,
-carries a `TODO(/onboard): <what to do>` marker, or sits in a file onboarding deletes or
-replaces (this page, `.claude/commands/onboard.md`, `README.md` and the license files). Text
+carries a `TODO(/onboard): <what to do>` marker, is changed by a procedure above, or sits in
+a file onboarding deletes or replaces (this page, `.claude/commands/onboard.md`, `README.md` and the license files). Text
 that waits on project code, such as the `ci.yml` jobs to uncomment once you add their inputs,
 carries no marker: it stays true after onboarding.
 
@@ -134,9 +134,10 @@ carries no marker: it stays true after onboarding.
    git grep -n 'TODO(/onboard)'
    ```
 
-2. Do what each marker says, then delete the marker. Where you have no answer yet, as for
-   the response targets in `.github/SECURITY.md`, keep the default the marked text states,
-   without the marker. Never fill in a value nobody gave.
+2. Do what each marker says, then delete the marker. Decide gives every value a marker
+   needs except the optional ones: with no answer for the supported versions or response
+   targets in `.github/SECURITY.md`, rewrite the marked line to state only the default it
+   gives (`Report against the latest release.`). Never fill in a value nobody gave.
 3. Run the grep again. It should print only this page, the marker on its `docs/index.md`
    entry, which Finish deletes, and `.scaffold-sync`, which the next section fills.
 
@@ -153,12 +154,15 @@ one scaffold commit's tree. Write that commit to the file:
 git remote add upstream https://github.com/Jartan-LLC/scaffold.git
 git fetch upstream
 tree=$(git rev-parse "$(git rev-list --max-parents=0 HEAD)^{tree}")
-git log --format='%H %T' upstream/main | awk -v t="$tree" '$2 == t {print $1; exit}' > .scaffold-sync
-test -s .scaffold-sync
+sha=$(git log --format='%H %T' upstream/main | awk -v t="$tree" '$2 == t {print $1; exit}')
+test -n "$sha" && echo "$sha" > .scaffold-sync
 ```
 
-If `test -s` fails, no scaffold commit has the first commit's tree and the file is now
-empty: write the scaffold commit you started from into it by hand.
+If `test -n` fails, the file keeps its marker. In a shallow clone, run
+`git fetch --unshallow` and try again; otherwise no scaffold commit has the first commit's
+tree, so write the scaffold commit you started from into the file by hand. The `upstream`
+remote stays for [syncing](scaffold.md#syncing-template-updates), so skip its one-time
+`git remote add` there.
 
 If you forked scaffold instead, delete `.scaffold-sync`: the history is shared, so
 `git merge upstream/main` brings in later changes.

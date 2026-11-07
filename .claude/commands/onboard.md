@@ -23,7 +23,7 @@ Summarize the answers and the changes you will make, the files you will delete i
 
 ### 4. Apply
 
-Work through `docs/onboard.md` in order, from Procedures through GitHub settings. Use only values the user gave: never invent one. Where a step can't run from inside the container, such as removing a container or a volume for a declined Feature, give the user those steps in their order, ending with the rebuild.
+Work through `docs/onboard.md` in order, from Decide through GitHub settings: carry out what each Decide item says to do with its answer, then each section after it. Use only values the user gave: never invent one. Where a step can't run from inside the container, such as removing a container or a volume for a declined Feature, give the user those steps in their order, ending with the rebuild.
 
 ### 5. Report
 
