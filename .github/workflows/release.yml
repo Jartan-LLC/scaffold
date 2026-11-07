@@ -27,22 +27,39 @@ jobs:
       # puts the compare links last, inside the oldest section. GitHub renders
       # each newline in a release body as a line break, so Prettier joins the
       # hard-wrapped lines; it reads stdin because, given a path, it obeys
-      # .prettierignore, which skips *.md. No `file` output means no section,
-      # and the next step falls back to generated notes.
+      # .prettierignore, which skips *.md. Dependabot doesn't read `run:`
+      # strings, so the Prettier pin is bumped by hand. This step gets no token:
+      # npx runs code fetched from the npm registry.
       - name: Extract release notes from CHANGELOG.md
         id: notes
         run: |
+          version="${GITHUB_REF_NAME#v}"
+          raw="$RUNNER_TEMP/notes.raw.md"
           notes="$RUNNER_TEMP/notes.md"
-          VERSION="${GITHUB_REF_NAME#v}" awk '
-            /^## / { in_section = index($0, "## [" ENVIRON["VERSION"] "]") == 1; next }
-            in_section && !/^\[[^]]+\]: /
-          ' CHANGELOG.md >"$notes.raw"
-          if grep -q '[^[:space:]]' "$notes.raw"; then
-            npx --yes prettier@3.9.10 --parser markdown --prose-wrap never <"$notes.raw" >"$notes"
+          generated() {
+            echo "::warning::$1; using generated release notes"
+            echo "source=generated" >>"$GITHUB_OUTPUT"
+            exit 0
+          }
+          [ -f CHANGELOG.md ] || generated "No CHANGELOG.md"
+          VERSION="$version" awk '
+            match($0, /^ ? ? ?(```|~~~)/) {
+              mark = substr($0, RLENGTH, 1)
+              if (fence == "") fence = mark; else if (mark == fence) fence = ""
+            }
+            fence == "" && /^## / { in_section = index($0, "## [" ENVIRON["VERSION"] "]") == 1; next }
+            in_section && (fence != "" || !/^\[[^]]+\]: /)
+          ' CHANGELOG.md >"$raw"
+          # HTML comments render as nothing, so a section of only comments is empty.
+          perl -0777 -ne 's/<!--.*?-->//gs; $found = /\S/; END { exit !$found }' "$raw" \
+            || generated "CHANGELOG.md has nothing under '## [$version]'"
+          if npx --yes prettier@3.7.4 --parser markdown --prose-wrap never <"$raw" >"$notes"; then
             echo "file=$notes" >>"$GITHUB_OUTPUT"
           else
-            echo "::warning::CHANGELOG.md has nothing under '## [${GITHUB_REF_NAME#v}]'; using generated release notes"
+            echo "::warning::Prettier failed; the release notes keep CHANGELOG.md's line breaks"
+            echo "file=$raw" >>"$GITHUB_OUTPUT"
           fi
+          echo "source=changelog" >>"$GITHUB_OUTPUT"
 
       # The view-or-create guard keeps re-runs on the same tag idempotent
       # instead of failing with "release already exists".
@@ -50,14 +67,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          NOTES_SOURCE: ${{ steps.notes.outputs.source }}
           NOTES_FILE: ${{ steps.notes.outputs.file }}
         run: |
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             exit 0
           fi
-          if [ -n "$NOTES_FILE" ]; then
-            notes=(--notes-file "$NOTES_FILE")
-          else
-            notes=(--generate-notes)
-          fi
+          case "$NOTES_SOURCE" in
+            changelog) notes=(--notes-file "$NOTES_FILE") ;;
+            generated) notes=(--generate-notes) ;;
+            *) echo "::error::The notes step set no notes source"; exit 1 ;;
+          esac
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" "${notes[@]}" --verify-tag
