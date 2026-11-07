@@ -1,6 +1,6 @@
 # Releasing
 
-How to cut a release from `main`. What a tag publishes, workflow by workflow, is in
+How to cut a release from `main`. The workflows a tag runs are listed in
 [Publishing](docs/scaffold.md#publishing).
 
 ## Cut a release
