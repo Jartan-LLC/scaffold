@@ -20,7 +20,6 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 - [ ] Prune `.github/workflows/ci.yml` and `.github/dependabot.yml` to your stack ([details](scaffold.md#ci))
 - [ ] Update the docs site ([details](#docs-site))
 - [ ] Set your license: keep `LICENSE` (MIT) with your own year and name, or replace it with one of the `LICENSE.*` templates (filling in `[year]` and `[fullname]`), then delete the `LICENSE.*` files
-- [ ] Switch off plugin skills that don't fit your stack ([details](#claude-settings))
 
 ### Recommended
 
@@ -131,13 +130,6 @@ which reads fine on GitHub without Sphinx, and this page, which Cleanup deletes.
 - `getting-started.md`: update the `pip install app` line.
 - `reference.md`: after the package rename, update the `automodule` names. The docs build
   fails while they point at `app`.
-
-## Claude settings
-
-In `.claude/settings.json`, add `skillOverrides` to switch off installed plugin skills that
-don't fit your stack, for example `{"go-review": "off"}`. Where two plugins cover one
-domain, keep the more specific; keep universal skills on. Update any agent's `skills:`
-frontmatter that names a skill you switched off.
 
 ## Dependabot labels
 
