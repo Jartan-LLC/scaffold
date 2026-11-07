@@ -257,7 +257,7 @@ def test_fence_marker_in_indented_code_opens_no_fence(
     assert run(tmp_path, changelog, "1.0.0").stdout == expected
 
 
-def test_link_definitions_are_dropped_and_footnotes_kept(tmp_path: Path) -> None:
+def test_unused_link_definitions_are_dropped_and_footnotes_kept(tmp_path: Path) -> None:
     changelog = """\
         ## [1.0.0] - 2026-01-01
 
@@ -271,6 +271,46 @@ def test_link_definitions_are_dropped_and_footnotes_kept(tmp_path: Path) -> None
     assert run(tmp_path, changelog, "1.0.0").stdout == (
         "- First release.[^1]\n\n[^1]: A footnote.\n"
     )
+
+
+DEFINITIONS = """\
+
+    ```
+    [x]: https://example.com/in-a-fence
+    ```
+
+    [Unreleased]: https://example.com/compare/v1.2.0...HEAD
+    [@X]: https://example.com/x
+    [docs]: https://example.com/docs
+    [@x]: https://example.com/ignored-as-a-repeat
+    [x]: https://example.com/a-second-x
+    """
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        pytest.param("- Fixed ([@x]).", id="shortcut"),
+        pytest.param("- Fixed ([text][@x]).", id="full"),
+        pytest.param("- Fixed ([@x][]).", id="collapsed"),
+        pytest.param("- Fixed ([@X  ]).", id="case and whitespace"),
+    ],
+)
+def test_used_link_definitions_are_appended(tmp_path: Path, entry: str) -> None:
+    changelog = f"## [1.2.0]\n\n{entry}\n\n## [1.1.0]\n{textwrap.dedent(DEFINITIONS)}"
+    assert run(tmp_path, changelog, "1.2.0").stdout == (f"{entry}\n\n[@X]: https://example.com/x\n")
+
+
+def test_link_definition_in_code_is_not_collected(tmp_path: Path) -> None:
+    changelog = f"## [1.2.0]\n\n- See [x].\n\n## [1.1.0]\n{textwrap.dedent(DEFINITIONS)}"
+    assert run(tmp_path, changelog, "1.2.0").stdout == (
+        "- See [x].\n\n[x]: https://example.com/a-second-x\n"
+    )
+
+
+def test_notes_using_no_definition_get_none(tmp_path: Path) -> None:
+    changelog = f"## [1.2.0]\n\n- Plain.\n\n## [1.1.0]\n{textwrap.dedent(DEFINITIONS)}"
+    assert run(tmp_path, changelog, "1.2.0").stdout == "- Plain.\n"
 
 
 @pytest.mark.parametrize("version", ["1.2.0-rc.1", "1.2.0rc1", "1.2.0"])

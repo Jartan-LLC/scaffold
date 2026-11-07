@@ -3,8 +3,9 @@
 `release.yml` runs this for each `v*` tag. The notes are the body of the
 version's `## [X.Y.Z]` section, kept as written except that hard-wrapped lines
 are joined: GitHub renders every newline in a release body as a line break.
-Link reference definitions are dropped, since Keep a Changelog puts its compare
-links at the end of the file, inside the oldest section.
+Link reference definitions sit at the end of the file in Keep a Changelog, so
+they are taken out of the section, and the ones the notes use, wherever they
+sit outside code, are appended to the notes.
 
 When there are no notes (no changelog file, no section for the version, or a
 section that is empty or holds only HTML comments), nothing is printed on
@@ -26,7 +27,12 @@ from pathlib import Path
 # (CommonMark).
 _FENCE = re.compile(r"\s*(`{3,}|~{3,})(.*)")
 _ATX_HEADING = re.compile(r" {0,3}#{1,6}(\s|$)")
-_LINK_DEFINITION = re.compile(r" {0,3}\[[^\]^][^\]]*\]:")
+# A link reference definition, not a footnote one (`[^1]:`), which stays in place.
+_LINK_DEFINITION = re.compile(r" {0,3}\[([^\]^][^\]]*)\]:")
+# Bracketed text that may be a reference: `[x]`, and both parts of `[text][x]`
+# and `[x][]`. Appending a definition nothing uses is harmless: it renders as
+# nothing.
+_BRACKETED = re.compile(r"\[([^\[\]]+)\]")
 # Lines that start a block of their own, so they are never joined onto the line
 # above: list items, headings, quotes, table rows, HTML, link and footnote
 # definitions, and thematic breaks or setext underlines.
@@ -165,14 +171,43 @@ def release_notes(changelog: str, version: str) -> str:
         version: The version as its heading writes it, such as ``1.2.0``.
 
     Returns:
-        The section with its wrapped lines joined and its surrounding blank
-        lines removed, ending in a newline; empty when the section is missing,
-        empty or holds only HTML comments.
+        The section with its wrapped lines joined, its surrounding blank lines
+        removed and the link reference definitions it uses appended, ending in
+        a newline; empty when the section is missing, empty or holds only HTML
+        comments.
     """
     notes = "\n".join(join_wrapped_lines(section(changelog, version))).strip("\n")
     if not _HTML_COMMENT.sub("", notes).strip():
         return ""
+    definitions = _used_definitions(changelog, notes)
+    if definitions:
+        notes += "\n\n" + "\n".join(definitions)
     return notes + "\n"
+
+
+def _used_definitions(changelog: str, notes: str) -> list[str]:
+    """Return the changelog's link reference definitions that ``notes`` may use.
+
+    Definitions inside code are not definitions. Labels match as CommonMark
+    matches them, ignoring case and runs of whitespace, and the first definition
+    of a label wins. They come back in file order.
+    """
+    used = {
+        _label(text)
+        for line, in_code in _with_code_state(notes.splitlines())
+        if not in_code
+        for text in _BRACKETED.findall(line)
+    }
+    definitions: dict[str, str] = {}
+    for line, in_code in _with_code_state(changelog.splitlines()):
+        match = None if in_code else _LINK_DEFINITION.match(line)
+        if match and _label(match[1]) in used:
+            definitions.setdefault(_label(match[1]), line)
+    return list(definitions.values())
+
+
+def _label(text: str) -> str:
+    return " ".join(text.split()).casefold()
 
 
 def main(argv: list[str]) -> int:
