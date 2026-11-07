@@ -27,9 +27,8 @@ jobs:
         with:
           persist-credentials: false
 
-      # tests/test_release_notes.py covers the script. It prints nothing when
-      # the tag has no notes in CHANGELOG.md, and this step then falls back to
-      # generated notes.
+      # The script prints nothing when the tag has no notes in CHANGELOG.md, and
+      # this step then falls back to generated notes.
       - name: Extract release notes from CHANGELOG.md
         id: notes
         run: |

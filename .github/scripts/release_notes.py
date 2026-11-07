@@ -17,11 +17,14 @@ release job needs nothing but the runner's ``python3``.
 
 import re
 import sys
+from collections.abc import Iterable, Iterator
+from itertools import pairwise
 from pathlib import Path
 
 # A fence may sit inside a list item, so any indent opens one. A backtick
 # fence's info string can't contain a backtick (CommonMark).
 _FENCE = re.compile(r"\s*(`{3,}|~{3,})(.*)")
+_ATX_HEADING = re.compile(r" {0,3}#{1,6}(\s|$)")
 _LINK_DEFINITION = re.compile(r" {0,3}\[[^\]^][^\]]*\]:")
 # Lines that start a block of their own, so they are never joined onto the line
 # above: list items, headings, quotes, table rows, HTML, link and footnote
@@ -40,18 +43,19 @@ _BLOCK_START = re.compile(
     re.VERBOSE,
 )
 _LIST_ITEM_WITH_TEXT = re.compile(r"\s*([-*+]|\d{1,9}[.)])\s+\S")
-# A GFM table starts at its delimiter row, such as `| --- | :-: |`.
+# A GFM table's delimiter row, such as `| --- | :-: |`.
 _TABLE_DELIMITER = re.compile(r"[\s|:-]*-[\s|:-]*")
 _HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
-# A line indented this far after a blank line is an indented code block.
+# A line indented this far after a blank line or a heading starts an indented
+# code block.
 _CODE_INDENT = 4
 
 
 def section(changelog: str, version: str) -> list[str]:
     """Return the lines of ``version``'s section, without its heading.
 
-    The section runs to the next ``## `` heading outside a code fence. Link
-    reference definitions outside fences are dropped; footnote definitions stay.
+    The section runs to the next ``## `` heading outside a code block. Link
+    reference definitions outside code are dropped; footnote definitions stay.
 
     Args:
         changelog: The changelog's text.
@@ -64,17 +68,37 @@ def section(changelog: str, version: str) -> list[str]:
     heading = f"## [{version}]"
     lines: list[str] = []
     in_section = False
-    fence: tuple[str, int] | None = None
-    for line in changelog.splitlines():
-        opened = fence
-        fence = _next_fence_state(line, fence)
-        in_fence = opened is not None or fence is not None
-        if not in_fence and line.startswith("## "):
+    for line, in_code in _with_code_state(changelog.splitlines()):
+        if not in_code and line.startswith("## "):
             in_section = line.startswith(heading)
             continue
-        if in_section and (in_fence or not _LINK_DEFINITION.match(line)):
+        if in_section and (in_code or not _LINK_DEFINITION.match(line)):
             lines.append(line)
     return lines
+
+
+def _with_code_state(lines: Iterable[str]) -> Iterator[tuple[str, bool]]:
+    """Yield each line with whether it is code: a fence, its contents or an indented code block.
+
+    An indented code block is taken to be any run of lines indented four or more
+    spaces that follows a blank line or a heading. A fence marker inside one is
+    code, so it opens no fence.
+    """
+    fence: tuple[str, int] | None = None
+    code_may_start = True
+    for line in lines:
+        indent = len(line) - len(line.lstrip(" "))
+        if not line.strip():
+            in_code = fence is not None
+            code_may_start = True
+        elif fence is None and code_may_start and indent >= _CODE_INDENT:
+            in_code = True
+        else:
+            opened = fence
+            fence = _next_fence_state(line, fence)
+            in_code = opened is not None or fence is not None
+            code_may_start = not in_code and bool(_ATX_HEADING.match(line))
+        yield line, in_code
 
 
 def _next_fence_state(line: str, fence: tuple[str, int] | None) -> tuple[str, int] | None:
@@ -98,8 +122,7 @@ def join_wrapped_lines(lines: list[str]) -> list[str]:
 
     A line is never joined inside a code block or a table, after a blank line,
     after a hard break (two trailing spaces or a ``\``), or when it starts a
-    block of its own. An indented code block is taken to be any run of lines
-    indented four or more spaces that follows a blank line.
+    block of its own, a table's header row included.
 
     Args:
         lines: Markdown lines.
@@ -109,32 +132,24 @@ def join_wrapped_lines(lines: list[str]) -> list[str]:
         space.
     """
     out: list[str] = []
-    fence: tuple[str, int] | None = None
-    joinable = in_table = in_indented_code = False
-    for line in lines:
-        opened = fence
-        fence = _next_fence_state(line, fence)
-        indent = len(line) - len(line.lstrip(" "))
-        after_blank = not out or not out[-1].strip()
-        if opened is not None or fence is not None:
-            joinable = False
-        elif not line.strip():
+    joinable = in_table = False
+    # A table starts at its header row, which can interrupt a paragraph, so it is
+    # known only from the delimiter row after it.
+    classified = [*_with_code_state(lines), ("", False)]
+    for (line, in_code), (next_line, _) in pairwise(classified):
+        if in_code or not line.strip():
             joinable = in_table = False
-        elif in_indented_code and indent >= _CODE_INDENT:
-            pass
-        elif indent >= _CODE_INDENT and after_blank:
-            in_indented_code = True
-        elif in_table or ("|" in line and _TABLE_DELIMITER.fullmatch(line)):
+        elif in_table or (
+            "|" in line and "|" in next_line and _TABLE_DELIMITER.fullmatch(next_line)
+        ):
             in_table = True
         elif _BLOCK_START.match(line):
             joinable = bool(_LIST_ITEM_WITH_TEXT.match(line))
         elif joinable and not out[-1].endswith(("  ", "\\")):
-            out[-1] = f"{out[-1].rstrip()} {line.strip()}"
+            out[-1] = f"{out[-1].rstrip()} {line.lstrip()}"
             continue
         else:
             joinable = True
-        if line.strip() and indent < _CODE_INDENT:
-            in_indented_code = False
         out.append(line)
     return out
 

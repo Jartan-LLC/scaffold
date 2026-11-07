@@ -128,8 +128,15 @@ def test_fence_closes_only_on_its_own_marker(tmp_path: Path) -> None:
         ```js
         ## still code
         ```
+
+        ~~~
+        ```
+        ## still code
+        ~~~
         """
-    assert notes(tmp_path, body) == "```\n```js\n## still code\n```\n"
+    assert (
+        notes(tmp_path, body) == "```\n```js\n## still code\n```\n\n~~~\n```\n## still code\n~~~\n"
+    )
 
 
 def test_fence_closes_only_on_a_run_as_long(tmp_path: Path) -> None:
@@ -152,16 +159,32 @@ def test_table_rows_are_not_joined(tmp_path: Path) -> None:
         --- | ---
         c | d
         e | f
+
+        A paragraph that
+        wraps.
         """
     assert notes(tmp_path, body) == (
         "| Setting | Default |\n|---|---|\n| a | b |\n\nName | Value\n--- | ---\nc | d\ne | f\n"
+        "\nA paragraph that wraps.\n"
     )
+
+
+def test_table_after_a_paragraph_keeps_its_header_row(tmp_path: Path) -> None:
+    body = "A paragraph that\nwraps.\nName | Value\n--- | ---\nc | d\n"
+    assert notes(tmp_path, body) == "A paragraph that wraps.\nName | Value\n--- | ---\nc | d\n"
 
 
 def test_hard_breaks_are_kept(tmp_path: Path) -> None:
     body = "Two spaces end this line  \nso it breaks, and this one\\\nbreaks too, but this\nline joins.\n"
     assert notes(tmp_path, body) == (
         "Two spaces end this line  \nso it breaks, and this one\\\nbreaks too, but this line joins.\n"
+    )
+
+
+def test_hard_break_on_a_joined_line_is_kept(tmp_path: Path) -> None:
+    body = "A line that\nbreaks here  \nand then\njoins.\n\n- An item that\n  breaks here  \n  and then\n  joins.\n"
+    assert notes(tmp_path, body) == (
+        "A line that breaks here  \nand then joins.\n\n- An item that breaks here  \n  and then joins.\n"
     )
 
 
@@ -194,6 +217,32 @@ def test_block_starts_are_not_joined(tmp_path: Path) -> None:
 def test_indented_code_block_is_not_joined(tmp_path: Path) -> None:
     body = "Example:\n\n    first line\n    second line\n\n    after a blank\n\nText.\n"
     assert notes(tmp_path, body) == body
+
+
+def test_indented_code_after_a_heading_is_not_joined(tmp_path: Path) -> None:
+    body = "### Usage\n    first line\n    second line\n"
+    assert notes(tmp_path, body) == body
+
+
+@pytest.mark.parametrize(
+    ("changelog", "expected"),
+    [
+        pytest.param(
+            "## [1.0.0]\n\n    code\n    ```\n\nA paragraph that\nwraps.\n\n## [0.9.0]\n\n- Older.\n",
+            "    code\n    ```\n\nA paragraph that wraps.\n",
+            id="after a blank line",
+        ),
+        pytest.param(
+            "## [1.0.0]\n    ```\n\n## [0.9.0]\n\n- Older.\n",
+            "    ```\n",
+            id="after the heading",
+        ),
+    ],
+)
+def test_fence_marker_in_indented_code_opens_no_fence(
+    tmp_path: Path, changelog: str, expected: str
+) -> None:
+    assert run(tmp_path, changelog, "1.0.0").stdout == expected
 
 
 def test_link_definitions_are_dropped_and_footnotes_kept(tmp_path: Path) -> None:
@@ -253,6 +302,28 @@ def test_no_notes_prints_nothing_and_says_why(
     result = run(tmp_path, changelog, "1.2.0")
     assert result.stdout == ""
     assert reason in result.stderr
+
+
+def test_changelog_defaults_to_the_working_directory(tmp_path: Path) -> None:
+    (tmp_path / "CHANGELOG.md").write_text("## [1.2.0]\n\n- Entry.\n", encoding="utf-8")
+    result = subprocess.run(  # noqa: S603 -- fixed interpreter and script, test-owned arguments
+        [sys.executable, str(SCRIPT), "1.2.0"],
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=tmp_path,
+    )
+    assert result.stdout == "- Entry.\n"
+
+
+@pytest.mark.parametrize("args", [[], ["1.2.0", "CHANGELOG.md", "extra"]])
+def test_bad_arguments_exit_2_with_usage(args: list[str]) -> None:
+    result = subprocess.run(  # noqa: S603 -- fixed interpreter and script, test-owned arguments
+        [sys.executable, str(SCRIPT), *args], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 2
+    assert result.stderr == "usage: release_notes.py VERSION [CHANGELOG]\n"
+    assert result.stdout == ""
 
 
 def test_only_whitespace_changes(tmp_path: Path) -> None:
