@@ -8,8 +8,8 @@ for none as rpm 4 does (passing the check), ``bad`` for a bad signature and
 `rpmkeys` prints the RPM's path before its checks, as the real one does. A key
 file holds one key per line. The stub `createrepo_c` writes a primary.xml that
 lists each package's location, and the stub `gpg` writes the signing key into
-the signature and lists a key file's keys. ci.yml's dnf-repo job runs the real
-tools.
+the signature and lists a key file's keys, failing as the real one does on an
+empty file. ci.yml's dnf-repo job runs the real tools.
 """
 
 import io
@@ -91,7 +91,10 @@ hrefs = sorted(prefix + str(p.relative_to(packages)) for p in packages.rglob("*.
 import sys
 args = sys.argv[1:]
 if "--show-keys" in args:
-    for key in open(args[-1]).read().split():
+    keys = open(args[-1]).read().split()
+    if not keys:
+        sys.exit("gpg: no valid OpenPGP data found.")
+    for key in keys:
         print(f"fpr:::::::::{key}:")  # codespell:ignore fpr
     sys.exit(0)
 signer = args[args.index("--local-user") + 1]
@@ -434,6 +437,19 @@ def test_metadata_fails_when_the_key_file_lacks_the_signing_key(
     result = metadata(env, tmp_path, keyfile)
     assert result.returncode == 1
     assert result.stderr == f"dnf-repo.sh: {keyfile} doesn't hold the key {SIGNER}\n"
+    assert not (tmp_path / "out").exists()
+
+
+def test_metadata_fails_with_gpgs_error_when_gpg_cant_read_the_key_file(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    keyfile.write_text("", encoding="utf-8")
+    add_rpm(tmp_path / "rpms", "v1.1.0", "1.1.0", SIGNER)
+    result = metadata(env, tmp_path, keyfile)
+    assert result.returncode == 1
+    assert result.stderr == (
+        f"dnf-repo.sh: can't read the keys in {keyfile}: gpg: no valid OpenPGP data found.\n"
+    )
     assert not (tmp_path / "out").exists()
 
 

@@ -32,17 +32,16 @@ jobs:
           sparse-checkout: packaging/fedora.Containerfile
           sparse-checkout-cone-mode: false
       # An empty ref would run the build on the bare runner, and a tag alone could change
-      # under the build; this check is the pin zizmor can't see through the expression.
+      # under the build; this check is the pin zizmor can't see through the expression. A
+      # flag, a stage name or a second FROM line would make the ref no valid image, or not
+      # the one ci.yml's dnf-repo job builds from this file.
       - id: ref
         run: |
-          ref=$(sed -n 's/^FROM //p' packaging/fedora.Containerfile)
-          case $ref in
-            *@sha256:*) ;;
-            *)
-              echo "::error::packaging/fedora.Containerfile's FROM line must pin a digest (image@sha256:...)"
-              exit 1
-              ;;
-          esac
+          ref=$(sed -n 's/^FROM //Ip' packaging/fedora.Containerfile)
+          if [[ ! $ref =~ ^[^[:space:]]+@sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::packaging/fedora.Containerfile must have one FROM line, holding only an image pinned by digest (image@sha256:...)"
+            exit 1
+          fi
           echo "ref=$ref" >>"$GITHUB_OUTPUT"
 
   build:

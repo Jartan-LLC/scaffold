@@ -66,8 +66,10 @@ metadata() (
     [[ -f $keyfile ]] || die "no such key file: $keyfile"
     # Users check repomd.xml against KEYFILE: signed by another key, dnf skips the
     # repository with only a warning. gpg lists fingerprints in uppercase.
-    [[ $(gpg --batch --with-colons --show-keys -- "$keyfile" 2>/dev/null) == \
-        *":$(printf '%s' "$fingerprint" | tr a-f A-F):"* ]] ||
+    local keys
+    keys=$(gpg --batch --with-colons --show-keys -- "$keyfile" 2>&1) ||
+        die "can't read the keys in $keyfile: $keys"
+    [[ $keys == *":$(printf '%s' "$fingerprint" | tr a-f A-F):"* ]] ||
         die "$keyfile doesn't hold the key $fingerprint"
     [[ $url == */ ]] || die "the URL must end in /: $url"
     [[ -z $previous || -f $previous ]] || die "no such bundle: $previous"

@@ -21,7 +21,7 @@ readonly root
 readonly url=http://127.0.0.1:8000
 # build's scratch directory, which its EXIT trap removes.
 work=''
-# The output of run's last command, which check reads.
+# The file that holds the output of run's last command, which check reads.
 log=''
 
 die() {
@@ -110,6 +110,7 @@ bundle() {
 
 check() {
     local www=$1 name
+    log=$(mktemp)
     name=$(basename "$www"/v1/RPM-GPG-KEY-*)
     name=${name#RPM-GPG-KEY-}
     local i
@@ -182,10 +183,9 @@ serve() {
     printf '== the repository is now %s\n' "$2"
 }
 
-# Runs a command, showing its output and keeping it in $log for the checks to read.
+# Runs a command, showing its output and keeping it in the file $log for the checks to read.
 run() {
     printf '$ %s\n' "$*"
-    log=$(mktemp)
     "$@" 2>&1 | tee "$log"
 }
 
