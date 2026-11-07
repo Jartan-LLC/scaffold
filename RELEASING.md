@@ -57,8 +57,9 @@ The tag starts `release.yml`, `publish-pypi.yml` and `publish-docker.yml`. While
 `packaging/rpm.spec` exists, a failed RPM build or attestation leaves the tag without a GitHub
 Release; if the failure was transient, such as a mirror timeout, `gh run rerun <run ID> --failed`
 on the `release.yml` run creates it. While `packaging/dnf.repo` exists, a failed or rejected
-`sign` job also leaves the tag without a GitHub Release, and [Signing key](docs/signing-key.md)
-says when a re-run fails again.
+`sign` job also leaves the tag without a GitHub Release: after a rejection, the same re-run asks
+for approval again and, once approved, creates it, and [Signing key](docs/signing-key.md) says
+what to fix first when the job failed.
 
 1. Approve the `publish-pypi.yml` and `publish-docker.yml` runs: open each from
    `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits for this only when

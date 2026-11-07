@@ -6,10 +6,16 @@ How to make, rotate and replace the key that signs the RPMs and the dnf reposito
 While `packaging/dnf.repo` exists, `release.yml`'s `sign` job signs each RPM, and each full
 release's dnf repository metadata, with the key in the `RPM_SIGNING_KEY` secret of the
 `rpm-signing` environment. The package installs `packaging/RPM-GPG-KEY`, and dnf trusts only
-the keys in it, so the job refuses to sign with a key that file doesn't hold. Without the
-secret, the job fails and the tag gets no GitHub Release. A re-run checks out the same tagged
-commit, so it fails again while that commit's `packaging/RPM-GPG-KEY` doesn't hold the secret's
-key.
+the keys in it, so the job refuses to sign with a key that file doesn't hold. If the job fails,
+the tag gets no GitHub Release until a re-run succeeds:
+
+- If the secret is empty or holds the wrong key, store the right one with the first command in
+  step 2 of [Making a key](#making-a-key), with `GNUPGHOME` set to the key's offline copy.
+  Then run `gh run rerun <run ID> --failed` on the tag's `release.yml` run, and approve the
+  `sign` job again.
+- If the tagged commit's `packaging/RPM-GPG-KEY` doesn't hold the right key, a re-run checks out
+  the same commit and fails again. Fix the file through a pull request and release a new patch
+  version, leaving the failed tag without a GitHub Release.
 
 <!-- TODO(/onboard): in this page's commands, replace ORG/REPO with the GitHub org and repo, NAME with Name in packaging/rpm.spec, and ADDRESS with the key's contact email address. -->
 
