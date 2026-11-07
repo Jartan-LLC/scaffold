@@ -19,8 +19,8 @@ An item whose answer needs neither, such as which workflows to keep, says what t
 - [ ] Contacts for conduct reports and security reports, one address or two. Both are
       published, so give addresses you are willing to publish
 - [ ] Which enchantments Features to keep ([Features](#features))
-- [ ] Publishing targets: the PyPI package, the container image, the docs site
-      ([details](#publishing-targets))
+- [ ] Publishing targets: the PyPI package, the container image, the docs site, an RPM for
+      Fedora ([details](#publishing-targets))
 - [ ] Whether to keep `Dockerfile` (its marker says what goes with it, and the
       `publish-docker.yml` row in [Publishing](scaffold.md#publishing) and the sentences
       naming it in `RELEASING.md` go too),
@@ -33,7 +33,8 @@ An item whose answer needs neither, such as which workflows to keep, says what t
 ### Publishing targets
 
 Keep `release.yml` whatever you publish: it creates a GitHub Release for each `v*` tag, in any
-stack.
+stack. While you keep the RPM, it does so only for the tag forms the `rpm.yml` row in
+[Publishing](scaffold.md#publishing) lists.
 
 - PyPI package: keep `publish-pypi.yml`, and set up its environment in
   [GitHub settings](#publishing-environments). If the package's version isn't
@@ -46,10 +47,18 @@ stack.
   Actions", then rename `.github/workflows/pages.yml.example` to `pages.yml`. For a version
   per release, use Read the Docs: rename `.readthedocs.yaml.example` to `.readthedocs.yaml`
   and import the repo there.
+- RPM for Fedora, attached to each GitHub Release: keep `packaging/`. It fits files that run
+  unchanged on every Fedora release, such as a shell script. A Python package's RPM requires
+  the Python version of the Fedora release that built it, so publish a Python package to PyPI
+  instead. Put the commands in `RELEASING.md`'s Installing the RPM section in your README.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
-`RELEASING.md` that names that workflow.
+`RELEASING.md` that names that workflow. To drop the RPM, delete `packaging/`,
+`tests/test_rpm_sh.py`, the `rpm.yml` row in Publishing, and, in `RELEASING.md`, the
+Installing the RPM section and each sentence and list item that opens with "while
+`packaging/rpm.spec` exists". Keep `.github/workflows/rpm.yml`: `ci.yml` and `release.yml`
+call it from jobs that skip while `packaging/rpm.spec` is missing.
 
 ## Procedures
 
@@ -122,7 +131,8 @@ that nothing reads.
    `.github/workflows/publish-pypi.yml` and `.github/workflows/dependency-audit.yml`. If
    not containerized, also `Dockerfile`, `.dockerignore`,
    `.github/workflows/publish-docker.yml` and the commented `docker` job in
-   `.github/workflows/ci.yml`.
+   `.github/workflows/ci.yml`. Deleting `tests/` also deletes `tests/test_rpm_sh.py`, the
+   test of `packaging/rpm.sh`'s version check.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
    `check` entries (`docs/scaffold.md`, CI), and the commented `integration-tests` job. In
@@ -303,6 +313,7 @@ Copy the badge lines from the top of the template README into yours, then:
 | `.claude/` | Claude Code project files — the `/onboard` command, which onboarding deletes, and `workspace/`, where agents keep plans and other working files, git-ignored |
 | `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates |
 | `pyproject.toml`, `ci/`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use, each with its release files' hashes, so an install rejects a download that doesn't match. The tools' own dependencies are not pinned. `ci/release_notes.py` makes the release notes `release.yml` publishes, and `ci/changes.py` decides which of `ci.yml`'s gated jobs a change runs. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
+| `packaging/` | `rpm.sh` and the spec stub for the RPM each GitHub Release attaches, which `.github/workflows/rpm.yml` builds and installs |
 | `src/`, `tests/` | The package (src layout, PEP 561 typed) and its tests; the template ships a CLI entry point and logging setup |
 | `Makefile`, `.pre-commit-config.yaml` | Task runner (`make install`/`lint`/`fix`/`test`/`check`/`docs`, backed by [uv](https://docs.astral.sh/uv/), installing into the checkout's `.venv`, else the active environment, else the devcontainer's system Python) + the single lint source, whose hooks `make lint` and CI both run, and the source of ruff's and codespell's versions |
 | `docs/`, `.readthedocs.yaml.example` | Sphinx docs site (Markdown via MyST, API reference from docstrings); `make docs` builds it. [Publishing targets](#publishing-targets) says how to publish it |

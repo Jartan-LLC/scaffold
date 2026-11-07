@@ -1,0 +1,52 @@
+name: RPM
+
+# Builds the RPM of the commit checked out with packaging/rpm.sh, which runs the spec's
+# %check, then installs it. ci.yml calls it on each change and release.yml on each tag.
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: The version to build. A leading v is dropped, so a tag name works.
+        required: true
+        type: string
+      artifact:
+        description: The artifact name to upload the RPM under; empty uploads nothing.
+        required: false
+        type: string
+        default: ""
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    # Dependabot doesn't update a workflow's container image
+    # (dependabot/dependabot-core#5819): bump this pin by hand.
+    container: fedora:45@sha256:a7d72ba2745b100a3351087472e5ee7b2450af7cf331e7673007e3817612839c
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      # Before checkout, which without git fetches no repository for rpm.sh to archive.
+      - run: dnf -y install git-core rpm-build
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build the RPM
+        run: |
+          rpm=$(packaging/rpm.sh "${VERSION#v}" dist)
+          echo "RPM=$rpm" >>"$GITHUB_ENV"
+
+      - name: Install the RPM
+        run: dnf -y install "./$RPM"
+
+      - if: inputs.artifact != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ inputs.artifact }}
+          path: ${{ env.RPM }}
+          if-no-files-found: error

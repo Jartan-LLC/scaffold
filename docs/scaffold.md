@@ -63,6 +63,9 @@ The `changes` job skips `python` and `test` when every changed file is Markdown,
 them. If a Python job comes to use a file in a skipped path, such as a local action under
 `.github/actions/`, add it to `_PYTHON_READS` in `ci/changes.py`.
 
+The `rpm` job runs on every change while `packaging/rpm.spec` exists: it builds the RPM,
+running the spec's `%check`, and installs it in Fedora.
+
 The dev container job runs only when a change touches one of its build inputs, which
 `_DEVCONTAINER_INPUTS` in `ci/changes.py` lists. `pyproject.toml`, `package.json` and pnpm's
 lockfile and config are not among them; `ci/requirements.txt` is, because `post-create.sh`
@@ -88,6 +91,7 @@ Nothing publishes until you push a `v*` tag. Each tag runs these workflows:
 | Workflow | Publishes |
 |---|---|
 | `release.yml` | a GitHub Release whose notes are the tag's `CHANGELOG.md` section (`## [1.2.0]` for `v1.2.0`) with its hard-wrapped lines joined, or GitHub's generated notes, with a warning in the run, when there is no `CHANGELOG.md` or that section is missing, empty or holds only HTML comments. A PEP 440 or SemVer pre-release tag (`v1.2.0rc1`, `v1.2.0-rc.1`) makes a pre-release |
+| `rpm.yml`, run by `release.yml` | while `packaging/rpm.spec` exists, `NAME.noarch.rpm` on the GitHub Release, built from the tag and installed in Fedora first, with a build provenance attestation in a public repository. A failed build creates no Release. A tag gets the RPM in one of these forms: `vX.Y.Z`; `vX.Y.ZaN`, `vX.Y.ZbN` or `vX.Y.ZrcN`; or `vX.Y.Z-` and a SemVer pre-release of lowercase letters, digits and dots that starts with a letter (`v1.2.0-rc.1`), unless PEP 440 reads it as a post-release or development release (`v1.2.0-post.1`, `v1.2.0-dev3`). Any other tag gets no Release, while the other workflows here still publish |
 | `publish-pypi.yml` | the package to PyPI from the `pypi` environment, once the tag matches `pyproject.toml`'s `version`, through [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/), so no token secret is stored |
 | `publish-docker.yml` | multi-arch images to `ghcr.io/OWNER/REPO` from the `ghcr` environment, with the built-in `GITHUB_TOKEN`, no secret needed. Images are tagged `X.Y.Z` and `X.Y`; `latest` moves only when the tag is the highest release |
 

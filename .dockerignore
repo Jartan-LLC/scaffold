@@ -5,6 +5,7 @@
 .editorconfig
 .github
 ci
+packaging
 
 # Dev environment
 .devcontainer
