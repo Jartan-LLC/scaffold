@@ -127,10 +127,10 @@ that nothing reads.
    lines in `check` (`uv build`, `twine check`, `pip-audit`), so `make check` stays the one
    verify gate.
 6. In `ci/requirements.txt`, delete the `twine` and `pip-audit` entries with their comment
-   lines and "build frontend" from the `uv` comment. In the header, delete the reason the
-   tools' own dependencies aren't pinned, and replace the sentence on where the other tools'
-   versions live with "The lint tools are versioned by their hook revs in
-   .pre-commit-config.yaml."
+   lines, and make the `uv` comment "installer, resolver and venv manager". In the header,
+   end the sentence on the tools' own dependencies at "Their own dependencies are neither
+   pinned nor hashed.", and replace the sentence on where the other tools' versions live
+   with "The lint tools are versioned by their hook revs in .pre-commit-config.yaml."
 7. In `.github/dependabot.yml`, delete the `pip` entry for `/` and keep the one for `/ci`. In
    the `/ci` entry's comment, delete the sentence "Separate from the "/" entry above so a
    CI-tool bump lands as its own reviewable PR rather than riding along with a project
