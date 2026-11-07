@@ -1,10 +1,15 @@
 ## Summary
 
-<!-- Open with any merge dependency ("Requires #XX."), then what the change does and why, in a
-     sentence or two; the full reasoning goes in the commit messages. Then one line for each
-     thing a careful reviewer could miss, a breaking change included, and each decision they
-     might question, with its reason. Say where to start reading. Don't list the changed files
-     or retell the commits. End with anything the merger must do besides merging. -->
+<!--
+- Open with any merge dependency ("Requires #XX.").
+- Then what the change does and why, in a sentence or two; the full reasoning goes in the
+  commit messages.
+- Then one line for each thing a careful reviewer could miss, a breaking change included,
+  and each decision they might question, with its reason.
+- Say where to start reading.
+- Don't list the changed files or retell the commits.
+- End with anything the merger must do besides merging.
+-->
 
 ## Related issues
 
