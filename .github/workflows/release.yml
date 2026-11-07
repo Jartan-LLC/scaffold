@@ -18,13 +18,46 @@ jobs:
     permissions:
       contents: write
     steps:
-      # No checkout needed: gh talks to the API and resolves the repo from
-      # GH_REPO. The view-or-create guard keeps re-runs on the same tag
-      # idempotent instead of failing with "release already exists".
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The notes are the body of the tag's `## [X.Y.Z]` section in CHANGELOG.md
+      # (tag vX.Y.Z). Link reference definitions are dropped: Keep a Changelog
+      # puts the compare links last, inside the oldest section. GitHub renders
+      # each newline in a release body as a line break, so Prettier joins the
+      # hard-wrapped lines; it reads stdin because, given a path, it obeys
+      # .prettierignore, which skips *.md. No `file` output means no section,
+      # and the next step falls back to generated notes.
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        run: |
+          notes="$RUNNER_TEMP/notes.md"
+          VERSION="${GITHUB_REF_NAME#v}" awk '
+            /^## / { in_section = index($0, "## [" ENVIRON["VERSION"] "]") == 1; next }
+            in_section && !/^\[[^]]+\]: /
+          ' CHANGELOG.md >"$notes.raw"
+          if grep -q '[^[:space:]]' "$notes.raw"; then
+            npx --yes prettier@3.9.10 --parser markdown --prose-wrap never <"$notes.raw" >"$notes"
+            echo "file=$notes" >>"$GITHUB_OUTPUT"
+          else
+            echo "::warning::CHANGELOG.md has nothing under '## [${GITHUB_REF_NAME#v}]'; using generated release notes"
+          fi
+
+      # The view-or-create guard keeps re-runs on the same tag idempotent
+      # instead of failing with "release already exists".
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          NOTES_FILE: ${{ steps.notes.outputs.file }}
         run: |
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            exit 0
+          fi
+          if [ -n "$NOTES_FILE" ]; then
+            notes=(--notes-file "$NOTES_FILE")
+          else
+            notes=(--generate-notes)
+          fi
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" "${notes[@]}" --verify-tag
