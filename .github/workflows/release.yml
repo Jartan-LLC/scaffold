@@ -12,9 +12,8 @@ concurrency:
 permissions: {}
 
 jobs:
-  # npx runs code fetched from the npm registry, so the notes are made in a job
-  # that holds no write token. Run as a step of the release job, that code could
-  # reach the token through what it leaves on the runner, such as a PATH entry.
+  # The notes job reads the tagged checkout with a read-only token; only the
+  # release job, which runs no repository code, holds the write token.
   notes:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -28,55 +27,22 @@ jobs:
         with:
           persist-credentials: false
 
-      # The notes are the body of the tag's `## [X.Y.Z]` section in CHANGELOG.md
-      # (tag vX.Y.Z). Link reference definitions are dropped, footnote
-      # definitions kept: Keep a Changelog puts the compare links last, inside
-      # the oldest section. GitHub renders each newline in a release body as a
-      # line break, so Prettier joins the hard-wrapped lines; it reads stdin
-      # because, given a path, it obeys .prettierignore, which skips *.md.
-      # Dependabot doesn't read `run:` strings, so the Prettier pin is bumped by
-      # hand. `timeout` bounds npx, as npm waits 5 minutes per fetch and retries.
+      # tests/test_release_notes.py covers the script. It prints nothing when
+      # the tag has no notes in CHANGELOG.md, and this step then falls back to
+      # generated notes.
       - name: Extract release notes from CHANGELOG.md
         id: notes
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          raw="$RUNNER_TEMP/notes.raw.md"
           notes="$RUNNER_TEMP/notes.md"
-          fall_back_to_generated_notes() {
-            echo "::warning::$1; using generated release notes"
-            echo "source=generated" >>"$GITHUB_OUTPUT"
-            exit 0
-          }
-          [ -f CHANGELOG.md ] || fall_back_to_generated_notes "No CHANGELOG.md"
-          # Fences open and close by CommonMark's rules, so `## ` and `[x]: `
-          # lines inside one stay code. A fence indented four or more spaces, as
-          # in a nested list item, is not seen as one.
-          VERSION="$version" awk '
-            {
-              line = $0; sub(/^ ? ? ?/, "", line)
-              c = substr(line, 1, 1); n = 0
-              if (c == "`" || c == "~") while (substr(line, n + 1, 1) == c) n++
-              rest = substr(line, n + 1)
-            }
-            n >= 3 {
-              if (fence == "") { if (c == "~" || !index(rest, "`")) { fence = c; fence_len = n } }
-              else if (c == fence && n >= fence_len && rest ~ /^[ \t]*$/) fence = ""
-            }
-            fence == "" && /^## / { in_section = index($0, "## [" ENVIRON["VERSION"] "]") == 1; next }
-            in_section && (fence != "" || !/^\[[^]^][^]]*\]: /)
-          ' CHANGELOG.md >"$raw"
-          # HTML comments render as nothing, so a section of only comments is empty.
-          perl -0777 -ne 's/<!--.*?-->//gs; $found = /\S/; END { exit !$found }' "$raw" \
-            || fall_back_to_generated_notes "CHANGELOG.md has nothing under '## [$version]'"
-          if timeout 120 npx --yes prettier@3.7.4 --parser markdown --prose-wrap never <"$raw" >"$notes"; then
-            file=$notes
+          python3 .github/scripts/release_notes.py "${GITHUB_REF_NAME#v}" CHANGELOG.md >"$notes"
+          if [ -s "$notes" ]; then
+            delimiter="EOF_$(openssl rand -hex 16)"
+            { echo "notes<<$delimiter"; cat "$notes"; echo "$delimiter"; } >>"$GITHUB_OUTPUT"
+            echo "source=changelog" >>"$GITHUB_OUTPUT"
           else
-            echo "::warning::Prettier failed; the release notes keep CHANGELOG.md's line breaks"
-            file=$raw
+            echo "::warning::No release notes for $GITHUB_REF_NAME in CHANGELOG.md; using generated release notes"
+            echo "source=generated" >>"$GITHUB_OUTPUT"
           fi
-          delimiter="EOF_$(openssl rand -hex 16)"
-          { echo "notes<<$delimiter"; cat "$file"; echo "$delimiter"; } >>"$GITHUB_OUTPUT"
-          echo "source=changelog" >>"$GITHUB_OUTPUT"
 
   release:
     needs: notes
