@@ -1,62 +1,8 @@
-# About this template
+# Scaffold
 
-How the template's parts work and how to keep them current. This page stays useful after
-setup.
-
-## What's included
-
-| Area | Contents |
-|------|----------|
-| `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, and the [enchantments](https://github.com/Jartan-LLC/enchantments) Features: Claude Code, the GitHub CLI login, Liza and its agent toolchain. To drop a Feature, follow the Removal section on its page, where it has one ([the Features list](https://github.com/Jartan-LLC/enchantments#features) links each page), then remove its entry and its `devcontainer-lock.json` key. `post-create.sh` runs `make install`, which installs the project's dependencies into the system Python, as CI does: `containerEnv` sets `UV_SYSTEM_PYTHON`, so the container has no project `.venv`. It also installs the ruff version in the ruff hook's `# frozen:` comment, so the ruff extension formats on save as `make lint` does |
-| `.claude/` | Claude Code project files — the `/onboard` command, which onboarding deletes, and `workspace/`, where agents keep plans and other working files, git-ignored |
-| `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates |
-| `pyproject.toml`, `ci/`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use, each with its release files' hashes, so an install rejects a download that doesn't match. The tools' own dependencies are not pinned. `ci/release_notes.py` makes the release notes `release.yml` publishes. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
-| `src/`, `tests/` | The package (src layout, PEP 561 typed) and its tests; the template ships a CLI entry point and logging setup |
-| `Makefile`, `.pre-commit-config.yaml` | Task runner (`make install`/`lint`/`fix`/`test`/`check`/`docs`, backed by [uv](https://docs.astral.sh/uv/), installing into the checkout's `.venv`, else the active environment, else the devcontainer's system Python) + the single lint source (ruff, codespell, shellcheck, markdownlint, lychee, actionlint, zizmor, hygiene) that `make lint` and CI both run, and the source of ruff's and codespell's versions |
-| `docs/`, `.readthedocs.yaml.example` | Sphinx docs site (Markdown via MyST, API reference from docstrings); `make docs` builds it. Publish via `pages.yml.example` (GitHub Pages) or ReadTheDocs |
-| `AGENTS.md` | Instructions every coding agent reads (Claude Code through `CLAUDE.md`): points to the project rules; corrections, verification commands, skill index |
-| `Dockerfile`, `.dockerignore` | Minimal Python image stub — pairs with `publish-docker.yml` |
-| `CHANGELOG.md`, `CONTRIBUTING.md` | Keep-a-Changelog skeleton and a Python contributor guide |
-| `.env.example`, `.prettierrc` | Env-var template and Prettier config (for JS/TS work) |
-| `.editorconfig` | Language-aware formatting — 4-space Python, 2-space JS/TS, tabs for Makefiles |
-| `.gitattributes` | Syntax-aware diffs, LF checkout on every platform |
-| `.gitignore` | Comprehensive patterns for Node, Python, Docker, IDEs, env files, build artifacts |
-| `CLAUDE.md` | Imports `AGENTS.md` for Claude Code; edit `AGENTS.md` instead |
-| `GUARDRAILS.md` | Project rules ranked by how firmly each holds (never / ask first / default / preference) — the tiers Liza agents enforce |
-
-## Syncing template updates
-
-You can still pull in later improvements to the template. How depends on how your repository started.
-
-```bash
-# Once per clone, either way, unless onboarding added it there: add the template as an 'upstream' remote
-git remote add upstream https://github.com/Jartan-LLC/scaffold.git  # this template's repo
-git fetch upstream
-```
-
-**If you used *Use this template*** — the button on the template's GitHub page — GitHub started your history
-fresh, so there is nothing to merge: `git merge upstream/main` stops at `fatal: refusing to merge
-unrelated histories`. Port changes by hand instead, and keep the newest upstream commit you have
-dealt with — ported or deliberately skipped — in `.scaffold-sync` at your repository root.
-Onboarding recorded there the template commit your repository was created from, so a
-first sync starts from it:
-
-```bash
-git log --oneline --reverse "$(cat .scaffold-sync)"..upstream/main  # not yet dealt with, oldest first
-git show <sha>                          # the change to port; apply the equivalent by hand
-echo <sha> > .scaffold-sync             # once everything up to <sha> is ported or skipped
-```
-
-Commit `.scaffold-sync` with the port, so the file always matches what the repository contains.
-
-**If you forked this repository**, the history is shared and the merge works:
-
-```bash
-git checkout -b template-update
-git merge upstream/main   # resolve conflicts, keeping your customizations
-```
-
-Open a PR either way, so CI runs before the changes land.
+This project started from [scaffold](https://github.com/Jartan-LLC/scaffold), a GitHub
+template repository, or is scaffold itself. This page covers the parts that came from
+scaffold and how to pull in later scaffold changes.
 
 ## Liza
 
@@ -102,13 +48,15 @@ the rest of the run: checkpoints, the operator session, logs.
 
 ## CI
 
-`ci.yml`'s `lint`, `python`, `test` and `docs` jobs gate the `check` aggregator. `python`
-runs pyright, builds and checks the package, and runs pip-audit, which is advisory: its
-failure doesn't fail the job, and adds a warning annotation naming pip-audit to the
-`python` check. Removing a gating job also means removing its `check.needs` and results
-entries. To add the `docker` or `integration-tests` job, uncomment it and add it to both.
-The Node checks are commented steps inside `lint`: uncomment them there, with no `check`
-change needed.
+`ci.yml`'s `check` job passes when every job in its `needs` list passed or was skipped. A
+job joins or leaves that gate through two entries in `check`: `needs` and the `results`
+array. To add the `docker` or `integration-tests` job, uncomment it and add it to both. The
+Node checks are commented steps inside `lint`: uncomment them there, with no `check` change
+needed.
+
+The `python` job runs pyright, builds and checks the package, and runs pip-audit, which is
+advisory: its failure doesn't fail the job, and adds a warning annotation naming pip-audit
+to the `python` check.
 
 The `changes` job skips `python` and `test` when every changed file is Markdown,
 `.pre-commit-config.yaml`, or under `docs/`, `.claude/` or `.github/`. A change to
@@ -124,9 +72,6 @@ breaks only the dev container build shows at the weekly run, not on its PR. A pu
 `main` that skips the Python jobs doesn't check the dev extras, which resolve at run time;
 the weekly run or the next PR that runs those jobs does.
 
-In `.github/dependabot.yml`, remove the ecosystems you don't use, add the ones you need,
-and adjust `directory` where manifests aren't at the root.
-
 A private repository pays for Actions minutes, and GitHub bills each job as at least one
 minute. Two levers cut those minutes:
 
@@ -139,21 +84,48 @@ minute. Two levers cut those minutes:
 
 ## Publishing
 
-Nothing publishes until you push a `v*` tag. Keep `release.yml` even if you publish no
-package or image: it is language-agnostic. Delete the publish workflows you won't use, with
-their stubs.
+Nothing publishes until you push a `v*` tag. Each tag runs these workflows:
 
-| Workflow | Needs |
+| Workflow | Publishes |
 |---|---|
-| `release.yml` | nothing; creates a GitHub Release whose notes are the tag's `CHANGELOG.md` section (`## [1.2.0]` for `v1.2.0`) with its hard-wrapped lines joined, or GitHub's generated notes, with a warning in the run, when there is no `CHANGELOG.md` or that section is missing, empty or holds only HTML comments. A PEP 440 or SemVer pre-release tag (`v1.2.0rc1`, `v1.2.0-rc.1`) makes a pre-release |
-| `publish-pypi.yml` | the package rename; a `pypi` environment (`gh api -X PUT repos/{owner}/{repo}/environments/pypi`, which also clears the GitHub Actions VS Code extension's "environment `pypi` is not valid" warning) with [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) configured for it, so no token secret is stored. It fails on a tag until both are done. Optionally uncomment its tag-vs-version check |
-| `publish-docker.yml` | a real `Dockerfile` entrypoint; a `ghcr` environment (`gh api -X PUT repos/{owner}/{repo}/environments/ghcr`), with required reviewers to gate publishing. Publishes multi-arch images to `ghcr.io/OWNER/REPO` with the built-in `GITHUB_TOKEN`, no secret needed |
+| `release.yml` | a GitHub Release whose notes are the tag's `CHANGELOG.md` section (`## [1.2.0]` for `v1.2.0`) with its hard-wrapped lines joined, or GitHub's generated notes, with a warning in the run, when there is no `CHANGELOG.md` or that section is missing, empty or holds only HTML comments. A PEP 440 or SemVer pre-release tag (`v1.2.0rc1`, `v1.2.0-rc.1`) makes a pre-release |
+| `publish-pypi.yml` | the package to PyPI from the `pypi` environment, through [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/), so no token secret is stored |
+| `publish-docker.yml` | multi-arch images to `ghcr.io/OWNER/REPO` from the `ghcr` environment, with the built-in `GITHUB_TOKEN`, no secret needed. Images are tagged `X.Y.Z` and `X.Y`; `latest` moves only when the tag is the highest release |
 
-Docker images are tagged `X.Y.Z` and `X.Y`; `latest` moves only when the tag is the highest
-release.
+## Syncing template updates
 
-To publish the docs, pick one: GitHub Pages for a single version (Settings > Pages >
-Source = "GitHub Actions", then rename `.github/workflows/pages.yml.example` to
-`pages.yml`), or Read the Docs for versioned docs (rename `.readthedocs.yaml.example` to
-`.readthedocs.yaml` and import the repo there). The docs build is checked on every PR either
-way.
+In a project created with *Use this template*, `.scaffold-sync` holds the newest scaffold
+commit it has ported or skipped. List the scaffold commits after it:
+
+```bash
+git remote add upstream https://github.com/Jartan-LLC/scaffold.git  # once per clone
+git fetch upstream
+git log --oneline --reverse "$(cat .scaffold-sync)"..upstream/main  # not yet dealt with, oldest first
+```
+
+Oldest first, port each commit you want, and skip the others by leaving them out:
+
+```bash
+git cherry-pick -n <sha>   # stages the commit's change without committing it
+```
+
+- `cherry-pick` merges three ways, across the unrelated history *Use this template* creates.
+  Resolve each conflict before the next pick, then adapt the change to this project. Where
+  scaffold's side of a conflict holds a `TODO(/onboard)` marker or a placeholder, keep this
+  project's side.
+- A file this project deleted comes up as a `modify/delete` conflict. `git rm <path>` keeps it
+  deleted, and the rest of the commit applies.
+- Pick one commit at a time. A range (`A..B`) stops at its first conflict and won't continue
+  over the staged result.
+- `-n` makes no commit, so scaffold's subjects, and the `(#NNN)` numbers in them, which name
+  scaffold's issues, stay out of this project's history.
+- Scaffold's `main` is linear, so every commit picks without `-m`.
+
+Then record the newest commit you ported or skipped, and commit `.scaffold-sync` with the
+port, so the file always matches what the repository contains:
+
+```bash
+git rev-parse <sha> > .scaffold-sync
+```
+
+Open a PR, so CI runs before the changes land.
