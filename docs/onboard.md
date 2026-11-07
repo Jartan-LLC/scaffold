@@ -21,6 +21,11 @@ An item whose answer needs neither, such as which workflows to keep, says what t
 - [ ] Publishing targets: the PyPI package, the container image, the docs site.
       [Publishing](scaffold.md#publishing) says what each needs and what to delete for each
       you drop
+- [ ] Whether each GitHub Release attaches an RPM for Fedora, built from `packaging/rpm.spec`.
+      It fits files that run unchanged on every Fedora release, such as a shell script. A
+      Python package's RPM requires the Python version of the Fedora release that built it,
+      so publish a Python package to PyPI instead. To drop the RPM, delete `packaging/`: the
+      `rpm` jobs in `ci.yml` and `release.yml` run only while `packaging/rpm.spec` exists
 - [ ] Whether to keep `Dockerfile` (its marker says what goes with it),
       `.github/workflows/scorecard.yml` (an OpenSSF score; it skips on private repos) and
       `.github/workflows/external-link-check.yml` (a weekly check for broken external links).
