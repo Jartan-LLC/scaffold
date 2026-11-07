@@ -109,8 +109,8 @@ metadata() {
         "$work/packages" >&2
     local repodata=$work/bundle/repodata file
     if [[ -n $previous ]]; then
-        # A CDN can go on serving the previous repomd.xml for a while; the files it names
-        # must still be there, or dnf gets a 404 and skips the repository.
+        # A client that read the previous repomd.xml just before a deploy fetches the files it
+        # names just after; they must still be there, or dnf gets a 404 and skips the repository.
         mkdir "$work/previous"
         tar -xzf "$previous" -C "$work/previous" repodata/repomd.xml ||
             die "$previous has no repodata/repomd.xml"
