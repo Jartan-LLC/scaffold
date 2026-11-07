@@ -10,7 +10,7 @@ setup.
 | `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, and the [enchantments](https://github.com/Jartan-LLC/enchantments) Features: Claude Code, the GitHub CLI login, Liza and its agent toolchain. To drop a Feature, follow the Removal section on its page, where it has one ([the Features list](https://github.com/Jartan-LLC/enchantments#features) links each page), then remove its entry and its `devcontainer-lock.json` key. `post-create.sh` runs `make install`, which installs the project's dependencies into the system Python, as CI does: `containerEnv` sets `UV_SYSTEM_PYTHON`, so the container has no project `.venv`. It also installs the ruff version in the ruff hook's `# frozen:` comment, so the ruff extension formats on save as `make lint` does |
 | `.claude/` | Claude Code project files — the `/onboard` command, which onboarding deletes, and `workspace/`, where agents keep plans and other working files, git-ignored |
 | `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates |
-| `pyproject.toml`, `ci/`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use, each with its release files' hashes, so an install rejects a download that doesn't match. The tools' own dependencies are not pinned. `ci/release_notes.py` makes the release notes `release.yml` publishes. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
+| `pyproject.toml`, `ci/`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use, each with its release files' hashes, so an install rejects a download that doesn't match. The tools' own dependencies are not pinned. `ci/release_notes.py` makes the release notes `release.yml` publishes, and `ci/changes.py` decides which of `ci.yml`'s gated jobs a change runs. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
 | `src/`, `tests/` | The package (src layout, PEP 561 typed) and its tests; the template ships a CLI entry point and logging setup |
 | `Makefile`, `.pre-commit-config.yaml` | Task runner (`make install`/`lint`/`fix`/`test`/`check`/`docs`, backed by [uv](https://docs.astral.sh/uv/), installing into the checkout's `.venv`, else the active environment, else the devcontainer's system Python) + the single lint source (ruff, codespell, shellcheck, markdownlint, lychee, actionlint, zizmor, hygiene) that `make lint` and CI both run, and the source of ruff's and codespell's versions |
 | `docs/`, `.readthedocs.yaml.example` | Sphinx docs site (Markdown via MyST, API reference from docstrings); `make docs` builds it. Publish via `pages.yml.example` (GitHub Pages) or ReadTheDocs |
@@ -114,15 +114,15 @@ The `changes` job skips `python` and `test` when every changed file is Markdown,
 `.pre-commit-config.yaml`, or under `docs/`, `.claude/` or `.github/`. A change to
 `README.md`, `.github/workflows/ci.yml` or anything under `src/` or `tests/` always runs
 them. If a Python job comes to use a file in a skipped path, such as a local action under
-`.github/actions/`, add it to that list in the `changes` job's `diff` step in `ci.yml`.
+`.github/actions/`, add it to `_PYTHON_READS` in `ci/changes.py`.
 
-The dev container job runs only when a change touches one of its build inputs, which the
-`diff` step lists. `pyproject.toml`, `package.json` and pnpm's lockfile and config are not
-among them; `ci/requirements.txt` is, because `post-create.sh` reads uv's pin from it.
-Scheduled and manual runs run every job, so a `pyproject.toml` or Node manifest change that
-breaks only the dev container build shows at the weekly run, not on its PR. A push to
-`main` that skips the Python jobs doesn't check the dev extras, which resolve at run time;
-the weekly run or the next PR that runs those jobs does.
+The dev container job runs only when a change touches one of its build inputs, which
+`_DEVCONTAINER_INPUTS` in `ci/changes.py` lists. `pyproject.toml`, `package.json` and pnpm's
+lockfile and config are not among them; `ci/requirements.txt` is, because `post-create.sh`
+reads uv's pin from it. Scheduled and manual runs run every job, so a `pyproject.toml` or
+Node manifest change that breaks only the dev container build shows at the weekly run, not
+on its PR. A push to `main` that skips the Python jobs doesn't check the dev extras, which
+resolve at run time; the weekly run or the next PR that runs those jobs does.
 
 In `.github/dependabot.yml`, remove the ecosystems you don't use, add the ones you need,
 and adjust `directory` where manifests aren't at the root.
