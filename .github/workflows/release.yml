@@ -55,8 +55,8 @@ jobs:
             echo "source=generated" >>"$GITHUB_OUTPUT"
           fi
 
-      # Each release attaches an RPM while the project ships one, signed while the RPM
-      # carries a dnf repository.
+      # Each release attaches an RPM while packaging/rpm.spec exists, signed while
+      # packaging/dnf.repo exists.
       - id: packaging
         run: |
           if [ -f packaging/rpm.spec ]; then
@@ -128,9 +128,9 @@ jobs:
           echo "RPM=${rpms[0]}" >>"$GITHUB_ENV"
           echo "NAME=$(basename "${rpms[0]}" .noarch.rpm)" >>"$GITHUB_ENV"
 
-      # The latest release's bundle is the one Pages serves until this one replaces it: a
-      # client that read its repomd.xml just before the deploy fetches the files it names
-      # just after, so the new bundle keeps them.
+      # The latest release's bundle is the one the dnf repository serves until this one
+      # replaces it: a client that read its repomd.xml just before the swap fetches the
+      # files it names just after, so the new bundle keeps them.
       - name: Download the earlier full releases' RPMs and the latest bundle
         if: env.PRERELEASE == 'false'
         env:

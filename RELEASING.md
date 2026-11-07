@@ -51,10 +51,6 @@ How to cut a release from `main`. The workflows a tag runs are listed in
    The tag is `v` and the version exactly as the changelog heading writes it: the release and
    publish workflows run on `v*` tags, and `release.yml` takes the notes from `## [X.Y.Z]`.
 
-   While `packaging/dnf.repo` exists, a full release's dnf repository bundle leaves out an
-   earlier release whose `release.yml` run hadn't created its GitHub Release when this run's
-   `sign` job listed the releases; the next full release's bundle has it again.
-
 ## After the tag
 
 The tag starts `release.yml`, `publish-pypi.yml` and `publish-docker.yml`. While
@@ -78,7 +74,9 @@ when a re-run fails again.
    generated notes, `CHANGELOG.md` had nothing under `## [X.Y.Z]` at the tag; the warning says
    why. While `packaging/rpm.spec` exists, check that it lists `NAME.noarch.rpm` too, where
    `NAME` is `Name` in `packaging/rpm.spec`. While `packaging/dnf.repo` exists, a full release
-   lists `NAME-dnf-repo.tar.gz` as well, the dnf repository's signed metadata.
+   lists `NAME-dnf-repo.tar.gz` as well, the dnf repository's signed metadata; it leaves out an
+   earlier release whose `release.yml` run hadn't created its GitHub Release when this run's
+   `sign` job listed the releases, and the next full release's bundle has it again.
 
 ## Pre-releases
 

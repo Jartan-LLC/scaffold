@@ -50,9 +50,9 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
   and import the repo there.
 - RPM for Fedora, attached to each GitHub Release: for files that run unchanged on every
   Fedora release, such as a shell script, keep `packaging/`, and copy `RELEASING.md`'s
-  Installing the RPM section into your README. In the README's copy, drop the "While
-  `packaging/dnf.repo` exists" that opens the fingerprint paragraph, or, without a dnf
-  repository, the whole paragraph. For a Python package, publish to PyPI instead.
+  Installing the RPM section into your README. In the README's copy, delete "While
+  `packaging/dnf.repo` exists, " from the start of the fingerprint paragraph; without a dnf
+  repository, delete that paragraph. For a Python package, publish to PyPI instead.
   A dnf repository lets users get new releases with `dnf upgrade`; a private repository can't
   publish one, because dnf can't fetch its Release assets.
 
