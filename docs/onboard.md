@@ -127,8 +127,10 @@ that nothing reads.
    lines in `check` (`uv build`, `twine check`, `pip-audit`), so `make check` stays the one
    verify gate.
 6. In `ci/requirements.txt`, delete the `twine` and `pip-audit` entries with their comment
-   lines, "build frontend" from the `uv` comment, and, from the header, the reason the
-   tools' own dependencies aren't pinned and the mention of `pyproject.toml`'s extras.
+   lines and "build frontend" from the `uv` comment. In the header, delete the reason the
+   tools' own dependencies aren't pinned, and replace the sentence on where the other tools'
+   versions live with "The lint tools are versioned by their hook revs in
+   .pre-commit-config.yaml."
 7. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
    uv" line for your stack.
 8. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
