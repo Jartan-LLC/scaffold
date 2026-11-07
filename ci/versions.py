@@ -90,7 +90,7 @@ def is_prerelease(version: str) -> bool:
     return read is not None and read.prerelease
 
 
-def release_key(version: str) -> ReleaseKey | None:
+def _release_key(version: str) -> ReleaseKey | None:
     """Return a key that orders releases as PEP 440 does.
 
     Versions PEP 440 calls equal get equal keys: ``1.2`` and ``1.2.0``, or
@@ -135,7 +135,7 @@ def image_tags(version: str, tags: Iterable[str]) -> dict[str, str]:
         raise ValueError(f"v{version} makes no valid Docker tag")
     if read.prerelease:
         return {"version": docker_version, "minor": "", "latest": "false"}
-    keys = (release_key(name.removeprefix("v")) for name in tags)
+    keys = (_release_key(name.removeprefix("v")) for name in tags)
     highest = max((k for k in keys if k is not None), default=read.key)
     major, minor = (*read.key[1], 0)[:2]
     return {

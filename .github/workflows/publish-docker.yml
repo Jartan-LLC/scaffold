@@ -48,8 +48,8 @@ jobs:
 
       # Not metadata-action's semver or pep440 tag types: neither keeps the names of both
       # version forms release.yml accepts (semver drops v1.2.0rc1, pep440 renames
-      # v1.2.0-rc.1), and its `latest=auto` tags every non-prerelease build, so a patch
-      # on an older release line would move `latest` backwards.
+      # v1.2.0-rc.1), and metadata-action's `latest=auto` tags every non-prerelease
+      # build, so a patch on an older release line would move `latest` backwards.
       - name: Choose the image's tags
         id: tags
         run: |
