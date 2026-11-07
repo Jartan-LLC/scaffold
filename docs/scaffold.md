@@ -120,7 +120,7 @@ their stubs.
 
 | Workflow | Needs |
 |---|---|
-| `release.yml` | nothing; creates a GitHub Release whose notes are the tag's `CHANGELOG.md` section (`## [1.2.0]` for `v1.2.0`) with its hard-wrapped lines joined, or GitHub's generated notes, with a warning in the run, when that section is missing or empty |
+| `release.yml` | nothing; creates a GitHub Release whose notes are the tag's `CHANGELOG.md` section (`## [1.2.0]` for `v1.2.0`) with its hard-wrapped lines joined, or GitHub's generated notes, with a warning in the run, when there is no `CHANGELOG.md` or that section is missing, empty or holds only HTML comments |
 | `publish-pypi.yml` | the package rename; a `pypi` environment (`gh api -X PUT repos/{owner}/{repo}/environments/pypi`, which also clears the GitHub Actions VS Code extension's "environment `pypi` is not valid" warning) with [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) configured for it, so no token secret is stored. It fails on a tag until both are done. Optionally uncomment its tag-vs-version check |
 | `publish-docker.yml` | a real `Dockerfile` entrypoint; a `ghcr` environment (`gh api -X PUT repos/{owner}/{repo}/environments/ghcr`), with required reviewers to gate publishing. Publishes multi-arch images to `ghcr.io/OWNER/REPO` with the built-in `GITHUB_TOKEN`, no secret needed |
 

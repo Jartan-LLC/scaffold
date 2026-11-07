@@ -12,7 +12,7 @@ stdout and the reason goes to stderr; the workflow then falls back to
 generated notes.
 
 Usage: ``release_notes.py VERSION [CHANGELOG]``. Standard library only, so the
-release job needs nothing but the runner's ``python3``.
+notes job needs nothing but the runner's ``python3``.
 """
 
 import re
@@ -21,8 +21,9 @@ from collections.abc import Iterable, Iterator
 from itertools import pairwise
 from pathlib import Path
 
-# A fence may sit inside a list item, so any indent opens one. A backtick
-# fence's info string can't contain a backtick (CommonMark).
+# A fence may sit inside a list item, so it opens at any indent outside an
+# indented code block. A backtick fence's info string can't contain a backtick
+# (CommonMark).
 _FENCE = re.compile(r"\s*(`{3,}|~{3,})(.*)")
 _ATX_HEADING = re.compile(r" {0,3}#{1,6}(\s|$)")
 _LINK_DEFINITION = re.compile(r" {0,3}\[[^\]^][^\]]*\]:")

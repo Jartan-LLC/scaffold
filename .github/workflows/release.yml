@@ -60,6 +60,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           NOTES_SOURCE: ${{ needs.notes.outputs.source }}
+          # Linux caps one environment variable at 128 KiB, so a section longer
+          # than that fails this step, on a re-run too.
           NOTES: ${{ needs.notes.outputs.notes }}
         run: |
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
