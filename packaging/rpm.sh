@@ -21,14 +21,28 @@ git() {
 (($# == 2)) || die "usage: packaging/rpm.sh VERSION OUTDIR"
 outdir=$2
 # RPM sorts 1.2.0rc1 after 1.2.0 and can't hold a - in a version. A ~ before the
-# pre-release part sorts it before the release, as PEP 440 and SemVer do. PEP 440 reads
-# 1.2.0-1 and 1.2.0-post.1 as post-releases, which release.yml publishes as full releases,
-# so those are refused: the ~ would sort them before 1.2.0.
+# pre-release part sorts it before the release, as PEP 440 and SemVer do.
 release='[0-9]+(\.[0-9]+)*'
+# PEP 440's version pattern, which release.yml reads before SemVer's (in lowercase, without
+# epoch or local part).
+pre='([-_.]?(a|b|c|rc|alpha|beta|pre|preview)[-_.]?[0-9]*)?'
+post='(-[0-9]+|[-_.]?(post|rev|r)[-_.]?[0-9]*)?'
+dev='([-_.]?dev[-_.]?[0-9]*)?'
+pep440="^$release$pre$post$dev\$"
+# Whether PEP 440 reads $1 as a post-release of a release (1.2.0-post.1, sorted after
+# 1.2.0) or as a development release (1.2.0-dev3, sorted before 1.2.0-alpha). With a ~,
+# RPM would sort it the other way, so dnf would skip an upgrade.
+post_or_dev() {
+    local lower
+    # Not ${1,,}, which macOS's bash 3.2 lacks.
+    lower=$(tr '[:upper:]' '[:lower:]' <<<"$1")
+    # Groups: 2 is the pre-release, 4 the post-release, 6 the development release.
+    [[ $lower =~ $pep440 ]] &&
+        [[ -n ${BASH_REMATCH[6]} || (-n ${BASH_REMATCH[4]} && -z ${BASH_REMATCH[2]}) ]]
+}
 if [[ $1 =~ ^($release)((a|b|rc)[0-9]+)$ ]]; then
     version="${BASH_REMATCH[1]}~${BASH_REMATCH[3]}"
-elif [[ $1 =~ ^$release(-[A-Za-z][0-9A-Za-z]*(\.[0-9A-Za-z]+)*)?$ &&
-    ! ${1,,} =~ -(post|rev|r)[0-9]*(\.|$) ]]; then
+elif [[ $1 =~ ^$release(-[A-Za-z][0-9A-Za-z]*(\.[0-9A-Za-z]+)*)?$ ]] && ! post_or_dev "$1"; then
     version=${1/-/\~}
 else
     die "not a version: $1 (write X.Y.Z, or X.Y.ZrcN or X.Y.Z-rc.N for a pre-release)"
