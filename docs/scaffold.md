@@ -103,13 +103,14 @@ the rest of the run: checkpoints, the operator session, logs.
 
 ## CI
 
-`ci.yml`'s `lint`, `typecheck`, `test`, `build` and `docs` jobs gate the `check`
-aggregator; `audit` runs but is advisory. Removing a gating job also means removing its
+`ci.yml`'s `lint`, `python`, `test` and `docs` jobs gate the `check` aggregator. `python`
+runs pyright, builds and checks the package, and runs pip-audit, which is advisory: its
+failure doesn't fail the job. Removing a gating job also means removing its
 `check.needs` and results entries. To add the `docker` or `integration-tests` job,
 uncomment it and add it to both. The Node checks are commented steps inside `lint`:
 uncomment them there, with no `check` change needed.
 
-The `changes` job skips `typecheck`, `test`, `build` and `audit` when every changed file is
+The `changes` job skips `python` and `test` when every changed file is
 Markdown, `.pre-commit-config.yaml`, or under `docs/`, `.claude/` or `.github/`. A change to
 `README.md`, `.github/workflows/ci.yml` or anything under `src/` or `tests/` always runs
 them. If a Python job comes to use a file in a skipped path, such as a local action under

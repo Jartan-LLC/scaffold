@@ -30,7 +30,7 @@ Cleanup; [`scaffold.md`](scaffold.md) covers what stays useful afterwards.
 - [ ] Enable CodeQL default setup (Settings > Security > Code scanning)
 - [ ] Delete `.github/workflows/scorecard.yml` if you don't want an OpenSSF score (it skips on private repos)
 - [ ] Enable secret scanning with push protection (Settings > Security > Secret Protection)
-- [ ] Configure branch ruleset for `main` — require PR reviews, require CI to pass, block force pushes
+- [ ] Configure branch ruleset for `main` — require PR reviews, require the `check` status to pass, block force pushes
 - [ ] Enable auto-merge (Settings > General > Allow auto-merge) — Dependabot minor/patch PRs auto-merge after CI passes
 
 ### Cleanup
@@ -95,8 +95,8 @@ which reads fine on GitHub without Sphinx, and this page, which Cleanup deletes.
    `.github/workflows/dependency-audit.yml`. If not containerized, also `Dockerfile`,
    `.dockerignore` and `.github/workflows/publish-docker.yml`.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
-4. In `.github/workflows/ci.yml`, remove the `typecheck`, `test`, `build`, `audit` and
-   `docs` jobs and their `check` entries (`docs/scaffold.md`, CI). In the `changes` job,
+4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
+   `check` entries (`docs/scaffold.md`, CI). In the `changes` job,
    remove the `python:` line under `outputs` and the `python=true` block, with its comment,
    in the `diff` step. `lint` stays.
 5. Keep the `Makefile`: it is the verify entry point in every stack. Point its `lint`, `fix`,

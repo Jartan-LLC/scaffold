@@ -77,11 +77,13 @@ jobs:
       # - run: pnpm install --frozen-lockfile
       # - run: pnpm exec prettier --check .
 
-  typecheck:
+  # pyright, the package build and the audit share one job and one install: each job is
+  # billed as at least a minute, and on their own these finish well inside one.
+  python:
     needs: changes
     if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -96,8 +98,25 @@ jobs:
           version-file: ci/requirements.txt
           enable-cache: true
 
-      - run: uv pip install -e '.[dev]'
+      # The full environment `make check` audits: package deps plus the dev/docs/CI
+      # tools, not just the (currently empty) declared deps.
+      - run: uv pip install -e '.[dev,docs]' -r ci/requirements.txt
       - run: pyright
+
+      # These run whatever pyright found, so one run reports every failing check.
+      # `uv build` builds the project in its own isolated env.
+      - id: build
+        if: ${{ !cancelled() }}
+        run: uv build
+      - if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: python -m twine check dist/*
+
+      # Advisory: an unfixable transitive advisory must not fail every run.
+      # dependency-audit.yml tracks findings in an issue.
+      - name: Audit dependencies for known CVEs
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: pip-audit
 
   test:
     needs: changes
@@ -126,59 +145,6 @@ jobs:
 
       - run: uv pip install -e '.[dev]'
       - run: pytest -m "not integration"
-
-  build:
-    needs: changes
-    if: needs.changes.outputs.python == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      # No dependency cache: this job only installs the pinned CI tools (nothing
-      # from pyproject), and `uv build` builds the project in its own isolated env.
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version-file: .python-version
-
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          version-file: ci/requirements.txt
-
-      - run: uv pip install -r ci/requirements.txt
-      - run: uv build
-      - run: python -m twine check dist/*
-
-  # Advisory: an unfixable transitive advisory must not fail every run, so the job may
-  # fail and `check` deliberately does not gate on it. dependency-audit.yml tracks
-  # findings in an issue.
-  audit:
-    needs: changes
-    if: needs.changes.outputs.python == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version-file: .python-version
-
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          version-file: ci/requirements.txt
-          enable-cache: true
-
-      # Audit the full installed environment — package deps plus the dev/docs/CI
-      # tools — mirroring `make check`, not just the (currently empty) declared deps.
-      - run: uv pip install -e '.[dev,docs]' -r ci/requirements.txt
-      - name: Audit dependencies for known CVEs
-        run: pip-audit
 
   docs:
     runs-on: ubuntu-24.04
@@ -323,12 +289,12 @@ jobs:
     if: always()
     # When you uncomment integration-tests / docker above, add them to BOTH the
     # needs list and the results array below.
-    needs: [lint, typecheck, test, build, docs, changes, devcontainer]
+    needs: [lint, python, test, docs, changes, devcontainer]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - run: |
-          results=("${{ needs.lint.result }}" "${{ needs.typecheck.result }}" "${{ needs.test.result }}" "${{ needs.build.result }}" "${{ needs.docs.result }}" "${{ needs.changes.result }}" "${{ needs.devcontainer.result }}")
+          results=("${{ needs.lint.result }}" "${{ needs.python.result }}" "${{ needs.test.result }}" "${{ needs.docs.result }}" "${{ needs.changes.result }}" "${{ needs.devcontainer.result }}")
           for r in "${results[@]}"; do
             if [[ "$r" != "success" && "$r" != "skipped" ]]; then
               echo "Check failed: $r"
