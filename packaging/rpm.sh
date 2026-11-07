@@ -19,15 +19,23 @@ git() {
 }
 
 (($# == 2)) || die "usage: packaging/rpm.sh VERSION OUTDIR"
-# RPM sorts 1.2.0rc1 after 1.2.0, so a pre-release must carry its - for the ~ below.
-[[ $1 =~ ^[0-9]+(\.[0-9]+)*(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]] ||
-    die "not a version: $1 (write X.Y.Z, or X.Y.Z-rc.N for a pre-release)"
-# RPM's Version can't hold a -; ~ takes its place and, like SemVer's -, sorts before the
-# release.
-version=${1//-/\~} outdir=$2
+outdir=$2
+# RPM sorts 1.2.0rc1 after 1.2.0 and can't hold a - in a version. A ~ before the
+# pre-release part sorts it before the release, as PEP 440 and SemVer do. PEP 440 reads
+# 1.2.0-1 and 1.2.0-post.1 as post-releases, which release.yml publishes as full releases,
+# so those are refused: the ~ would sort them before 1.2.0.
+release='[0-9]+(\.[0-9]+)*'
+if [[ $1 =~ ^($release)((a|b|rc)[0-9]+)$ ]]; then
+    version="${BASH_REMATCH[1]}~${BASH_REMATCH[3]}"
+elif [[ $1 =~ ^$release(-[A-Za-z][0-9A-Za-z]*(\.[0-9A-Za-z]+)*)?$ &&
+    ! ${1,,} =~ -(post|rev|r)[0-9]*(\.|$) ]]; then
+    version=${1/-/\~}
+else
+    die "not a version: $1 (write X.Y.Z, or X.Y.ZrcN or X.Y.Z-rc.N for a pre-release)"
+fi
 
 # The commit's time as build time and file times, and a fixed build host, so a rebuild
-# of the same commit in the same image gives the same bytes.
+# of the same commit in the same image, with the same rpm-build, gives the same bytes.
 SOURCE_DATE_EPOCH=$(git log -1 --format=%ct HEAD)
 export SOURCE_DATE_EPOCH
 

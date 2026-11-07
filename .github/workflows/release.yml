@@ -71,6 +71,9 @@ jobs:
 
   attest:
     needs: rpm
+    # Attestations need a public repository, or a private one on GitHub Enterprise Cloud,
+    # which can drop this condition. Elsewhere the action fails and the tag gets no Release.
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
