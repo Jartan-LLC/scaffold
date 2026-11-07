@@ -51,9 +51,8 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
 - RPM for Fedora, attached to each GitHub Release: for files that run unchanged on every
   Fedora release, such as a shell script, keep `packaging/`, and copy the commands in
   `RELEASING.md`'s Installing the RPM section into your README. For a Python package, publish
-  to PyPI instead. With a dnf repository, the RPM also installs the repository's definition,
-  `packaging/dnf.repo`, and its public key, `packaging/RPM-GPG-KEY`. A private repository
-  can't publish a dnf repository, because dnf can't fetch private Release assets.
+  to PyPI instead. A dnf repository lets users get new releases with `dnf upgrade`; a private
+  repository can't publish one, because dnf can't fetch its Release assets.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
@@ -62,16 +61,14 @@ its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sent
 `/packaging` in `.github/dependabot.yml`, the `rpm.yml` row in Publishing, and, in
 `RELEASING.md`, the Installing the RPM section and each sentence and list item that opens with
 "while `packaging/rpm.spec` exists" or "while `packaging/dnf.repo` exists". Keep
-`.github/workflows/rpm.yml`: `ci.yml` and `release.yml` call it from jobs that skip while
-`packaging/rpm.spec` is missing. `ci.yml`'s `dnf-repo` job skips then too.
+`.github/workflows/rpm.yml` and the RPM jobs in `ci.yml` and `release.yml`: they skip while
+the spec is missing.
 
-To keep the RPM without the dnf repository, delete `packaging/dnf.repo`,
-`packaging/RPM-GPG-KEY`, `packaging/dnf-repo.sh`, `tests/packaging/test_dnf_repo_sh.py`,
-`ci/dnf-repo-test.sh` and `ci/dnf_repo_server.py`, the lines in
-`packaging/rpm.spec` that make and install the first two and list them under `%files`, with
-their comments, and each sentence and list item in `RELEASING.md` that opens with "while
-`packaging/dnf.repo` exists". `ci.yml`'s `dnf-repo` job skips while `packaging/dnf.repo` is
-missing.
+To keep the RPM without the dnf repository, as a private repository must, delete
+`packaging/dnf.repo`, `packaging/RPM-GPG-KEY`, `packaging/dnf-repo.sh`,
+`tests/packaging/test_dnf_repo_sh.py`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, the
+spec's lines that make, install and list those two files, with their comments, and each
+sentence and list item in `RELEASING.md` that opens with "while `packaging/dnf.repo` exists".
 
 ## Procedures
 
