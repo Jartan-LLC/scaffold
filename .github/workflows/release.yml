@@ -12,70 +12,99 @@ concurrency:
 permissions: {}
 
 jobs:
-  release:
+  # npx runs code fetched from the npm registry, so the notes are made in a job
+  # that holds no write token. Run as a step of the release job, that code could
+  # reach the token through what it leaves on the runner, such as a PATH entry.
+  notes:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 5
     permissions:
-      contents: write
+      contents: read # checkout
+    outputs:
+      source: ${{ steps.notes.outputs.source }}
+      notes: ${{ steps.notes.outputs.notes }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       # The notes are the body of the tag's `## [X.Y.Z]` section in CHANGELOG.md
-      # (tag vX.Y.Z). Link reference definitions are dropped: Keep a Changelog
-      # puts the compare links last, inside the oldest section. GitHub renders
-      # each newline in a release body as a line break, so Prettier joins the
-      # hard-wrapped lines; it reads stdin because, given a path, it obeys
-      # .prettierignore, which skips *.md. Dependabot doesn't read `run:`
-      # strings, so the Prettier pin is bumped by hand. This step gets no token:
-      # npx runs code fetched from the npm registry.
+      # (tag vX.Y.Z). Link reference definitions are dropped, footnote
+      # definitions kept: Keep a Changelog puts the compare links last, inside
+      # the oldest section. GitHub renders each newline in a release body as a
+      # line break, so Prettier joins the hard-wrapped lines; it reads stdin
+      # because, given a path, it obeys .prettierignore, which skips *.md.
+      # Dependabot doesn't read `run:` strings, so the Prettier pin is bumped by
+      # hand. `timeout` bounds npx, as npm waits 5 minutes per fetch and retries.
       - name: Extract release notes from CHANGELOG.md
         id: notes
         run: |
           version="${GITHUB_REF_NAME#v}"
           raw="$RUNNER_TEMP/notes.raw.md"
           notes="$RUNNER_TEMP/notes.md"
-          generated() {
+          fall_back_to_generated_notes() {
             echo "::warning::$1; using generated release notes"
             echo "source=generated" >>"$GITHUB_OUTPUT"
             exit 0
           }
-          [ -f CHANGELOG.md ] || generated "No CHANGELOG.md"
+          [ -f CHANGELOG.md ] || fall_back_to_generated_notes "No CHANGELOG.md"
+          # Fences open and close by CommonMark's rules, so `## ` and `[x]: `
+          # lines inside one stay code. A fence indented four or more spaces, as
+          # in a nested list item, is not seen as one.
           VERSION="$version" awk '
-            match($0, /^ ? ? ?(```|~~~)/) {
-              mark = substr($0, RLENGTH, 1)
-              if (fence == "") fence = mark; else if (mark == fence) fence = ""
+            {
+              line = $0; sub(/^ ? ? ?/, "", line)
+              c = substr(line, 1, 1); n = 0
+              if (c == "`" || c == "~") while (substr(line, n + 1, 1) == c) n++
+              rest = substr(line, n + 1)
+            }
+            n >= 3 {
+              if (fence == "") { if (c == "~" || !index(rest, "`")) { fence = c; fence_len = n } }
+              else if (c == fence && n >= fence_len && rest ~ /^[ \t]*$/) fence = ""
             }
             fence == "" && /^## / { in_section = index($0, "## [" ENVIRON["VERSION"] "]") == 1; next }
-            in_section && (fence != "" || !/^\[[^]]+\]: /)
+            in_section && (fence != "" || !/^\[[^]^][^]]*\]: /)
           ' CHANGELOG.md >"$raw"
           # HTML comments render as nothing, so a section of only comments is empty.
           perl -0777 -ne 's/<!--.*?-->//gs; $found = /\S/; END { exit !$found }' "$raw" \
-            || generated "CHANGELOG.md has nothing under '## [$version]'"
-          if npx --yes prettier@3.7.4 --parser markdown --prose-wrap never <"$raw" >"$notes"; then
-            echo "file=$notes" >>"$GITHUB_OUTPUT"
+            || fall_back_to_generated_notes "CHANGELOG.md has nothing under '## [$version]'"
+          if timeout 120 npx --yes prettier@3.7.4 --parser markdown --prose-wrap never <"$raw" >"$notes"; then
+            file=$notes
           else
             echo "::warning::Prettier failed; the release notes keep CHANGELOG.md's line breaks"
-            echo "file=$raw" >>"$GITHUB_OUTPUT"
+            file=$raw
           fi
+          delimiter="EOF_$(openssl rand -hex 16)"
+          { echo "notes<<$delimiter"; cat "$file"; echo "$delimiter"; } >>"$GITHUB_OUTPUT"
           echo "source=changelog" >>"$GITHUB_OUTPUT"
 
-      # The view-or-create guard keeps re-runs on the same tag idempotent
-      # instead of failing with "release already exists".
+  release:
+    needs: notes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      # No checkout needed: gh talks to the API and resolves the repo from
+      # GH_REPO. The view-or-create guard keeps re-runs on the same tag
+      # idempotent instead of failing with "release already exists".
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          NOTES_SOURCE: ${{ steps.notes.outputs.source }}
-          NOTES_FILE: ${{ steps.notes.outputs.file }}
+          NOTES_SOURCE: ${{ needs.notes.outputs.source }}
+          NOTES: ${{ needs.notes.outputs.notes }}
         run: |
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             exit 0
           fi
           case "$NOTES_SOURCE" in
-            changelog) notes=(--notes-file "$NOTES_FILE") ;;
+            changelog)
+              [ -n "$NOTES" ] || { echo "::error::The notes job passed no notes"; exit 1; }
+              printf '%s\n' "$NOTES" >"$RUNNER_TEMP/notes.md"
+              notes=(--notes-file "$RUNNER_TEMP/notes.md")
+              ;;
             generated) notes=(--generate-notes) ;;
-            *) echo "::error::The notes step set no notes source"; exit 1 ;;
+            *) echo "::error::The notes job set no notes source"; exit 1 ;;
           esac
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" "${notes[@]}" --verify-tag
