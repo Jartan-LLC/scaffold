@@ -22,15 +22,12 @@ make install || make_install_failed=true
 
 # The ruff extension formats on save with the ruff in the selected Python, else its own
 # bundled one. Pinned from the ruff hook's frozen version, so the editor runs make lint's ruff.
-# The patterns stop at the next repo: key and skip '- rev:' lines, so a ruff entry with
-# rev: above repo: finds no version instead of taking the next hook's.
-ruff_hook='astral-sh/ruff-pre-commit'
-ruff_rev=$(sed -n "\|$ruff_hook|,/^[[:space:]-]*repo:/{/^[[:space:]]*rev:/{p;q}}" .pre-commit-config.yaml 2>/dev/null)
-ruff_version=$(sed -n 's/.*# frozen: v\([^[:space:]]*\).*/\1/p' <<<"$ruff_rev")
-if [ -n "$ruff_version" ]; then
+ruff_version=$(bash .devcontainer/ruff-version.sh)
+ruff_status=$?
+if [ "$ruff_status" -eq 0 ]; then
     echo "Installing ruff $ruff_version..."
     uv pip install "ruff==$ruff_version" || echo "Warning: ruff install failed (ruff==$ruff_version); format on save uses the ruff extension's bundled ruff" >&2
-elif grep -qF "$ruff_hook" .pre-commit-config.yaml 2>/dev/null; then
+elif [ "$ruff_status" -eq 1 ]; then
     echo "Warning: found no 'rev: ... # frozen: vX.Y.Z' line below the ruff hook's repo: line; format on save uses the ruff extension's bundled ruff" >&2
 fi
 

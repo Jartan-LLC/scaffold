@@ -13,6 +13,12 @@ check "pre-commit hook wired" test -f "$(git rev-parse --git-path hooks)/pre-com
 # Liza sets core.hooksPath in task worktrees; set here, make install skips pre-commit.
 check "core.hooksPath unset" test -z "$(git config core.hooksPath)"
 check "pnpm available" pnpm --version
+# The ruff the editor formats with, in the Python the ruff extension selects.
+ruff_version=$(bash .devcontainer/ruff-version.sh)
+case $? in
+    0) check "ruff $ruff_version installed" test "$(python -m ruff --version 2>/dev/null)" = "ruff $ruff_version" ;;
+    1) check "ruff hook rev has a '# frozen: vX.Y.Z' comment" false ;;
+esac
 # make install put the project into this Python; the name is pyproject.toml's
 # [tool.hatch.build.targets.wheel] packages entry.
 if [ -f pyproject.toml ]; then
