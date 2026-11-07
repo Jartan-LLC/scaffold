@@ -104,6 +104,11 @@ This deletes the docs site, and with it some markers, so it runs before [Markers
 Keep `docs/scaffold.md`, which reads fine on GitHub without Sphinx, and this page, which
 Finish deletes.
 
+Keep `ci/`. `ci.yml`'s `changes` job runs `ci/changes.py` and `release.yml` runs
+`ci/release_notes.py`, both on the runner's `python3`. This repository doesn't test, lint
+or type-check those scripts: scaffold does, and its changes to them come in by
+[syncing](scaffold.md#syncing-template-updates), so leave them as they are.
+
 1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
 2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md` and
    this page, `.readthedocs.yaml.example`, `.github/workflows/pages.yml.example`,
@@ -114,17 +119,16 @@ Finish deletes.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
    `check` entries (`docs/scaffold.md`, CI), and the commented `integration-tests` job. In
-   the `changes` job, remove the `python:` line under `outputs`. In `ci/changes.py`, remove
-   `_PYTHON_SKIPS`, `_PYTHON_READS` and `_needs_python`; in `outputs()`, the `"python"` in
-   the no-base return and the `if` block that appends it; and the `python` parts of the
-   module and `outputs()` docstrings. `lint` stays.
+   the `changes` job, remove the `python:` line under `outputs`. `lint` stays.
 5. Keep the `Makefile`: it is the verify entry point in every stack. Point its `lint`, `fix`,
    `typecheck`, `test` and `docs` targets at your stack's commands, and replace the Python
    lines in `check` (the `.[dev,docs]` install, `uv build`, `twine check`, `pip-audit`), so
    `make check` stays the one verify gate.
-6. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
+6. In `ci/requirements.txt`, delete the `twine` and `pip-audit` entries, and rewrite the
+   header comment's lines on the dev/docs extras and `pyproject.toml`.
+7. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
    uv" line for your stack.
-7. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
+8. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
    table, delete the `publish-pypi.yml` row and, if not containerized, the
    `publish-docker.yml` row.
 
