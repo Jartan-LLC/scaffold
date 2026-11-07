@@ -38,17 +38,17 @@ jobs:
           version-file: ci/requirements.txt
           enable-cache: false
 
-      # Optional: fail the release if the git tag doesn't match the package version.
-      # pyproject.toml keeps `version` static; uncomment to enforce that it
-      # matches the tag. Repoint `ver=` if you declare the version elsewhere.
-      # - name: Verify tag matches package version
-      #   run: |
-      #     tag="${GITHUB_REF_NAME#v}"
-      #     ver="$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)"
-      #     if [ "$tag" != "$ver" ]; then
-      #       echo "tag '$tag' does not match version '$ver'"
-      #       exit 1
-      #     fi
+      # The package takes its version from pyproject.toml, not the tag, so this fails
+      # the publish when the tag without its `v` differs from `[project] version`.
+      # Repoint `ver=` if the version is declared elsewhere.
+      - name: Verify tag matches package version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          ver="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"].get("version", ""))')"
+          if [ "$tag" != "$ver" ]; then
+            echo "::error::tag 'v$tag' does not match pyproject.toml's version '$ver'"
+            exit 1
+          fi
 
       - run: uv pip install -r ci/requirements.txt
 
