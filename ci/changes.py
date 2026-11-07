@@ -103,6 +103,9 @@ def changed_paths(event: str, before: str) -> list[str] | None:
             base = before
         case _:
             return None
+    # git quotes a path holding a non-ASCII or control character, a double quote or
+    # a backslash, so the patterns miss it: such a path runs the Python jobs and
+    # not the dev container job, even under .devcontainer/.
     diff = subprocess.run(  # noqa: S603 -- fixed git command; base is HEAD^1 or a verified commit
         ["git", "diff", "--no-renames", "--name-only", base, "HEAD"],  # noqa: S607 -- the runner's git
         stdout=subprocess.PIPE,
