@@ -1,8 +1,8 @@
 # Setting up the template
 
 Work through the sections below in order. `/onboard` in Claude Code works through the page
-for you. Finish deletes this page;
-[`scaffold.md`](scaffold.md) covers what stays useful afterwards.
+for you. Finish deletes this page; [`scaffold.md`](scaffold.md) covers what stays useful
+afterwards.
 
 ## Decide
 
@@ -12,8 +12,8 @@ needs no procedure, its item says what to do with it.
 - [ ] Project name and one-line description; for Python, the distribution and import names,
       and whether it has a command-line interface
 - [ ] GitHub org and repo, and the code owners
-- [ ] Stack: language and framework, deployment target, and the lint, test and build commands
-      if it isn't Python
+- [ ] Stack: language and framework, deployment target, and, if it isn't Python, its
+      lint, fix, typecheck, test, docs and build commands
 - [ ] License, and the author and copyright holder ([License](#license))
 - [ ] Contacts for conduct reports and security reports, one address or two. Both are
       published, so give addresses you are willing to publish
@@ -84,10 +84,9 @@ Keep `docs/scaffold.md`, which reads fine on GitHub without Sphinx, and this pag
 Finish deletes.
 
 1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
-2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md` and this page,
-   `.readthedocs.yaml.example`,
-   `.github/workflows/pages.yml.example`, `.github/workflows/publish-pypi.yml` and
-   `.github/workflows/dependency-audit.yml`. If not containerized, also `Dockerfile`,
+2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md` and
+   this page, `.readthedocs.yaml.example`, `.github/workflows/pages.yml.example`,
+   `.github/workflows/publish-pypi.yml` and `.github/workflows/dependency-audit.yml`. If not containerized, also `Dockerfile`,
    `.dockerignore`, `.github/workflows/publish-docker.yml` and the commented `docker` job in
    `.github/workflows/ci.yml`.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
@@ -137,10 +136,10 @@ uncomment once you add their inputs, carries no marker: it stays true after onbo
 
 2. Do what each marker says, then delete the marker. Never fill in a value nobody gave.
    Decide gives every value the markers need but the optional ones. With no version
-   corrections, resolving the `AGENTS.md` marker deletes its examples. With no supported versions or
-   response targets, rewrite each of those marked lines in `.github/SECURITY.md` to state
-   only the default it gives (for the supported versions, `Report against the latest
-   release.`), and delete the comment with the example table.
+   corrections, resolving the `AGENTS.md` marker deletes its examples. With no supported
+   versions or response targets, rewrite each of those marked lines in `.github/SECURITY.md`
+   to state only the default it gives (for the supported versions, `Report against the
+   latest release.`), and delete the comment with the example table.
 3. Run the grep again. It should print only this page, the marker on its `docs/index.md`
    entry, which Finish deletes, and `.scaffold-sync`, which the next section fills or, in a
    fork, deletes.
@@ -162,10 +161,14 @@ sha=$(git log --format='%H %T' upstream/main | awk -v t="$tree" '$2 == t {print 
 test -n "$sha" && echo "$sha" > .scaffold-sync
 ```
 
-If `test -n` fails, the file keeps its marker. In a shallow clone, run
-`git fetch --unshallow` and run the block again from the `tree=` line; otherwise no scaffold commit has the first commit's
-tree, so write the scaffold commit you started from into the file by hand. The `upstream`
-remote stays for [syncing](scaffold.md#syncing-template-updates).
+If `test -n` fails, the file keeps its marker:
+
+- In a shallow clone (`git rev-parse --is-shallow-repository` prints `true`), run
+  `git fetch --unshallow`, then run the block again from the `tree=` line.
+- Otherwise, or if it fails again, no scaffold commit has the first commit's tree: write the
+  scaffold commit you started from into the file by hand.
+
+The `upstream` remote stays for [syncing](scaffold.md#syncing-template-updates).
 
 If you forked scaffold instead, delete `.scaffold-sync`: the history is shared, so
 `git merge upstream/main` brings in later changes.

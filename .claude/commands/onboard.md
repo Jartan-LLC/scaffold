@@ -4,8 +4,7 @@ description: Set up this template for your project
 
 # Onboard
 
-Set up this repository for a new project by applying `docs/onboard.md`. That page says what
-changes and in what order; this command says how to run it with the user.
+Set up this repository for a new project by applying `docs/onboard.md`. That page says what changes and in what order; this command says how to run it with the user.
 
 ## Process
 
