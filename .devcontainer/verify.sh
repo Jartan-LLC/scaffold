@@ -18,6 +18,8 @@ ruff_version=$(bash .devcontainer/ruff-version.sh)
 case $? in
     0) check "ruff $ruff_version installed" test "$(python -m ruff --version 2>/dev/null)" = "ruff $ruff_version" ;;
     1) check "ruff hook rev has a '# frozen: vX.Y.Z' comment" false ;;
+    2) ;;  # No ruff hook: post-create.sh installs none.
+    *) check "ruff-version.sh runs" false ;;
 esac
 # make install put the project into this Python; the name is pyproject.toml's
 # [tool.hatch.build.targets.wheel] packages entry.
