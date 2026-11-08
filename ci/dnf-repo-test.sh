@@ -15,6 +15,12 @@
 #     Runs dnf against WWW, which ci/dnf_repo_server.py serves at the url below from
 #     outside this container: python3 here would hold tzdata, which the Obsoletes check
 #     needs dnf to be able to remove. Needs dnf5 5.4.7 or later and dnf5-plugin-automatic.
+#     Ends with verify's checks, with no time to wait.
+#   ci/dnf-repo-test.sh verify RPM_URL VERSION [SECONDS]
+#     Installs RPM_URL, which ends in NAME.noarch.rpm and brings the .repo file and the key,
+#     then fails unless dnf reads the repository that file names, its signature checked, and
+#     lists VERSION as NAME's newest version there, trying again every 10 seconds for SECONDS
+#     (120 by default). The Pages workflow runs it after each deploy of the repository.
 set -euo pipefail
 
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
@@ -116,6 +122,10 @@ build() {
     # repomd.xml changed after it was signed.
     cp -R "$www/v2" "$www/tampered"
     sed -i 's|<revision>|<revision>1|' "$www/tampered/repodata/repomd.xml"
+
+    # A deploy that lost the signature.
+    cp -R "$www/v2" "$www/noasc"
+    rm "$www/noasc/repodata/repomd.xml.asc"
 
     # Someone who can change the site but has no key: every package obsoletes tzdata, and
     # repomd.xml names the new primary.xml with its checksums, under the old signature.
@@ -232,6 +242,49 @@ check() {
     expect "$name" 0.0.1
     grep -q 'repomd.xml GPG signature verification error: Signing key not found' "$log" ||
         die "dnf did not skip the repository signed by another key"
+
+    local rpm_url=$url/releases/download/v0.0.1/$name.noarch.rpm
+    serve "$www" v2
+    run verify "$rpm_url" 0.0.2 0
+    serve "$www" v1
+    if run verify "$rpm_url" 0.0.2 0; then
+        die "verify passed on a repository whose newest version is 0.0.1"
+    fi
+    grep -q "the repository lists $name 0.0.1, not 0.0.2" "$log" ||
+        die "verify did not fail on the repository's newest version"
+    serve "$www" noasc
+    if run verify "$rpm_url" 0.0.2 0; then
+        die "verify passed on a repository with no signature"
+    fi
+    grep -q 'dnf could not read the repository' "$log" ||
+        die "verify did not fail on the missing signature"
+}
+
+# Called in an if, where set -e doesn't apply, so every failure is handled here.
+verify() {
+    local rpm_url=$1 version=$2 seconds=${3:-120} name newest why
+    name=$(basename -- "$rpm_url" .noarch.rpm)
+    [[ $rpm_url == */"$name.noarch.rpm" ]] || die "not a URL to NAME.noarch.rpm: $rpm_url"
+    [[ $seconds =~ ^[0-9]+$ ]] || die "SECONDS is not a number: $seconds"
+    dnf -y install "$rpm_url" || die "dnf could not install $rpm_url"
+    local deadline=$((SECONDS + seconds))
+    while :; do
+        # Fedora sets skip_if_unavailable, with which dnf skips a repository it can't read or
+        # verify, and exits 0.
+        if newest=$(dnf -y --refresh --repo "$name" --setopt="$name.skip_if_unavailable=0" \
+            repoquery --latest-limit 1 --qf '%{version}\n' "$name"); then
+            if [[ $newest == "$version" ]]; then
+                printf '== the repository lists %s %s\n' "$name" "$version"
+                return 0
+            fi
+            why="the repository lists $name ${newest:-nothing}, not $version"
+        else
+            why='dnf could not read the repository'
+        fi
+        ((SECONDS < deadline)) || die "$why"
+        printf '== %s; trying again in 10 seconds\n' "$why"
+        sleep 10
+    done
 }
 
 # Serves the scenario $2 under WWW $1 as the repository.
@@ -254,9 +307,15 @@ expect() {
     printf '== %s %s is installed\n' "$1" "$2"
 }
 
-(($# == 2)) || die "usage: ci/dnf-repo-test.sh build|check WWW"
+usage() {
+    die "usage: ci/dnf-repo-test.sh build|check WWW
+       ci/dnf-repo-test.sh verify RPM_URL VERSION [SECONDS]"
+}
+
+(($# > 0)) || usage
 case $1 in
-    build) build "$2" ;;
-    check) check "$2" ;;
-    *) die "usage: ci/dnf-repo-test.sh build|check WWW" ;;
+    build) (($# == 2)) || usage; build "$2" ;;
+    check) (($# == 2)) || usage; check "$2" ;;
+    verify) (($# == 3 || $# == 4)) || usage; verify "${@:2}" ;;
+    *) usage ;;
 esac
