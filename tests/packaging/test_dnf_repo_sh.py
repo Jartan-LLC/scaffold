@@ -16,7 +16,8 @@ signature and lists a key file's keys in the real one's order, failing as it
 does on an empty file. It imports a secret key from stdin into
 `$GNUPGHOME/secret-keys`, which takes a key file's form, failing as the real
 one does on input that holds no key, lists that file's keys the same way, and
-fails when `$GNUPGHOME` is not a directory. The stub `gh`
+fails when `$GNUPGHOME` is not a directory. The stub `gpgconf` fails when
+`$GPGCONF_FAILS` is set. The stub `gh`
 serves the fake releases in `$FAKE_GH/releases.json`, in the order `gh release
 list` gives them, and their assets under `$FAKE_GH/assets/TAG/`, logging each
 call to `$FAKE_GH/calls`; it runs each `--jq` filter with jq, as gh does with
@@ -152,8 +153,8 @@ signer = args[args.index("--local-user") + 1]
 open(args[args.index("--output") + 1], "w").write(signer)
 """,
     "gpgconf": """\
-import sys
-sys.exit(0 if sys.argv[1:] == ["--kill", "all"] else 1)
+import os, sys
+sys.exit(0 if sys.argv[1:] == ["--kill", "all"] and "GPGCONF_FAILS" not in os.environ else 1)
 """,
     "gh": """\
 import argparse, json, os, pathlib, shutil, subprocess, sys
@@ -985,6 +986,16 @@ def test_release_fails_on_a_key_file_gpg_cant_read(
     assert result.stderr.startswith(f"dnf-repo.sh: can't read the keys in {keyfile}: ")
     assert gh_calls(tmp_path) == []
     assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.usefixtures("releases")
+def test_release_removes_its_keyring_when_gpgconf_fails(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    # release() asserts the scratch directory, keyring included, is gone.
+    result = release(env, tmp_path, keyfile, "v0.0.7-rc.1", PRERELEASE="true", GPGCONF_FAILS="1")
+    assert result.returncode == 0, result.stderr
+    assert out_files(tmp_path) == ["app.noarch.rpm"]
 
 
 def test_a_pre_release_gets_the_signed_rpm_only(

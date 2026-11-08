@@ -274,7 +274,8 @@ release() (
     work=$(mktemp -d)
     GNUPGHOME=$work/gnupg
     export GNUPGHOME
-    trap 'gpgconf --kill all; rm -rf -- "$work"' EXIT
+    # Under set -e a failing gpgconf would end the trap before rm, leaving the keyring.
+    trap 'gpgconf --kill all || :; rm -rf -- "$work"' EXIT
     mkdir -m 700 "$GNUPGHOME"
     printf '%s\n' "$secret" | gpg --batch --quiet --import ||
         annotated_error "RPM_SIGNING_KEY must hold one secret key"
