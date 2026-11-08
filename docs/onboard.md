@@ -303,13 +303,13 @@ for env in pypi ghcr; do
     -F 'deployment_branch_policy[custom_branch_policies]=true' \
     --jq .can_admins_bypass
   gh api -X POST "repos/{owner}/{repo}/environments/$env/deployment-branch-policies" \
-    -f name='v*' -f type=tag
+    -f name='v*' -f type=tag --silent
 done
 ```
 
-Each `PUT` prints the `can_admins_bypass` value GitHub stored, which must be `false`: GitHub's
-REST reference doesn't list the field, and an environment created without it lets admins
-bypass its required reviewers.
+Each `PUT` prints the `can_admins_bypass` value GitHub stored. In a public repository, or a
+private one on Enterprise, it must print `false`: GitHub's REST reference doesn't list the
+field, and an environment created without it lets admins bypass its required reviewers.
 
 In a public repository, add required reviewers to each (Settings > Environments), so each
 publish waits for a reviewer's approval; a private repository needs GitHub Enterprise for
@@ -329,7 +329,7 @@ gh api -X PUT repos/{owner}/{repo}/environments/rpm-signing \
   -F 'deployment_branch_policy[custom_branch_policies]=true' \
   --jq .can_admins_bypass
 gh api -X POST repos/{owner}/{repo}/environments/rpm-signing/deployment-branch-policies \
-  -f name='v*' -f type=tag
+  -f name='v*' -f type=tag --silent
 ```
 
 The first command must print `false`, as for `pypi` and `ghcr`.
