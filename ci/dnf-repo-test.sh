@@ -262,7 +262,10 @@ check() {
     # The new repository goes live while verify waits for it.
     serve "$www" v1
     (
-        until grep -q 'trying again' "$log"; do sleep 1; done
+        for _ in {1..60}; do
+            grep -q 'trying again' "$log" && break
+            sleep 1
+        done
         serve "$www" v2
     ) &
     run verify "$rpm_url" 0.0.2 30

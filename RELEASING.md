@@ -83,11 +83,13 @@ what to fix first when the job failed.
    succeeded: its `verify` job installs the package from the release URL and fails unless the
    live dnf repository lists the Latest release as the newest version. A full release becomes
    Latest only when no full release has a higher version. Of the runs this lists, check the
-   one that started when this tag's `release.yml` run finished. A failed docs build stops the
-   run before it deploys `rpm/`: once a fix to the docs reaches `main`, that push deploys both.
+   one that started when this tag's `release.yml` run finished. If that run was cancelled, a
+   later run took its place in the queue: check that one, which deploys the same release. A
+   failed docs build stops the run before it deploys `rpm/`: once a fix to the docs reaches
+   `main`, that push deploys both.
 
    ```bash
-   gh run list --workflow pages.yml --event workflow_run --limit 5
+   gh run list --workflow pages.yml --limit 5
    ```
 
 ## Pre-releases

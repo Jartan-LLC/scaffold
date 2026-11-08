@@ -89,8 +89,7 @@ minute. Two levers cut those minutes:
 
 ## Publishing
 
-A `v*` tag runs these workflows, `pages.yml` once `release.yml` succeeds. `pages.yml` also runs
-on each push to `main`:
+A `v*` tag runs these workflows, and `pages.yml` also runs on each push to `main`:
 
 | Workflow | Publishes |
 |---|---|

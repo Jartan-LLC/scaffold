@@ -40,7 +40,8 @@ def step_script() -> str:
     return textwrap.dedent("\n".join(body)) + "\n"
 
 
-def created_args(tmp_path: Path, tag: str, releases: list[str]) -> list[str]:
+def run_step(tmp_path: Path, tag: str, releases: list[str]) -> tuple[list[str], str]:
+    """Returns the arguments ``gh release create`` got, and the step's output."""
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     gh = bin_dir / "gh"
@@ -68,7 +69,7 @@ def created_args(tmp_path: Path, tag: str, releases: list[str]) -> list[str]:
         cwd=tmp_path,
     )
     assert result.returncode == 0, result.stderr
-    return created.read_text(encoding="utf-8").splitlines()
+    return created.read_text(encoding="utf-8").splitlines(), result.stdout
 
 
 @pytest.mark.parametrize(
@@ -80,11 +81,35 @@ def created_args(tmp_path: Path, tag: str, releases: list[str]) -> list[str]:
         pytest.param("v1.10.0", ["v1.10.0", "v1.9.0"], "--latest", id="re-run of the highest"),
         pytest.param("v2.0.0", ["weekly", "v1.0.0"], "--latest", id="non-version tag"),
         pytest.param("v2.0.0", ["vnext", "v1.0.0"], "--latest", id="v and no digit"),
-        pytest.param("weekly", ["v1.0.0"], "--latest=false", id="non-version tag released"),
+        pytest.param("vnext", ["v1.0.0"], "--latest=false", id="non-version tag released"),
+        pytest.param("vnext", [], "--latest=false", id="non-version tag, no version releases"),
     ],
 )
 def test_latest_goes_to_the_highest_full_release(
     tmp_path: Path, tag: str, releases: list[str], latest: str
 ) -> None:
-    args = created_args(tmp_path, tag, releases)
+    args, _ = run_step(tmp_path, tag, releases)
     assert [arg for arg in args if arg.startswith("--latest")] == [latest]
+
+
+NOT_A_VERSION = "::notice::vnext doesn't start with v and a digit, so it is not marked Latest"
+
+
+@pytest.mark.parametrize(
+    ("tag", "releases", "notice"),
+    [
+        pytest.param(
+            "v1.9.1",
+            ["v1.10.0"],
+            "::notice::v1.10.0 is a higher full release, so v1.9.1 is not marked Latest",
+            id="lower after higher",
+        ),
+        pytest.param("vnext", ["v1.0.0"], NOT_A_VERSION, id="non-version tag released"),
+        pytest.param("vnext", [], NOT_A_VERSION, id="non-version tag, no version releases"),
+    ],
+)
+def test_the_notice_says_why_a_release_is_not_latest(
+    tmp_path: Path, tag: str, releases: list[str], notice: str
+) -> None:
+    _, output = run_step(tmp_path, tag, releases)
+    assert notice in output.splitlines()
