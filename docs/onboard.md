@@ -323,17 +323,11 @@ The first command prints the `can_admins_bypass` value GitHub stored, which must
 GitHub's REST reference doesn't list the field, and an environment created without it lets
 admins bypass its required reviewers.
 
-Then add required reviewers to it (Settings > Environments), and check that admins still can't
-bypass them:
-
-```bash
-gh api repos/{owner}/{repo}/environments/rpm-signing --jq .can_admins_bypass   # must print false
-```
-
-Every tag's `sign` job then waits for a required reviewer's approval, which may be the person
-who pushed the tag, so a project with one maintainer can still release. On GitHub Free, Pro
-and Team, required reviewers need a public repository, which the dnf repository needs anyway.
-Make the first key as [Making a key](signing-key.md#making-a-key) says.
+Then add required reviewers to it (Settings > Environments). Every tag's `sign` job then waits
+for a required reviewer's approval, which may be the person who pushed the tag, so a project
+with one maintainer can still release. On GitHub Free, Pro and Team, required reviewers need a
+public repository, which the dnf repository needs anyway. Make the first key as
+[Making a key](signing-key.md#making-a-key) says.
 
 ## Finish
 
