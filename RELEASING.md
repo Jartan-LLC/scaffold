@@ -82,10 +82,12 @@ what to fix first when the job failed.
 4. While `packaging/dnf.repo` exists, check that the `pages.yml` run the release started
    succeeded: its `verify` job installs the package from the release URL and fails unless the
    live dnf repository lists the Latest release as the newest version. A full release becomes
-   Latest only when no full release has a higher version.
+   Latest only when no full release has a higher version. Of the runs this lists, check the
+   one that started when this tag's `release.yml` run finished. A failed docs build stops the
+   run before it deploys `rpm/`: once a fix to the docs reaches `main`, that push deploys both.
 
    ```bash
-   gh run list --workflow pages.yml --event workflow_run --limit 1
+   gh run list --workflow pages.yml --event workflow_run --limit 5
    ```
 
 ## Pre-releases
@@ -124,7 +126,8 @@ sudo dnf install ./NAME.noarch.rpm
 ### Updates through dnf
 
 The package adds the project's dnf repository, so `sudo dnf upgrade` installs each new release.
-The repository works with dnf on Fedora, and on EL 8, 9 and 10.
+The repository works with dnf on Fedora, on EL 9 and 10, and, while its signing key is RSA,
+on EL 8.
 
 <!-- TODO(/onboard): replace FINGERPRINT below with the signing key's fingerprint once you make it, as step 4 of docs/signing-key.md's Making a key says. -->
 

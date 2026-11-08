@@ -56,8 +56,8 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
   A dnf repository lets users get new releases with `dnf upgrade`; a private repository can't
   publish one, because dnf can't fetch its Release assets. GitHub Pages serves it: set up the
   Pages workflow as for the docs site, which deploys the docs too while `docs/conf.py` exists.
-  To leave the docs off Pages, delete the workflow's `docs` job, and the `site` job's
-  `needs: docs` and step that downloads the docs.
+  To leave the docs off Pages, delete the workflow's `docs` job, and in the `site` job,
+  `needs: docs` and the two steps that download the docs and refuse docs that write `rpm/`.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in

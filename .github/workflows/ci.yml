@@ -55,6 +55,14 @@ jobs:
           restore-keys: pre-commit-
       - run: uv pip install -r ci/requirements.txt
       - run: pre-commit run --all-files --show-diff-on-failure
+      # Its .example name keeps the Pages workflow from actionlint and zizmor.
+      - name: Lint pages.yml.example as pages.yml
+        run: |
+          if [ -f .github/workflows/pages.yml.example ]; then
+            cp .github/workflows/pages.yml.example .github/workflows/pages.yml
+            pre-commit run actionlint-docker --files .github/workflows/pages.yml
+            pre-commit run zizmor --files .github/workflows/pages.yml
+          fi
 
       # Node/JS (secondary) — uncomment after adding package.json + committing a lockfile.
       # Drop `version:` if package.json pins pnpm in `packageManager`: the action rejects both.

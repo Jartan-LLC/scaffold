@@ -15,7 +15,7 @@
 #     Runs dnf against WWW, which ci/dnf_repo_server.py serves at the url below from
 #     outside this container: python3 here would hold tzdata, which the Obsoletes check
 #     needs dnf to be able to remove. Needs dnf5 5.4.7 or later and dnf5-plugin-automatic.
-#     Ends with verify's checks, with no time to wait.
+#     Ends with verify's checks.
 #   ci/dnf-repo-test.sh verify RPM_URL VERSION [SECONDS]
 #     Installs RPM_URL, which ends in NAME.noarch.rpm and brings the .repo file and the key,
 #     then fails unless dnf reads the repository that file names, its signature checked, and
@@ -258,9 +258,19 @@ check() {
     fi
     grep -q 'dnf could not read the repository' "$log" ||
         die "verify did not fail on the missing signature"
+
+    # The new repository goes live while verify waits for it.
+    serve "$www" v1
+    (
+        until grep -q 'trying again' "$log"; do sleep 1; done
+        serve "$www" v2
+    ) &
+    run verify "$rpm_url" 0.0.2 30
+    wait $!
+    grep -q 'trying again in 10 seconds' "$log" || die "verify did not try again"
 }
 
-# Called in an if, where set -e doesn't apply, so every failure is handled here.
+# Handles each failure itself, as check also calls it in an if, where set -e doesn't apply.
 verify() {
     local rpm_url=$1 version=$2 seconds=${3:-120} name newest why
     name=$(basename -- "$rpm_url" .noarch.rpm)
