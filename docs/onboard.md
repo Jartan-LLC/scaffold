@@ -293,7 +293,7 @@ gh label create patch --color 0E8A16 --description "Patch version update" --forc
 `publish-pypi.yml` runs in the `pypi` environment and `publish-docker.yml` in `ghcr`. A
 private repository needs GitHub Pro, Team or Enterprise for environments and their tag rules.
 Create the environment of each workflow you kept, open to `v*` tags only, with no bypass for
-admins. Remove from the `for` list the environment of any workflow you deleted:
+admins. Delete `pypi` or `ghcr` from the loop's `for` list if you deleted its workflow:
 
 ```bash
 for env in pypi ghcr; do
