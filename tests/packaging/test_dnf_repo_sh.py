@@ -1,28 +1,28 @@
-"""Tests for `packaging/dnf-repo.sh`'s checks on what it signs and indexes.
+"""Tests for `packaging/dnf-repo.sh`'s modes, run against stub tools.
 
-The script runs with stub `rpm`, `rpmkeys`, `rpmsign`, `createrepo_c` and `gpg`
-first on `PATH`, so no rpm tools are needed. A stub RPM is a text file holding
-its name, version and signing key: ``-`` for none as rpm 6 reports it, ``-4``
-for none as rpm 4 does (passing the check), ``bad`` for a bad signature,
-``damaged`` for an unsigned package whose digests don't match, a key and
-``-damaged`` for a package that key signed whose digests don't match, and a key
-and ``+bad`` for a package that key signed that also has a bad signature. The
-stub `rpmkeys` prints the RPM's path before its checks, as the real one does. A
-key file holds one primary key per line, each optionally followed by ``rvk:``
-and the fingerprint of its designated revoker, or ``sub:`` and the fingerprint
-of a subkey. The stub `createrepo_c` writes a primary.xml that lists each
-package's location, and the stub `gpg` writes the signing key into the
+The script runs with stub `rpm`, `rpmkeys`, `rpmsign`, `createrepo_c`, `gpg`,
+`gpgconf` and `gh` first on `PATH`, so no rpm tools are needed. A stub RPM is a
+text file holding its name, version and signing key: ``-`` for none as rpm 6
+reports it, ``-4`` for none as rpm 4 does (passing the check), ``bad`` for a bad
+signature, ``damaged`` for an unsigned package whose digests don't match, a key
+and ``-damaged`` for a package that key signed whose digests don't match, and a
+key and ``+bad`` for a package that key signed that also has a bad signature.
+The stub `rpmkeys` prints the RPM's path before its checks, as the real one
+does. A key file holds one primary key per line, each optionally followed by
+``rvk:`` and the fingerprint of its designated revoker, or ``sub:`` and the
+fingerprint of a subkey. The stub `createrepo_c` writes a primary.xml that lists
+each package's location, and the stub `gpg` writes the signing key into the
 signature and lists a key file's keys in the real one's order, failing as it
 does on an empty file. It imports a secret key from stdin into
-`$GNUPGHOME/secret-keys`, which takes a key file's form, failing as the real
-one does on input that holds no key, lists that file's keys the same way, and
-fails when `$GNUPGHOME` is not a directory. The stub `gpgconf` fails when
-`$GPGCONF_FAILS` is set. The stub `gh`
-serves the fake releases in `$FAKE_GH/releases.json`, in the order `gh release
-list` gives them, and their assets under `$FAKE_GH/assets/TAG/`, logging each
-call to `$FAKE_GH/calls`; it runs each `--jq` filter with jq, as gh does with
-its built-in one. Each stub logs its arguments to `$KEY_SEEN` when it sees
-`RPM_SIGNING_KEY` in its environment. ci.yml's dnf-repo job runs the real tools.
+`$GNUPGHOME/secret-keys`, which takes a key file's form, failing as the real one
+does on input that holds no key, lists that file's keys the same way, and fails
+when `$GNUPGHOME` is not a directory. The stub `gpgconf` fails when
+`$GPGCONF_FAILS` is set. The stub `gh` serves the fake releases in
+`$FAKE_GH/releases.json`, in the order `gh release list` gives them, and their
+assets under `$FAKE_GH/assets/TAG/`, logging each call to `$FAKE_GH/calls`; it
+runs each `--jq` filter with jq, as gh does with its built-in one. Each stub
+logs its arguments to `$KEY_SEEN` when it sees `RPM_SIGNING_KEY` in its
+environment. ci.yml's dnf-repo job runs the real tools.
 """
 
 import io
@@ -1007,7 +1007,8 @@ def test_a_pre_release_gets_the_signed_rpm_only(
     assert out_files(tmp_path) == ["app.noarch.rpm"]
     assert out_rpm(tmp_path) == f"app 0.0.7~rc.1 {SIGNER}"
     assert gh_calls(tmp_path) == []
-    # Not even the import's gpg: a real one starts a gpg-agent that keeps its environment.
+    # No stub saw RPM_SIGNING_KEY, the import's gpg included: a real one starts a gpg-agent
+    # that keeps its environment.
     assert key_seen(tmp_path) == []
 
 

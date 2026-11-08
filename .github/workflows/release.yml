@@ -84,8 +84,7 @@ jobs:
 
   # Signs the RPM, and on a full release builds the dnf repository's signed metadata for it
   # and the earlier full releases published most recently, so dnf downgrade and dnf history
-  # undo have the previous version. A pre-release stays out of the repository: dnf would
-  # upgrade every user to it, since it sorts 2.0.0~rc.1 above 1.1.0.
+  # undo have the previous version. A pre-release stays out of the repository.
   sign:
     needs: [notes, rpm]
     if: needs.notes.outputs.dnf_repo == 'true'

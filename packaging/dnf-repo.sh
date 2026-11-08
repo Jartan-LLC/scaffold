@@ -300,8 +300,7 @@ release() (
         fi
     done
     # The latest release's bundle is the one the dnf repository serves until this one
-    # replaces it: a client that read its repomd.xml just before the swap fetches the files it
-    # names just after, so the new bundle keeps them.
+    # replaces it; metadata keeps the files it names.
     if [[ -n $tags ]]; then
         latest=$(gh release view --json tagName --jq .tagName)
         if has_asset "$latest" "$name-dnf-repo.tar.gz"; then
