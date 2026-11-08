@@ -55,7 +55,7 @@ jobs:
           restore-keys: pre-commit-
       - run: uv pip install -r ci/requirements.txt
       - run: pre-commit run --all-files --show-diff-on-failure
-      # Its .example name keeps the Pages workflow from actionlint and zizmor.
+      # The .example name keeps the Pages workflow from actionlint and zizmor.
       - name: Lint pages.yml.example as pages.yml
         run: |
           if [ -f .github/workflows/pages.yml.example ]; then
