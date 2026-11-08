@@ -725,8 +725,6 @@ NO_KEY_ERROR = (
     " docs/signing-key.md says, or delete packaging/dnf.repo to release the RPM unsigned, with no"
     " dnf repository.\n"
 )
-# What a stub logs to $KEY_SEEN while the release mode imports the secret.
-IMPORT = "gpg --batch --quiet --import"
 
 
 def version_of(tag: str) -> str:
@@ -798,6 +796,8 @@ def downloaded_rpms(tmp_path: Path) -> list[str]:
 def release_env(
     env: dict[str, str], tmp_path: Path, tag: str, **changes: str | None
 ) -> dict[str, str]:
+    if shutil.which("jq") is None:
+        pytest.fail("the release tests need jq: the stub gh runs each --jq filter with it")
     (tmp_path / "tmp").mkdir()
     result = {
         **env,
@@ -996,7 +996,8 @@ def test_a_pre_release_gets_the_signed_rpm_only(
     assert out_files(tmp_path) == ["app.noarch.rpm"]
     assert out_rpm(tmp_path) == f"app 0.0.7~rc.1 {SIGNER}"
     assert gh_calls(tmp_path) == []
-    assert key_seen(tmp_path) == [IMPORT]
+    # Not even the import's gpg: a real one starts a gpg-agent that keeps its environment.
+    assert key_seen(tmp_path) == []
 
 
 @pytest.mark.usefixtures("releases")
@@ -1014,7 +1015,7 @@ def test_a_first_full_release_bundles_its_own_rpm(
     assert files["repodata/new-primary.xml"] == urls("v0.0.6")
     assert files["repodata/repomd.xml.asc"] == SIGNER
     assert files["RPM-GPG-KEY-app"] == f"{SIGNER}\n"
-    assert key_seen(tmp_path) == [IMPORT]
+    assert key_seen(tmp_path) == []
 
 
 @pytest.mark.parametrize("other_key_in_key_file", [False, True])
@@ -1047,7 +1048,7 @@ def test_a_full_release_bundles_the_full_releases_published_most_recently(
     )
     files = bundle_files(tmp_path / "out" / "app-dnf-repo.tar.gz")
     assert files["repodata/old-primary.xml"] == "old primary"
-    assert key_seen(tmp_path) == [IMPORT]
+    assert key_seen(tmp_path) == []
     if other_key_in_key_file:
         assert result.stderr == ""
         assert indexed(tmp_path) == urls("v0.0.4", "v0.0.5", "v0.0.6", "v0.0.7")

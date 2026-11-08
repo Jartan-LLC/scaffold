@@ -25,13 +25,13 @@
 #     Prints the fingerprint of the one secret key in gpg's keyring, and fails unless the
 #     keyring holds exactly one.
 #   packaging/dnf-repo.sh release RPM KEYFILE OUTDIR
-#     What release.yml's sign job runs, on RPM named NAME.noarch.rpm. Imports the one secret
-#     key in $RPM_SIGNING_KEY into a keyring of its own and unsets the variable, so nothing it
-#     runs inherits the secret in its environment, then signs RPM in place as sign does and
-#     copies it into OUTDIR, which it creates. On a full release, with $PRERELEASE false
-#     rather than true, it also downloads with gh the NAME.noarch.rpm of the $KEEP full
-#     releases published most recently, other than $GITHUB_REF_NAME, prunes them, and runs
-#     metadata on them and RPM into OUTDIR, with
+#     What release.yml's sign job runs, on RPM named NAME.noarch.rpm. Unsets $RPM_SIGNING_KEY
+#     before it runs anything, so nothing it runs, gpg-agent included, inherits the secret in
+#     its environment, and imports the one secret key it held into a keyring of its own. Then
+#     signs RPM in place as sign does and copies it into OUTDIR, which it creates. On a full
+#     release, with $PRERELEASE false rather than true, it also downloads with gh the
+#     NAME.noarch.rpm of the $KEEP full releases published most recently, other than
+#     $GITHUB_REF_NAME, prunes them, and runs metadata on them and RPM into OUTDIR, with
 #     $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/ as URL and the latest
 #     release's NAME-dnf-repo.tar.gz as PREVIOUS. gh reads GH_TOKEN and GH_REPO.
 #     An empty secret, a secret that isn't one secret key, or a $PRERELEASE other than true
@@ -251,6 +251,10 @@ release() (
     local rpm=$1 keyfile=$2 outdir=$3
     [[ -n ${RPM_SIGNING_KEY:-} ]] ||
         annotated_error "The rpm-signing environment has no RPM_SIGNING_KEY secret. Make the key as docs/signing-key.md says, or delete packaging/dnf.repo to release the RPM unsigned, with no dnf repository."
+    # Unset before anything runs, the import included: the gpg-agent the import starts
+    # outlives it and keeps the environment it started with.
+    local secret=$RPM_SIGNING_KEY
+    unset RPM_SIGNING_KEY
     case ${PRERELEASE:-} in
         true | false) ;;
         *) annotated_error "The notes job did not say whether this is a pre-release" ;;
@@ -272,11 +276,8 @@ release() (
     export GNUPGHOME
     trap 'gpgconf --kill all; rm -rf -- "$work"' EXIT
     mkdir -m 700 "$GNUPGHOME"
-    printf '%s\n' "$RPM_SIGNING_KEY" | gpg --batch --quiet --import ||
+    printf '%s\n' "$secret" | gpg --batch --quiet --import ||
         annotated_error "RPM_SIGNING_KEY must hold one secret key"
-    # Only the import needs the secret; keep it out of the environment of everything that
-    # runs below.
-    unset RPM_SIGNING_KEY
     key=$(fingerprint) || annotated_error "RPM_SIGNING_KEY must hold one secret key"
 
     sign "$key" "$keyfile" "$rpm"
