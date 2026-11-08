@@ -27,12 +27,13 @@
 #   packaging/dnf-repo.sh release RPM KEYFILE OUTDIR
 #     What release.yml's sign job runs, on RPM named NAME.noarch.rpm. Imports the one secret
 #     key in $RPM_SIGNING_KEY into a keyring of its own and unsets the variable, so nothing it
-#     runs sees the key, then signs RPM in place as sign does and copies it into OUTDIR,
-#     which it creates. On a full release, with $PRERELEASE false rather than true, it also
-#     downloads with gh the NAME.noarch.rpm of the $KEEP full releases published most
-#     recently, other than $GITHUB_REF_NAME, prunes them, and runs metadata on them and RPM
-#     into OUTDIR, with $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/ as URL and
-#     the latest release's NAME-dnf-repo.tar.gz as PREVIOUS. gh reads GH_TOKEN and GH_REPO.
+#     runs inherits the secret in its environment, then signs RPM in place as sign does and
+#     copies it into OUTDIR, which it creates. On a full release, with $PRERELEASE false
+#     rather than true, it also downloads with gh the NAME.noarch.rpm of the $KEEP full
+#     releases published most recently, other than $GITHUB_REF_NAME, prunes them, and runs
+#     metadata on them and RPM into OUTDIR, with
+#     $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/ as URL and the latest
+#     release's NAME-dnf-repo.tar.gz as PREVIOUS. gh reads GH_TOKEN and GH_REPO.
 #     An empty secret, a secret that isn't one secret key, or a $PRERELEASE other than true
 #     or false fails it with a GitHub Actions error annotation on stdout.
 set -euo pipefail
@@ -271,8 +272,10 @@ release() (
     export GNUPGHOME
     trap 'gpgconf --kill all; rm -rf -- "$work"' EXIT
     mkdir -m 700 "$GNUPGHOME"
-    printf '%s\n' "$RPM_SIGNING_KEY" | gpg --batch --quiet --import
-    # Only the import needs the key; keep it from everything that runs below.
+    printf '%s\n' "$RPM_SIGNING_KEY" | gpg --batch --quiet --import ||
+        annotated_error "RPM_SIGNING_KEY must hold one secret key"
+    # Only the import needs the secret; keep it out of the environment of everything that
+    # runs below.
     unset RPM_SIGNING_KEY
     key=$(fingerprint) || annotated_error "RPM_SIGNING_KEY must hold one secret key"
 

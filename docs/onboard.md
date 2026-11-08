@@ -20,8 +20,8 @@ An item whose answer needs neither, such as which workflows to keep, says what t
       published, so give addresses you are willing to publish
 - [ ] Which enchantments Features to keep ([Features](#features))
 - [ ] Publishing targets: the PyPI package, the container image, the docs site, an RPM for
-      Fedora, with or without a dnf repository (with one, also the public key that signs it)
-      ([details](#publishing-targets))
+      Fedora, with or without a dnf repository (with one, also the email address its signing
+      key names, which the key publishes) ([details](#publishing-targets))
 - [ ] Whether to keep `Dockerfile` (its marker says what goes with it, and the
       `publish-docker.yml` row in [Publishing](scaffold.md#publishing) and the sentences
       naming it in `RELEASING.md` go too),
@@ -325,9 +325,10 @@ admins bypass its required reviewers.
 
 Then add required reviewers to it (Settings > Environments). Every tag's `sign` job then waits
 for a required reviewer's approval, which may be the person who pushed the tag, so a project
-with one maintainer can still release. On GitHub Free, Pro and Team, required reviewers need a
-public repository, which the dnf repository needs anyway. Make the first key as
-[Making a key](signing-key.md#making-a-key) says.
+with one maintainer can still release. With more than one maintainer, also tick Prevent
+self-review there, so someone other than the tag's pusher approves the key's use. On GitHub
+Free, Pro and Team, required reviewers need a public repository, which the dnf repository
+needs anyway. Make the first key as [Making a key](signing-key.md#making-a-key) says.
 
 ## Finish
 

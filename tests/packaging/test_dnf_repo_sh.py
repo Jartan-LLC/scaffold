@@ -14,8 +14,9 @@ of a subkey. The stub `createrepo_c` writes a primary.xml that lists each
 package's location, and the stub `gpg` writes the signing key into the
 signature and lists a key file's keys in the real one's order, failing as it
 does on an empty file. It imports a secret key from stdin into
-`$GNUPGHOME/secret-keys`, which takes a key file's form, lists that file's keys
-the same way, and fails when `$GNUPGHOME` is not a directory. The stub `gh`
+`$GNUPGHOME/secret-keys`, which takes a key file's form, failing as the real
+one does on input that holds no key, lists that file's keys the same way, and
+fails when `$GNUPGHOME` is not a directory. The stub `gh`
 serves the fake releases in `$FAKE_GH/releases.json`, in the order `gh release
 list` gives them, and their assets under `$FAKE_GH/assets/TAG/`, logging each
 call to `$FAKE_GH/calls`; it runs each `--jq` filter with jq, as gh does with
@@ -110,7 +111,7 @@ hrefs = sorted(prefix + str(p.relative_to(packages)) for p in packages.rglob("*.
 (repodata / "repomd.xml").write_text('<location href="repodata/new-primary.xml"/>\\n')
 """,
     "gpg": """\
-import os, pathlib, sys
+import os, pathlib, re, sys
 args = sys.argv[1:]
 
 def show(path, primary_type, sub_type):
@@ -128,8 +129,12 @@ def show(path, primary_type, sub_type):
     return lines
 
 if "--import" in args:
+    keys = sys.stdin.read()
+    if not re.search(r"^[0-9A-F]{40}\\b", keys, re.MULTILINE):
+        print("gpg: no valid OpenPGP data found.", file=sys.stderr)
+        sys.exit(2)
     with open(pathlib.Path(os.environ["GNUPGHOME"]) / "secret-keys", "a") as keyring:
-        keyring.write(sys.stdin.read())
+        keyring.write(keys)
     sys.exit(0)
 if "--show-keys" in args:
     if not show(args[-1], "pub", "sub"):
@@ -927,15 +932,24 @@ def test_release_needs_an_rpm_named_for_its_package(
     assert not (tmp_path / "out").exists()
 
 
+@pytest.mark.parametrize(
+    ("secret", "error"),
+    [
+        pytest.param(
+            f"{SIGNER}\n{OTHER}\n", "dnf-repo.sh: the keyring must hold one secret key", id="two"
+        ),
+        pytest.param("garbage", "gpg: no valid OpenPGP data found.", id="none"),
+    ],
+)
 @pytest.mark.usefixtures("releases")
 def test_release_fails_unless_the_secret_holds_one_key(
-    env: dict[str, str], tmp_path: Path, keyfile: Path
+    env: dict[str, str], tmp_path: Path, keyfile: Path, secret: str, error: str
 ) -> None:
     keyfile.write_text(f"{SIGNER}\n{OTHER}\n", encoding="utf-8")
-    result = release(env, tmp_path, keyfile, RPM_SIGNING_KEY=f"{SIGNER}\n{OTHER}\n")
+    result = release(env, tmp_path, keyfile, RPM_SIGNING_KEY=secret)
     assert result.returncode == 1
     assert result.stdout == "::error::RPM_SIGNING_KEY must hold one secret key\n"
-    assert result.stderr == "dnf-repo.sh: the keyring must hold one secret key\n"
+    assert result.stderr == f"{error}\n"
     assert gh_calls(tmp_path) == []
     assert job_rpm(tmp_path) == "app 0.0.7 -"
     assert not (tmp_path / "out").exists()
