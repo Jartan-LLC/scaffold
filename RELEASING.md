@@ -79,6 +79,14 @@ what to fix first when the job failed.
    why. While `packaging/rpm.spec` exists, check that it lists `NAME.noarch.rpm` too, where
    `NAME` is `Name` in `packaging/rpm.spec`. While `packaging/dnf.repo` exists, a full release
    lists `NAME-dnf-repo.tar.gz` as well, the dnf repository's signed metadata.
+4. While `packaging/dnf.repo` exists, check that the `pages.yml` run the release started
+   succeeded: its `verify` job installs the package from the release URL and fails unless the
+   live dnf repository lists the Latest release as the newest version. A full release becomes
+   Latest only when no full release has a higher version.
+
+   ```bash
+   gh run list --workflow pages.yml --event workflow_run --limit 1
+   ```
 
 ## Pre-releases
 
@@ -113,8 +121,28 @@ gh attestation verify NAME.noarch.rpm --repo ORG/REPO
 sudo dnf install ./NAME.noarch.rpm
 ```
 
-<!-- TODO(/onboard): while packaging/dnf.repo exists, replace FINGERPRINT below with the signing key's fingerprint once you make it, as step 4 of docs/signing-key.md's Making a key says. -->
+### Updates through dnf
 
-While `packaging/dnf.repo` exists, the key that signs the RPMs and the dnf repository has the
-fingerprint `FINGERPRINT`; `gpg --show-keys /etc/pki/rpm-gpg/RPM-GPG-KEY-NAME` prints the
-fingerprints of the keys the package installed.
+The package adds the project's dnf repository, so `sudo dnf upgrade` installs each new release.
+The repository works with dnf on Fedora, and on EL 8, 9 and 10.
+
+<!-- TODO(/onboard): replace FINGERPRINT below with the signing key's fingerprint once you make it, as step 4 of docs/signing-key.md's Making a key says. -->
+
+The key that signs the packages and the repository has the fingerprint `FINGERPRINT`;
+`gpg --show-keys /etc/pki/rpm-gpg/RPM-GPG-KEY-NAME` prints the fingerprints of the keys the
+package installed.
+
+If dnf prints `>>> repomd.xml GPG signature verification error`, it skipped the repository:
+
+- once, right after a release: dnf read the new files and the old signature; run the command
+  again;
+- every time: the project's signing key changed, and this machine missed the releases that
+  brought the new one; install the package again from the URL above.
+
+A machine that updates with no one at a terminal, such as through `dnf-automatic`, can't answer
+dnf's prompt to trust the key. After installing the package:
+
+- Fedora 45 and later: nothing to do;
+- older Fedora: run
+  `sudo rpmkeys --import /etc/pki/rpm-gpg/RPM-GPG-KEY-NAME && sudo dnf -y makecache` once;
+- EL: run `sudo rpmkeys --import /etc/pki/rpm-gpg/RPM-GPG-KEY-NAME` once.

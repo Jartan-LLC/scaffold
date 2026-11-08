@@ -51,11 +51,13 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
 - RPM for Fedora, attached to each GitHub Release: for files that run unchanged on every
   Fedora release, such as a shell script, keep `packaging/`, and copy `RELEASING.md`'s
   Installing the RPM section into your README. In the README's copy, delete the
-  `TODO(/onboard)` marker above the fingerprint paragraph, and "While `packaging/dnf.repo`
-  exists, " from the start of that paragraph; without a dnf repository, delete that paragraph
-  too. For a Python package, publish to PyPI instead.
+  `TODO(/onboard)` marker above the fingerprint paragraph; without a dnf repository, delete its
+  Updates through dnf subsection. For a Python package, publish to PyPI instead.
   A dnf repository lets users get new releases with `dnf upgrade`; a private repository can't
-  publish one, because dnf can't fetch its Release assets.
+  publish one, because dnf can't fetch its Release assets. GitHub Pages serves it: set up the
+  Pages workflow as for the docs site, which deploys the docs too while `docs/conf.py` exists.
+  To leave the docs off Pages, delete the workflow's `docs` job, and the `site` job's
+  `needs: docs` and step that downloads the docs.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
@@ -73,9 +75,10 @@ To keep the RPM without the dnf repository, as a private repository must, delete
 `tests/packaging/test_dnf_repo_sh.py`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`,
 `docs/signing-key.md` and its entry in `docs/index.md`, the spec's lines that make, install and
 list those two files, with their comments, the codespell hook's `exclude` in
-`.pre-commit-config.yaml`, the `sign` row in Publishing, and, in `RELEASING.md`, each sentence
-and list item that opens with "while `packaging/dnf.repo` exists". Keep the `sign` job in
-`release.yml`: it skips while `packaging/dnf.repo` is missing.
+`.pre-commit-config.yaml`, the `sign` row in Publishing, and, in `RELEASING.md`, the Installing
+the RPM section's Updates through dnf subsection and each sentence and list item that opens
+with "while `packaging/dnf.repo` exists". Keep the `sign` job in `release.yml`: it skips while
+`packaging/dnf.repo` is missing.
 
 ## Procedures
 
@@ -145,10 +148,10 @@ them as they are. `ci/changes.py` still describes the `python` and `test` jobs a
 1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
 2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md`,
    `signing-key.md` and this page, `.readthedocs.yaml.example`,
-   `.github/workflows/pages.yml.example`, `.github/workflows/publish-pypi.yml` and
-   `.github/workflows/dependency-audit.yml`. If not containerized, also `Dockerfile`,
-   `.dockerignore`, `.github/workflows/publish-docker.yml` and the commented `docker` job in
-   `.github/workflows/ci.yml`.
+   `.github/workflows/publish-pypi.yml` and `.github/workflows/dependency-audit.yml`, and,
+   unless you keep the dnf repository, `.github/workflows/pages.yml.example`. If not
+   containerized, also `Dockerfile`, `.dockerignore`, `.github/workflows/publish-docker.yml`
+   and the commented `docker` job in `.github/workflows/ci.yml`.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
    `check` entries (`docs/scaffold.md`, CI), and the commented `integration-tests` job. In
@@ -169,8 +172,8 @@ them as they are. `ci/changes.py` still describes the `python` and `test` jobs a
 8. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
    uv" line for your stack.
 9. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
-   table, delete the `publish-pypi.yml` row and, if not containerized, the
-   `publish-docker.yml` row.
+   table, delete the `publish-pypi.yml` row, the `pages.yml` row unless you keep the dnf
+   repository, and, if not containerized, the `publish-docker.yml` row.
 10. In `RELEASING.md`, delete or rewrite each sentence that names `publish-pypi.yml` and,
     if not containerized, `publish-docker.yml`.
 
