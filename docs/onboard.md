@@ -290,13 +290,26 @@ gh label create patch --color 0E8A16 --description "Patch version update" --forc
 
 ### Publishing environments
 
-`publish-pypi.yml` runs in the `pypi` environment and `publish-docker.yml` in `ghcr`. Create
-the environment of each workflow you kept:
+`publish-pypi.yml` runs in the `pypi` environment and `publish-docker.yml` in `ghcr`. A
+private repository needs GitHub Pro, Team or Enterprise for environments and their tag rules.
+Create the environment of each workflow you kept, open to `v*` tags only, with no bypass for
+admins. Delete `pypi` or `ghcr` from the loop's `for` list if you deleted its workflow:
 
 ```bash
-gh api -X PUT repos/{owner}/{repo}/environments/pypi
-gh api -X PUT repos/{owner}/{repo}/environments/ghcr
+for env in pypi ghcr; do
+  gh api -X PUT "repos/{owner}/{repo}/environments/$env" \
+    -F can_admins_bypass=false \
+    -F 'deployment_branch_policy[protected_branches]=false' \
+    -F 'deployment_branch_policy[custom_branch_policies]=true' \
+    --jq .can_admins_bypass
+  gh api -X POST "repos/{owner}/{repo}/environments/$env/deployment-branch-policies" \
+    -f name='v*' -f type=tag --silent
+done
 ```
+
+Each `PUT` prints the `can_admins_bypass` value GitHub stored. In a public repository, or a
+private one on Enterprise, it must print `false`: GitHub's REST reference doesn't list the
+field, and an environment created without it lets admins bypass its required reviewers.
 
 In a public repository, add required reviewers to each (Settings > Environments), so each
 publish waits for a reviewer's approval; a private repository needs GitHub Enterprise for
@@ -316,12 +329,10 @@ gh api -X PUT repos/{owner}/{repo}/environments/rpm-signing \
   -F 'deployment_branch_policy[custom_branch_policies]=true' \
   --jq .can_admins_bypass
 gh api -X POST repos/{owner}/{repo}/environments/rpm-signing/deployment-branch-policies \
-  -f name='v*' -f type=tag
+  -f name='v*' -f type=tag --silent
 ```
 
-The first command prints the `can_admins_bypass` value GitHub stored, which must be `false`:
-GitHub's REST reference doesn't list the field, and an environment created without it lets
-admins bypass its required reviewers.
+The first command must print `false`, as for `pypi` and `ghcr`.
 
 Then add required reviewers to it (Settings > Environments). Every tag's `sign` job then waits
 for a required reviewer's approval, which may be the person who pushed the tag, so a project
