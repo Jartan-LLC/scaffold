@@ -1,51 +1,186 @@
-# GitHub Pages deploy for the Sphinx docs — dormant by name (like
-# .readthedocs.yaml.example). To enable: set Settings > Pages > Source = "GitHub
-# Actions", then rename this file to `pages.yml`. The docs BUILD is already checked
-# on every PR (the `docs` job in ci.yml); this only publishes. For versioned docs
-# (a page per release), connect the repo to ReadTheDocs instead.
-name: Deploy Docs
+# Deploys the GitHub Pages site: the Sphinx docs while docs/conf.py exists, and the dnf
+# repository under rpm/ while packaging/dnf.repo exists. Dormant by name, like
+# .readthedocs.yaml.example: docs/onboard.md's Publishing targets says when to rename it to
+# pages.yml. ci.yml's docs job already checks the docs build on every PR; this only publishes.
+name: Deploy Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Each release changes which bundle rpm/ serves. release.yml runs only on v* tags, and
+  # nothing from its run is used here: the bundle comes from the latest GitHub Release.
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: [Create GitHub Release]
+    types: [completed]
 
 permissions: {}
 
 env:
   UV_SYSTEM_PYTHON: 1
 
+# Each deploy replaces the whole site, and verify checks the one just deployed.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
+  # The docs toolchain comes from PyPI on every run, so it runs here, apart from the jobs that
+  # assemble and deploy the site.
+  docs:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      docs: ${{ steps.docs.outputs.docs }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: docs
+        run: |
+          if [ -f docs/conf.py ]; then
+            echo "docs=true" >>"$GITHUB_OUTPUT"
+          fi
+      - if: steps.docs.outputs.docs == 'true'
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version-file: .python-version
+      - if: steps.docs.outputs.docs == 'true'
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version-file: ci/requirements.txt
+          enable-cache: true
+      - if: steps.docs.outputs.docs == 'true'
+        run: uv pip install -e '.[docs]'
+      - if: steps.docs.outputs.docs == 'true'
+        run: sphinx-build -W -b html docs docs/_build/html
+      - if: steps.docs.outputs.docs == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: docs
+          path: docs/_build/html
+          if-no-files-found: error
+
+  site:
+    needs: docs
+    # The docs job's condition, repeated for a project that deletes that job.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read # packaging/dnf.repo, and the latest Release's bundle
+    outputs:
+      deploy: ${{ steps.check.outputs.deploy }}
+      name: ${{ steps.rpm.outputs.name }}
+      tag: ${{ steps.rpm.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: packaging/dnf.repo
+          sparse-checkout-cone-mode: false
+
+      - if: needs.docs.outputs.docs == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: docs
+          path: site
+
+      # Only the signed bundle may write rpm/.
+      - name: Refuse docs that write rpm/
+        run: |
+          if [ -e site/rpm ]; then
+            echo "::error::The docs build wrote rpm/, where the site serves the dnf repository"
+            exit 1
+          fi
+
+      # A deploy without rpm/ once a Release has a bundle would cut every user off, with only
+      # a warning in dnf's output, so a latest Release with none fails the run.
+      - name: Add the latest Release's dnf repository
+        id: rpm
+        if: hashFiles('packaging/dnf.repo') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Not a pipe: without pipefail, a failed gh would read as no bundle.
+          bundles=$(gh api --paginate "repos/$GH_REPO/releases" \
+            --jq '.[] | select(.draft | not) | .assets[].name | select(endswith("-dnf-repo.tar.gz"))')
+          if [ -z "$bundles" ]; then
+            echo "::notice::No GitHub Release has a dnf repository bundle yet, so the site has no rpm/"
+            exit 0
+          fi
+          # The latest Release is never a pre-release, which gets no bundle.
+          tag=$(gh release view --json tagName --jq .tagName)
+          bundle=$(gh release view "$tag" --json assets \
+            --jq '[.assets[].name | select(endswith("-dnf-repo.tar.gz"))] | select(length == 1) | .[0]')
+          if [ -z "$bundle" ]; then
+            echo "::error::The latest Release, $tag, has no single NAME-dnf-repo.tar.gz, while an earlier Release has one"
+            exit 1
+          fi
+          gh release download "$tag" --pattern "$bundle" --dir "$RUNNER_TEMP"
+          mkdir -p site/rpm
+          tar -xzf "$RUNNER_TEMP/$bundle" -C site/rpm
+          echo "name=${bundle%-dnf-repo.tar.gz}" >>"$GITHUB_OUTPUT"
+          echo "tag=$tag" >>"$GITHUB_OUTPUT"
+
+      - id: check
+        run: |
+          if [ -d site ]; then
+            echo "deploy=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "::notice::Neither the docs nor a dnf repository to deploy"
+          fi
+      - if: steps.check.outputs.deploy == 'true'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
   deploy:
+    needs: site
+    if: needs.site.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       pages: write
       id-token: write
-      contents: read
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: "3.12"
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-        with:
-          version-file: ci/requirements.txt
-          enable-cache: true
-      - run: uv pip install -e '.[docs]'
-      - run: sphinx-build -W -b html docs docs/_build/html
-      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          path: docs/_build/html
       - id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
+
+  # dnf skips a repository it can't read or verify, with only a warning, so users' updates
+  # stop silently. This installs the package as users do, and fails unless the live
+  # repository, its signature checked, lists the deployed release as the newest version.
+  verify:
+    needs: [site, deploy]
+    if: needs.site.outputs.tag != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            ci/dnf-repo-test.sh
+            packaging/fedora.Containerfile
+          sparse-checkout-cone-mode: false
+
+      # releases/latest/download/ can still serve the previous release for a minute or two
+      # after a release, so the check reads the repository's newest version, not the one
+      # installed. A full release's RPM version is its tag without the v.
+      - name: Check the live dnf repository
+        env:
+          NAME: ${{ needs.site.outputs.name }}
+          TAG: ${{ needs.site.outputs.tag }}
+        run: |
+          fedora=$(docker build -q - <packaging/fedora.Containerfile)
+          docker run --rm -v "$PWD:/src" -w /src "$fedora" ci/dnf-repo-test.sh verify \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/latest/download/$NAME.noarch.rpm" "${TAG#v}"

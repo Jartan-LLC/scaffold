@@ -1,3 +1,4 @@
+# The Pages workflow's workflow_run trigger names this workflow by this name.
 name: Create GitHub Release
 
 on:
@@ -210,7 +211,27 @@ jobs:
           esac
           case "$PRERELEASE" in
             true) args+=(--prerelease) ;;
-            false) ;;
+            false)
+              # Without --latest, GitHub marks the release published last Latest, so a lower
+              # version that a re-run or the queue publishes after a higher one would take
+              # it, and the Pages workflow would serve its dnf repository. sort -V, not
+              # ci/versions.py, as this job runs no repository code: it orders full releases
+              # as PEP 440 and SemVer do, except for epochs. It can put a tag that isn't v and
+              # a digit, such as vnext, above every version, so those tags are left out.
+              tags=$(gh release list --exclude-drafts --exclude-pre-releases --limit 1000 \
+                --json tagName --jq '.[].tagName')
+              highest=$(printf '%s\n%s\n' "$tags" "$GITHUB_REF_NAME" | sed -n '/^v[0-9]/p' |
+                sort -V | tail -n 1)
+              if [ "$highest" = "$GITHUB_REF_NAME" ]; then
+                args+=(--latest)
+              else
+                case "$GITHUB_REF_NAME" in
+                  v[0-9]*) echo "::notice::$highest is a higher full release, so $GITHUB_REF_NAME is not marked Latest" ;;
+                  *) echo "::notice::$GITHUB_REF_NAME doesn't start with v and a digit, so it is not marked Latest" ;;
+                esac
+                args+=(--latest=false)
+              fi
+              ;;
             *) echo "::error::The notes job did not say whether this is a pre-release"; exit 1 ;;
           esac
           # With files, gh creates a draft, uploads them, then publishes it, and deletes

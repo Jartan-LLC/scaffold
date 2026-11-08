@@ -32,7 +32,8 @@ Make the first key before the first release, once the `rpm-signing` environment 
    gpg --list-secret-keys   # the 40-character line is the key's fingerprint, FINGERPRINT below
    ```
 
-   - RSA-4096 works on every Fedora and EL client; an Ed25519 key fails on EL 8.
+   - RSA-4096 works on every Fedora and EL client. An Ed25519 key fails on EL 8, which
+     `RELEASING.md`'s Updates through dnf lists as supported, as does its copy in the README.
    - dnf never learns that a key was revoked, so an expiry adds no safety, and an expired key
      stops every user's updates.
    - A passphrase would be a second secret in the same environment, behind the same approval.
