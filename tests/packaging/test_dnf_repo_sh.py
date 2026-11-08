@@ -13,17 +13,26 @@ and the fingerprint of its designated revoker, or ``sub:`` and the fingerprint
 of a subkey. The stub `createrepo_c` writes a primary.xml that lists each
 package's location, and the stub `gpg` writes the signing key into the
 signature and lists a key file's keys in the real one's order, failing as it
-does on an empty file. It lists the secret keys of `$GNUPGHOME/secret-keys`,
-which takes a key file's form, the same way, and fails when `$GNUPGHOME` is not
-a directory. ci.yml's dnf-repo job runs the real tools.
+does on an empty file. It imports a secret key from stdin into
+`$GNUPGHOME/secret-keys`, which takes a key file's form, lists that file's keys
+the same way, and fails when `$GNUPGHOME` is not a directory. The stub `gh`
+serves the fake releases in `$FAKE_GH/releases.json`, in the order `gh release
+list` gives them, and their assets under `$FAKE_GH/assets/TAG/`, logging each
+call to `$FAKE_GH/calls`; it runs each `--jq` filter with jq, as gh does with
+its built-in one. Each stub logs its arguments to `$KEY_SEEN` when it sees
+`RPM_SIGNING_KEY` in its environment. ci.yml's dnf-repo job runs the real tools.
 """
 
 import io
+import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 import tarfile
 from pathlib import Path
+from typing import Literal
 
 import pytest
 
@@ -38,6 +47,7 @@ dnf-repo.sh: usage: packaging/dnf-repo.sh sign FINGERPRINT KEYFILE RPM
        packaging/dnf-repo.sh metadata FINGERPRINT KEYFILE URL RPMDIR OUTDIR [PREVIOUS]
        packaging/dnf-repo.sh prune KEYFILE RPMDIR
        packaging/dnf-repo.sh fingerprint
+       packaging/dnf-repo.sh release RPM KEYFILE OUTDIR
 """
 
 STUBS = {
@@ -117,6 +127,10 @@ def show(path, primary_type, sub_type):
                 print(f"fpr:::::::::{extra[4:]}:")  # codespell:ignore fpr
     return lines
 
+if "--import" in args:
+    with open(pathlib.Path(os.environ["GNUPGHOME"]) / "secret-keys", "a") as keyring:
+        keyring.write(sys.stdin.read())
+    sys.exit(0)
 if "--show-keys" in args:
     if not show(args[-1], "pub", "sub"):
         sys.exit("gpg: no valid OpenPGP data found.")
@@ -132,7 +146,59 @@ if "--list-secret-keys" in args:
 signer = args[args.index("--local-user") + 1]
 open(args[args.index("--output") + 1], "w").write(signer)
 """,
+    "gpgconf": """\
+import sys
+sys.exit(0 if sys.argv[1:] == ["--kill", "all"] else 1)
+""",
+    "gh": """\
+import argparse, json, os, pathlib, shutil, subprocess, sys
+fake = pathlib.Path(os.environ["FAKE_GH"])
+with open(fake / "calls", "a") as calls:
+    calls.write(" ".join(sys.argv[1:]).replace("\\n", " ") + "\\n")
+parser = argparse.ArgumentParser(allow_abbrev=False)
+parser.add_argument("group", choices=["release"])
+parser.add_argument("command", choices=["list", "view", "download"])
+parser.add_argument("tag", nargs="?")
+parser.add_argument("--exclude-drafts", action="store_true")
+parser.add_argument("--exclude-pre-releases", action="store_true")
+parser.add_argument("--limit", type=int, default=30)
+parser.add_argument("--json")
+parser.add_argument("--jq")
+parser.add_argument("--pattern")
+parser.add_argument("--dir")
+args = parser.parse_args()
+releases = json.loads((fake / "releases.json").read_text())
+if args.command == "download":
+    asset = fake / "assets" / args.tag / args.pattern
+    if not asset.is_file():
+        sys.exit("no assets match the file pattern")
+    pathlib.Path(args.dir).mkdir(parents=True, exist_ok=True)
+    shutil.copy(asset, args.dir)
+    sys.exit(0)
+fields = args.json.split(",")
+if args.command == "list":
+    found = [
+        r for r in releases
+        if not (args.exclude_drafts and r["isDraft"])
+        and not (args.exclude_pre_releases and r["isPrerelease"])
+    ][: args.limit]
+    data = [{f: r[f] for f in fields} for r in found]
+else:
+    found = [r for r in releases if (r["tagName"] == args.tag if args.tag else r["isLatest"])]
+    if not found:
+        sys.exit("release not found")
+    data = {f: found[0][f] for f in fields}
+sys.exit(subprocess.run(["jq", "-r", args.jq], input=json.dumps(data), text=True).returncode)
+""",
 }
+
+# Run first by each stub.
+KEY_SEEN = """\
+import os, sys
+if "RPM_SIGNING_KEY" in os.environ and "KEY_SEEN" in os.environ:
+    with open(os.environ["KEY_SEEN"], "a") as seen:
+        seen.write(" ".join([os.path.basename(sys.argv[0]), *sys.argv[1:]]) + "\\n")
+"""
 
 
 @pytest.fixture
@@ -141,7 +207,7 @@ def env(tmp_path: Path) -> dict[str, str]:
     bin_dir.mkdir()
     for name, text in STUBS.items():
         stub = bin_dir / name
-        stub.write_text(f"#!{sys.executable}\n{text}", encoding="utf-8")
+        stub.write_text(f"#!{sys.executable}\n{KEY_SEEN}{text}", encoding="utf-8")
         stub.chmod(0o755)
     return {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
 
@@ -208,6 +274,8 @@ def bundle_files(path: Path) -> dict[str, str]:
         pytest.param(["prune", "KEY"], id="prune without RPMDIR"),
         pytest.param(["prune", "KEY", "rpms", "x"], id="prune, extra"),
         pytest.param(["fingerprint", "x"], id="fingerprint, extra"),
+        pytest.param(["release", "app.noarch.rpm", "KEY"], id="release without OUTDIR"),
+        pytest.param(["release", "app.noarch.rpm", "KEY", "out", "x"], id="release, extra"),
     ],
 )
 def test_bad_arguments_exit_1_with_usage(env: dict[str, str], args: list[str]) -> None:
@@ -644,3 +712,390 @@ def test_fingerprint_fails_with_gpgs_error_when_gpg_cant_list_the_keys(
     assert result.stderr == (
         f"dnf-repo.sh: can't list the secret keys: gpg: {home} is not a directory\n"
     )
+
+
+TAG = "v0.0.7"
+NO_KEY_ERROR = (
+    "::error::The rpm-signing environment has no RPM_SIGNING_KEY secret. Make the key as"
+    " docs/signing-key.md says, or delete packaging/dnf.repo to release the RPM unsigned, with no"
+    " dnf repository.\n"
+)
+# What a stub logs to $KEY_SEEN while the release mode imports the secret.
+IMPORT = "gpg --batch --quiet --import"
+
+
+def version_of(tag: str) -> str:
+    return tag.removeprefix("v").replace("-", "~")
+
+
+class Releases:
+    """The stub `gh`'s releases, each published after every one added before it."""
+
+    def __init__(self, root: Path) -> None:
+        self.root = root
+        self.releases: list[dict[str, object]] = []
+        (root / "assets").mkdir(parents=True)
+        self.save()
+
+    def save(self) -> None:
+        (self.root / "releases.json").write_text(json.dumps(self.releases), encoding="utf-8")
+
+    def add(
+        self,
+        tag: str,
+        signer: str | None = SIGNER,
+        *,
+        bundle: Path | None = None,
+        kind: Literal["full", "latest", "pre-release", "draft"] = "full",
+        older_commit: bool = False,
+    ) -> None:
+        # signer None: no RPM. older_commit: gh lists the release last.
+        assets = self.root / "assets" / tag
+        if signer is None:
+            assets.mkdir()
+        else:
+            add_rpm(self.root / "assets", tag, version_of(tag), signer)
+        if bundle is not None:
+            shutil.copy(bundle, assets / "app-dnf-repo.tar.gz")
+        release: dict[str, object] = {
+            "tagName": tag,
+            "isDraft": kind == "draft",
+            "isPrerelease": kind == "pre-release",
+            "isLatest": kind == "latest",
+            "publishedAt": f"2026-01-01T00:{len(self.releases):02d}:00Z",
+            "assets": [{"name": path.name} for path in sorted(assets.iterdir())],
+        }
+        if older_commit:
+            self.releases.append(release)
+        else:
+            self.releases.insert(0, release)
+        self.save()
+
+
+@pytest.fixture
+def releases(tmp_path: Path) -> Releases:
+    return Releases(tmp_path / "fake")
+
+
+def gh_calls(tmp_path: Path) -> list[str]:
+    path = tmp_path / "fake" / "calls"
+    return path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+
+
+def downloaded_rpms(tmp_path: Path) -> list[str]:
+    return [
+        call.split()[2]
+        for call in gh_calls(tmp_path)
+        if call.startswith("release download") and "--pattern app.noarch.rpm " in call
+    ]
+
+
+def release_env(
+    env: dict[str, str], tmp_path: Path, tag: str, **changes: str | None
+) -> dict[str, str]:
+    (tmp_path / "tmp").mkdir()
+    result = {
+        **env,
+        "RPM_SIGNING_KEY": f"{SIGNER}\n",
+        "PRERELEASE": "false",
+        "KEEP": "4",
+        "GITHUB_REF_NAME": tag,
+        "GITHUB_SERVER_URL": "https://github.com",
+        "GITHUB_REPOSITORY": "ORG/REPO",
+        "GH_REPO": "ORG/REPO",
+        "GH_TOKEN": "token",
+        "FAKE_GH": str(tmp_path / "fake"),
+        "KEY_SEEN": str(tmp_path / "key-seen"),
+        "TMPDIR": str(tmp_path / "tmp"),
+    }
+    # Unset, as in the job, so the stub gpg fails unless release sets its own.
+    result.pop("GNUPGHOME", None)
+    for name, value in changes.items():
+        if value is None:
+            result.pop(name, None)
+        else:
+            result[name] = value
+    return result
+
+
+def release(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, tag: str = TAG, **changes: str | None
+) -> subprocess.CompletedProcess[str]:
+    rpm = add_rpm(tmp_path / "job", tag, version_of(tag), "-")
+    result = run(
+        release_env(env, tmp_path, tag, **changes), "release", rpm, keyfile, tmp_path / "out"
+    )
+    # Passing or failing, the run removes its keyring and scratch directories.
+    assert not any((tmp_path / "tmp").iterdir())
+    return result
+
+
+def key_seen(tmp_path: Path) -> list[str]:
+    path = tmp_path / "key-seen"
+    return path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+
+
+def job_rpm(tmp_path: Path, tag: str = TAG) -> str:
+    return (tmp_path / "job" / tag / "app.noarch.rpm").read_text(encoding="utf-8")
+
+
+def out_rpm(tmp_path: Path) -> str:
+    return (tmp_path / "out" / "app.noarch.rpm").read_text(encoding="utf-8")
+
+
+def out_files(tmp_path: Path) -> list[str]:
+    return sorted(path.name for path in (tmp_path / "out").iterdir())
+
+
+def indexed(tmp_path: Path) -> str:
+    return bundle_files(tmp_path / "out" / "app-dnf-repo.tar.gz")["repodata/new-primary.xml"]
+
+
+def urls(*tags: str) -> str:
+    return "\n".join(f"{URL}{tag}/app.noarch.rpm" for tag in tags)
+
+
+def previous_bundle(tmp_path: Path) -> Path:
+    return write_bundle(
+        tmp_path / "previous.tar.gz",
+        {
+            "repodata/repomd.xml": '<location href="repodata/old-primary.xml"/>\n',
+            "repodata/old-primary.xml": "old primary",
+        },
+    )
+
+
+@pytest.mark.parametrize("secret", [pytest.param("", id="empty"), pytest.param(None, id="unset")])
+@pytest.mark.usefixtures("releases")
+def test_release_fails_without_the_secret(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, secret: str | None
+) -> None:
+    result = release(env, tmp_path, keyfile, RPM_SIGNING_KEY=secret)
+    assert result.returncode == 1
+    assert result.stdout == NO_KEY_ERROR
+    assert gh_calls(tmp_path) == []
+    assert job_rpm(tmp_path) == "app 0.0.7 -"
+    assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize("prerelease", ["", "yes", None])
+@pytest.mark.usefixtures("releases")
+def test_release_fails_unless_the_notes_job_says_whether_it_is_a_pre_release(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, prerelease: str | None
+) -> None:
+    result = release(env, tmp_path, keyfile, PRERELEASE=prerelease)
+    assert result.returncode == 1
+    assert result.stdout == "::error::The notes job did not say whether this is a pre-release\n"
+    assert gh_calls(tmp_path) == []
+    assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize(
+    ("changes", "error"),
+    [
+        pytest.param({"KEEP": None}, "KEEP is not set", id="no KEEP"),
+        pytest.param({"KEEP": "four"}, "KEEP is not a number: four", id="KEEP not a number"),
+        pytest.param({"GITHUB_REF_NAME": ""}, "GITHUB_REF_NAME is not set", id="no tag"),
+    ],
+)
+@pytest.mark.usefixtures("releases")
+def test_release_needs_its_settings(
+    env: dict[str, str],
+    tmp_path: Path,
+    keyfile: Path,
+    changes: dict[str, str | None],
+    error: str,
+) -> None:
+    result = release(env, tmp_path, keyfile, TAG, **changes)
+    assert result.returncode == 1
+    assert result.stderr == f"dnf-repo.sh: {error}\n"
+    assert gh_calls(tmp_path) == []
+    assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize("name", ["missing.noarch.rpm", "app.rpm"])
+def test_release_needs_an_rpm_named_for_its_package(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, name: str
+) -> None:
+    rpm = tmp_path / name
+    error = "no such RPM" if name.startswith("missing") else "not named NAME.noarch.rpm"
+    if name == "app.rpm":
+        rpm.write_text("app 0.0.7 -", encoding="utf-8")
+    result = run(release_env(env, tmp_path, TAG), "release", rpm, keyfile, tmp_path / "out")
+    assert result.returncode == 1
+    assert result.stderr == f"dnf-repo.sh: {error}: {rpm}\n"
+    assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.usefixtures("releases")
+def test_release_fails_unless_the_secret_holds_one_key(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    keyfile.write_text(f"{SIGNER}\n{OTHER}\n", encoding="utf-8")
+    result = release(env, tmp_path, keyfile, RPM_SIGNING_KEY=f"{SIGNER}\n{OTHER}\n")
+    assert result.returncode == 1
+    assert result.stdout == "::error::RPM_SIGNING_KEY must hold one secret key\n"
+    assert result.stderr == "dnf-repo.sh: the keyring must hold one secret key\n"
+    assert gh_calls(tmp_path) == []
+    assert job_rpm(tmp_path) == "app 0.0.7 -"
+    assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize(
+    ("tag", "prerelease"), [pytest.param(TAG, "false"), pytest.param("v0.0.7-rc.1", "true")]
+)
+@pytest.mark.usefixtures("releases")
+def test_release_fails_unless_the_key_file_holds_the_key(
+    env: dict[str, str],
+    tmp_path: Path,
+    keyfile: Path,
+    tag: str,
+    prerelease: str,
+) -> None:
+    keyfile.write_text(f"{OTHER}\n", encoding="utf-8")
+    result = release(env, tmp_path, keyfile, tag, PRERELEASE=prerelease)
+    assert result.returncode == 1
+    assert result.stderr == f"dnf-repo.sh: {keyfile} doesn't hold the key {SIGNER}\n"
+    assert gh_calls(tmp_path) == []
+    assert job_rpm(tmp_path, tag) == f"app {version_of(tag)} -"
+    assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.usefixtures("releases")
+def test_release_fails_on_a_key_file_gpg_cant_read(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    keyfile.write_text("", encoding="utf-8")
+    result = release(env, tmp_path, keyfile)
+    assert result.returncode == 1
+    assert result.stderr.startswith(f"dnf-repo.sh: can't read the keys in {keyfile}: ")
+    assert gh_calls(tmp_path) == []
+    assert not (tmp_path / "out").exists()
+
+
+def test_a_pre_release_gets_the_signed_rpm_only(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, releases: Releases
+) -> None:
+    releases.add("v0.0.6", kind="latest")
+    result = release(env, tmp_path, keyfile, "v0.0.7-rc.1", PRERELEASE="true")
+    assert result.returncode == 0, result.stderr
+    assert out_files(tmp_path) == ["app.noarch.rpm"]
+    assert out_rpm(tmp_path) == f"app 0.0.7~rc.1 {SIGNER}"
+    assert gh_calls(tmp_path) == []
+    assert key_seen(tmp_path) == [IMPORT]
+
+
+@pytest.mark.usefixtures("releases")
+def test_a_first_full_release_bundles_its_own_rpm(
+    env: dict[str, str], tmp_path: Path, keyfile: Path
+) -> None:
+    result = release(env, tmp_path, keyfile, "v0.0.6")
+    bundle = tmp_path / "out" / "app-dnf-repo.tar.gz"
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == f"{bundle}\n"
+    assert out_files(tmp_path) == ["app-dnf-repo.tar.gz", "app.noarch.rpm"]
+    assert out_rpm(tmp_path) == f"app 0.0.6 {SIGNER}"
+    assert [call.split()[:2] for call in gh_calls(tmp_path)] == [["release", "list"]]
+    files = bundle_files(bundle)
+    assert files["repodata/new-primary.xml"] == urls("v0.0.6")
+    assert files["repodata/repomd.xml.asc"] == SIGNER
+    assert files["RPM-GPG-KEY-app"] == f"{SIGNER}\n"
+    assert key_seen(tmp_path) == [IMPORT]
+
+
+@pytest.mark.parametrize("other_key_in_key_file", [False, True])
+def test_a_full_release_bundles_the_full_releases_published_most_recently(
+    env: dict[str, str],
+    tmp_path: Path,
+    keyfile: Path,
+    releases: Releases,
+    other_key_in_key_file: bool,
+) -> None:
+    releases.add("v0.0.1")
+    releases.add("v0.0.2")
+    releases.add("v0.0.3", None)
+    releases.add("v0.0.4", OTHER)
+    releases.add("v0.0.5")
+    releases.add("v0.0.6", bundle=previous_bundle(tmp_path), kind="latest")
+    releases.add("v0.0.7-rc.1", kind="pre-release")
+    releases.add("v0.0.9", kind="draft")
+    if other_key_in_key_file:
+        keyfile.write_text(f"{SIGNER}\n{OTHER}\n", encoding="utf-8")
+    result = release(env, tmp_path, keyfile)
+    assert result.returncode == 0, result.stderr
+    assert downloaded_rpms(tmp_path) == ["v0.0.6", "v0.0.5", "v0.0.4"]
+    assert "release view v0.0.3 --json assets --jq any(.assets[]; .name == env.ASSET)" in (
+        gh_calls(tmp_path)
+    )
+    assert any(
+        call.startswith("release download v0.0.6 --pattern app-dnf-repo.tar.gz --dir ")
+        for call in gh_calls(tmp_path)
+    )
+    files = bundle_files(tmp_path / "out" / "app-dnf-repo.tar.gz")
+    assert files["repodata/old-primary.xml"] == "old primary"
+    assert key_seen(tmp_path) == [IMPORT]
+    if other_key_in_key_file:
+        assert result.stderr == ""
+        assert indexed(tmp_path) == urls("v0.0.4", "v0.0.5", "v0.0.6", "v0.0.7")
+    else:
+        assert re.fullmatch(
+            r"dnf-repo.sh: warning: leaving out \S+/releases/v0\.0\.4/app\.noarch\.rpm:"
+            rf" it is signed by a key not in {re.escape(str(keyfile))}\n",
+            result.stderr,
+        )
+        assert indexed(tmp_path) == urls("v0.0.5", "v0.0.6", "v0.0.7")
+
+
+def test_a_release_on_an_older_commit_counts_from_when_it_was_published(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, releases: Releases
+) -> None:
+    for tag in ["v0.0.1", "v0.0.2", "v0.0.4", "v0.0.5"]:
+        releases.add(tag)
+    releases.add("v0.0.6", bundle=previous_bundle(tmp_path), kind="latest")
+    releases.add("v0.0.3", older_commit=True)
+    result = release(env, tmp_path, keyfile)
+    assert result.returncode == 0, result.stderr
+    assert downloaded_rpms(tmp_path) == ["v0.0.3", "v0.0.6", "v0.0.5", "v0.0.4"]
+    assert indexed(tmp_path) == urls("v0.0.3", "v0.0.4", "v0.0.5", "v0.0.6", "v0.0.7")
+
+
+def test_a_re_run_does_not_download_its_own_release(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, releases: Releases
+) -> None:
+    releases.add("v0.0.5")
+    releases.add("v0.0.6", bundle=previous_bundle(tmp_path), kind="latest")
+    result = release(env, tmp_path, keyfile, "v0.0.6")
+    assert result.returncode == 0, result.stderr
+    assert downloaded_rpms(tmp_path) == ["v0.0.5"]
+    assert indexed(tmp_path) == urls("v0.0.5", "v0.0.6")
+
+
+def test_a_full_release_leaves_out_an_unsigned_earlier_rpm(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, releases: Releases
+) -> None:
+    releases.add("v0.0.5", "-")
+    releases.add("v0.0.6", bundle=previous_bundle(tmp_path), kind="latest")
+    result = release(env, tmp_path, keyfile)
+    assert result.returncode == 0, result.stderr
+    assert re.fullmatch(
+        r"dnf-repo.sh: warning: leaving out \S+/releases/v0\.0\.5/app\.noarch\.rpm:"
+        r" it is not signed\n",
+        result.stderr,
+    )
+    assert indexed(tmp_path) == urls("v0.0.6", "v0.0.7")
+
+
+@pytest.mark.parametrize("signer", [f"{SIGNER}-damaged", f"{OTHER}-damaged"])
+def test_a_full_release_fails_on_a_damaged_earlier_rpm(
+    env: dict[str, str], tmp_path: Path, keyfile: Path, releases: Releases, signer: str
+) -> None:
+    releases.add("v0.0.5", signer)
+    releases.add("v0.0.6", bundle=previous_bundle(tmp_path), kind="latest")
+    result = release(env, tmp_path, keyfile)
+    assert result.returncode == 1
+    assert re.search(
+        r"^dnf-repo.sh: \S+/releases/v0\.0\.5/app\.noarch\.rpm has a bad signature, or is damaged:$",
+        result.stderr,
+        re.MULTILINE,
+    )
+    assert out_files(tmp_path) == ["app.noarch.rpm"]

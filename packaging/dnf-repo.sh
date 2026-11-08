@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Signs RPMs, and builds the signed dnf repository metadata for RPMs a GitHub Release holds.
 # Needs rpm, rpmsign, rpmkeys, createrepo_c, gpg and tar, as the Fedora container in ci.yml's
-# dnf-repo job has. gpg signs with the secret key FINGERPRINT from its keyring
-# ($GNUPGHOME), which must have no passphrase.
+# dnf-repo job has; release also needs gh and gpgconf, as release.yml's sign job installs. gpg
+# signs with the secret key FINGERPRINT from its keyring ($GNUPGHOME), which must have no
+# passphrase.
 #
 # Usage:
 #   packaging/dnf-repo.sh sign FINGERPRINT KEYFILE RPM
@@ -23,6 +24,17 @@
 #   packaging/dnf-repo.sh fingerprint
 #     Prints the fingerprint of the one secret key in gpg's keyring, and fails unless the
 #     keyring holds exactly one.
+#   packaging/dnf-repo.sh release RPM KEYFILE OUTDIR
+#     What release.yml's sign job runs, on RPM named NAME.noarch.rpm. Imports the one secret
+#     key in $RPM_SIGNING_KEY into a keyring of its own and unsets the variable, so nothing it
+#     runs sees the key, then signs RPM in place as sign does and copies it into OUTDIR,
+#     which it creates. On a full release, with $PRERELEASE false rather than true, it also
+#     downloads with gh the NAME.noarch.rpm of the $KEEP full releases published most
+#     recently, other than $GITHUB_REF_NAME, prunes them, and runs metadata on them and RPM
+#     into OUTDIR, with $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/ as URL and
+#     the latest release's NAME-dnf-repo.tar.gz as PREVIOUS. gh reads GH_TOKEN and GH_REPO.
+#     An empty secret, a secret that isn't one secret key, or a $PRERELEASE other than true
+#     or false fails it with a GitHub Actions error annotation on stdout.
 set -euo pipefail
 
 die() {
@@ -34,7 +46,14 @@ usage() {
     die "usage: packaging/dnf-repo.sh sign FINGERPRINT KEYFILE RPM
        packaging/dnf-repo.sh metadata FINGERPRINT KEYFILE URL RPMDIR OUTDIR [PREVIOUS]
        packaging/dnf-repo.sh prune KEYFILE RPMDIR
-       packaging/dnf-repo.sh fingerprint"
+       packaging/dnf-repo.sh fingerprint
+       packaging/dnf-repo.sh release RPM KEYFILE OUTDIR"
+}
+
+# For release, whose errors the run's summary shows.
+annotated_error() {
+    printf '::error::%s\n' "$*"
+    exit 1
 }
 
 # A full fingerprint, so gpg can't pick another key whose ID or user ID matches.
@@ -216,6 +235,83 @@ fingerprint() {
     printf '%s\n' "$fingerprints"
 }
 
+# Succeeds when the release $1 has an asset named $2. In an if condition, a function ignores
+# set -e, hence the || exit.
+has_asset() {
+    local found
+    found=$(ASSET=$2 gh release view "$1" --json assets \
+        --jq 'any(.assets[]; .name == env.ASSET)') || exit 1
+    [[ $found == true ]]
+}
+
+# A subshell, so the EXIT trap removes the keyring when release returns.
+release() (
+    (($# == 3)) || usage
+    local rpm=$1 keyfile=$2 outdir=$3
+    [[ -n ${RPM_SIGNING_KEY:-} ]] ||
+        annotated_error "The rpm-signing environment has no RPM_SIGNING_KEY secret. Make the key as docs/signing-key.md says, or delete packaging/dnf.repo to release the RPM unsigned, with no dnf repository."
+    case ${PRERELEASE:-} in
+        true | false) ;;
+        *) annotated_error "The notes job did not say whether this is a pre-release" ;;
+    esac
+    local var
+    for var in KEEP GITHUB_REF_NAME GITHUB_SERVER_URL GITHUB_REPOSITORY; do
+        [[ -n ${!var:-} ]] || die "$var is not set"
+    done
+    [[ $KEEP =~ ^[0-9]+$ ]] || die "KEEP is not a number: $KEEP"
+    [[ -f $rpm ]] || die "no such RPM: $rpm"
+    # The name finds the same package in the earlier releases.
+    [[ $rpm == *.noarch.rpm ]] || die "not named NAME.noarch.rpm: $rpm"
+    local name
+    name=$(basename -- "$rpm" .noarch.rpm)
+
+    local work key
+    work=$(mktemp -d)
+    GNUPGHOME=$work/gnupg
+    export GNUPGHOME
+    trap 'gpgconf --kill all; rm -rf -- "$work"' EXIT
+    mkdir -m 700 "$GNUPGHOME"
+    printf '%s\n' "$RPM_SIGNING_KEY" | gpg --batch --quiet --import
+    # Only the import needs the key; keep it from everything that runs below.
+    unset RPM_SIGNING_KEY
+    key=$(fingerprint) || annotated_error "RPM_SIGNING_KEY must hold one secret key"
+
+    sign "$key" "$keyfile" "$rpm"
+    mkdir -- "$outdir"
+    cp -- "$rpm" "$outdir/"
+    [[ $PRERELEASE == false ]] || exit 0
+
+    local releases=$work/releases tags tag latest previous=()
+    # gh lists releases by their tagged commit's date, so a tag on an older commit, such as a
+    # maintenance release, sorts low; take the ones published most recently. A re-run finds
+    # this tag's own release, if the first run created it.
+    tags=$(gh release list --exclude-drafts --exclude-pre-releases \
+        --limit 1000 --json tagName,publishedAt \
+        --jq 'sort_by(.publishedAt) | reverse
+            | [.[].tagName | select(. != env.GITHUB_REF_NAME)][:(env.KEEP | tonumber)][]')
+    for tag in $tags; do
+        if has_asset "$tag" "$name.noarch.rpm"; then
+            gh release download "$tag" --pattern "$name.noarch.rpm" --dir "$releases/$tag"
+        fi
+    done
+    # The latest release's bundle is the one the dnf repository serves until this one
+    # replaces it: a client that read its repomd.xml just before the swap fetches the files it
+    # names just after, so the new bundle keeps them.
+    if [[ -n $tags ]]; then
+        latest=$(gh release view --json tagName --jq .tagName)
+        if has_asset "$latest" "$name-dnf-repo.tar.gz"; then
+            gh release download "$latest" --pattern "$name-dnf-repo.tar.gz" --dir "$work/previous"
+            previous=("$work/previous/$name-dnf-repo.tar.gz")
+        fi
+    fi
+
+    mkdir -p "$releases/$GITHUB_REF_NAME"
+    cp -- "$rpm" "$releases/$GITHUB_REF_NAME/"
+    prune "$keyfile" "$releases"
+    metadata "$key" "$keyfile" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/" \
+        "$releases" "$outdir" "${previous[@]}"
+)
+
 (($# > 0)) || usage
 mode=$1
 shift
@@ -224,5 +320,6 @@ case $mode in
     metadata) metadata "$@" ;;
     prune) prune "$@" ;;
     fingerprint) fingerprint "$@" ;;
+    release) release "$@" ;;
     *) usage ;;
 esac

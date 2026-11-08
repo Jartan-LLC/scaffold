@@ -99,8 +99,6 @@ jobs:
     defaults:
       run:
         shell: bash
-    env:
-      PRERELEASE: ${{ needs.notes.outputs.prerelease }}
     steps:
       # Before checkout, which without git ignores sparse-checkout and downloads the whole
       # tree.
@@ -128,81 +126,15 @@ jobs:
             exit 1
           fi
           echo "RPM=${rpms[0]}" >>"$GITHUB_ENV"
-          echo "NAME=$(basename "${rpms[0]}" .noarch.rpm)" >>"$GITHUB_ENV"
 
-      # The latest release's bundle is the one the dnf repository serves until this one
-      # replaces it: a client that read its repomd.xml just before the swap fetches the
-      # files it names just after, so the new bundle keeps them.
-      - name: Download the earlier full releases' RPMs and the latest bundle
-        if: env.PRERELEASE == 'false'
+      - name: Sign the RPM, and build the repository bundle on a full release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           KEEP: 4
-        run: |
-          # In an if condition, a function ignores set -e, hence the || exit.
-          has_asset() {
-            local found
-            found=$(ASSET=$2 gh release view "$1" --json assets \
-              --jq 'any(.assets[]; .name == env.ASSET)') || exit 1
-            [[ $found == true ]]
-          }
-          # gh lists releases by their tagged commit's date, so a tag on an older commit, such
-          # as a maintenance release, sorts low; take the ones published most recently. A
-          # re-run finds this tag's own release, if the first run created it.
-          tags=$(gh release list --exclude-drafts --exclude-pre-releases \
-            --limit 1000 --json tagName,publishedAt \
-            --jq 'sort_by(.publishedAt) | reverse
-              | [.[].tagName | select(. != env.GITHUB_REF_NAME)][:(env.KEEP | tonumber)][]')
-          for tag in $tags; do
-            if has_asset "$tag" "$NAME.noarch.rpm"; then
-              gh release download "$tag" --pattern "$NAME.noarch.rpm" --dir "releases/$tag"
-            fi
-          done
-          if [[ -n $tags ]]; then
-            latest=$(gh release view --json tagName --jq .tagName)
-            if has_asset "$latest" "$NAME-dnf-repo.tar.gz"; then
-              gh release download "$latest" --pattern "$NAME-dnf-repo.tar.gz" --dir previous
-            fi
-          fi
-
-      - name: Sign the RPM, and build the repository bundle on a full release
-        env:
+          PRERELEASE: ${{ needs.notes.outputs.prerelease }}
           RPM_SIGNING_KEY: ${{ secrets.RPM_SIGNING_KEY }}
-        run: |
-          if [[ -z $RPM_SIGNING_KEY ]]; then
-            echo "::error::The rpm-signing environment has no RPM_SIGNING_KEY secret. Make the key as docs/signing-key.md says, or delete packaging/dnf.repo to release the RPM unsigned, with no dnf repository."
-            exit 1
-          fi
-          case "$PRERELEASE" in
-            true | false) ;;
-            *) echo "::error::The notes job did not say whether this is a pre-release"; exit 1 ;;
-          esac
-          work=$(mktemp -d)
-          GNUPGHOME=$work/gnupg
-          export GNUPGHOME
-          trap 'gpgconf --kill all; rm -rf -- "$work"' EXIT
-          mkdir -m 700 "$GNUPGHOME"
-          printf '%s\n' "$RPM_SIGNING_KEY" | gpg --batch --quiet --import
-          # Only the import needs the key; keep it from everything that runs below.
-          unset RPM_SIGNING_KEY
-          if ! fingerprint=$(packaging/dnf-repo.sh fingerprint); then
-            echo "::error::RPM_SIGNING_KEY must hold one secret key"
-            exit 1
-          fi
-
-          packaging/dnf-repo.sh sign "$fingerprint" packaging/RPM-GPG-KEY "$RPM"
-          mkdir out
-          cp -- "$RPM" out/
-          [[ $PRERELEASE == false ]] || exit 0
-
-          mkdir -p "releases/$GITHUB_REF_NAME"
-          cp -- "$RPM" "releases/$GITHUB_REF_NAME/"
-          packaging/dnf-repo.sh prune packaging/RPM-GPG-KEY releases
-          shopt -s nullglob
-          previous=(previous/*.tar.gz)
-          packaging/dnf-repo.sh metadata "$fingerprint" packaging/RPM-GPG-KEY \
-            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/" releases out "${previous[@]}"
+        run: packaging/dnf-repo.sh release "$RPM" packaging/RPM-GPG-KEY out
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
