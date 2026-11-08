@@ -20,8 +20,8 @@ An item whose answer needs neither, such as which workflows to keep, says what t
       published, so give addresses you are willing to publish
 - [ ] Which enchantments Features to keep ([Features](#features))
 - [ ] Publishing targets: the PyPI package, the container image, the docs site, an RPM for
-      Fedora, with or without a dnf repository (with one, also the public key that signs it)
-      ([details](#publishing-targets))
+      Fedora, with or without a dnf repository (with one, also the email address its signing
+      key names, which the key publishes) ([details](#publishing-targets))
 - [ ] Whether to keep `Dockerfile` (its marker says what goes with it, and the
       `publish-docker.yml` row in [Publishing](scaffold.md#publishing) and the sentences
       naming it in `RELEASING.md` go too),
@@ -49,26 +49,33 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
   per release, use Read the Docs: rename `.readthedocs.yaml.example` to `.readthedocs.yaml`
   and import the repo there.
 - RPM for Fedora, attached to each GitHub Release: for files that run unchanged on every
-  Fedora release, such as a shell script, keep `packaging/`, and copy the commands in
-  `RELEASING.md`'s Installing the RPM section into your README. For a Python package, publish
-  to PyPI instead. A dnf repository lets users get new releases with `dnf upgrade`; a private
-  repository can't publish one, because dnf can't fetch its Release assets.
+  Fedora release, such as a shell script, keep `packaging/`, and copy `RELEASING.md`'s
+  Installing the RPM section into your README. In the README's copy, delete the
+  `TODO(/onboard)` marker above the fingerprint paragraph, and "While `packaging/dnf.repo`
+  exists, " from the start of that paragraph; without a dnf repository, delete that paragraph
+  too. For a Python package, publish to PyPI instead.
+  A dnf repository lets users get new releases with `dnf upgrade`; a private repository can't
+  publish one, because dnf can't fetch its Release assets.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
 `RELEASING.md` that names that workflow. To drop the RPM, delete `packaging/`,
-`tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, the `docker` entry for
-`/packaging` in `.github/dependabot.yml`, the `rpm.yml` row in Publishing, and, in
-`RELEASING.md`, the Installing the RPM section and each sentence and list item that opens with
-"while `packaging/rpm.spec` exists" or "while `packaging/dnf.repo` exists". Keep
-`.github/workflows/rpm.yml` and the RPM jobs in `ci.yml` and `release.yml`: they skip while
-the spec is missing.
+`tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, `docs/signing-key.md` and
+its entry in `docs/index.md`, the `docker` entry for `/packaging` in `.github/dependabot.yml`,
+the codespell hook's `exclude` in `.pre-commit-config.yaml`, the `rpm.yml` and `sign` rows in
+Publishing, and, in `RELEASING.md`, the Installing the RPM section and each sentence and list
+item that opens with "while `packaging/rpm.spec` exists" or "while `packaging/dnf.repo`
+exists". Keep `.github/workflows/rpm.yml` and the RPM jobs in
+`ci.yml` and `release.yml`: they skip while the spec is missing.
 
 To keep the RPM without the dnf repository, as a private repository must, delete
 `packaging/dnf.repo`, `packaging/RPM-GPG-KEY`, `packaging/dnf-repo.sh`,
-`tests/packaging/test_dnf_repo_sh.py`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, the
-spec's lines that make, install and list those two files, with their comments, and each
-sentence and list item in `RELEASING.md` that opens with "while `packaging/dnf.repo` exists".
+`tests/packaging/test_dnf_repo_sh.py`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`,
+`docs/signing-key.md` and its entry in `docs/index.md`, the spec's lines that make, install and
+list those two files, with their comments, the codespell hook's `exclude` in
+`.pre-commit-config.yaml`, the `sign` row in Publishing, and, in `RELEASING.md`, each sentence
+and list item that opens with "while `packaging/dnf.repo` exists". Keep the `sign` job in
+`release.yml`: it skips while `packaging/dnf.repo` is missing.
 
 ## Procedures
 
@@ -125,8 +132,8 @@ Rename the `app` stub to your import name:
 ### Not a Python project
 
 This deletes the docs site, and with it some markers, so it runs before [Markers](#markers).
-Keep `docs/scaffold.md`, which reads fine on GitHub without Sphinx, and this page, which
-Finish deletes.
+Keep `docs/scaffold.md` and `docs/signing-key.md`, which read fine on GitHub without Sphinx,
+and this page, which Finish deletes.
 
 Keep `ci/`. `ci.yml`'s `changes` job runs `ci/changes.py`, `release.yml` runs
 `ci/release_notes.py` and `publish-docker.yml` runs `ci/versions.py`, all on the runner's
@@ -136,11 +143,11 @@ them as they are. `ci/changes.py` still describes the `python` and `test` jobs a
 `python` output that nothing reads.
 
 1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
-2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md` and
-   this page, `.readthedocs.yaml.example`, `.github/workflows/pages.yml.example`,
-   `.github/workflows/publish-pypi.yml` and `.github/workflows/dependency-audit.yml`. If
-   not containerized, also `Dockerfile`, `.dockerignore`,
-   `.github/workflows/publish-docker.yml` and the commented `docker` job in
+2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md`,
+   `signing-key.md` and this page, `.readthedocs.yaml.example`,
+   `.github/workflows/pages.yml.example`, `.github/workflows/publish-pypi.yml` and
+   `.github/workflows/dependency-audit.yml`. If not containerized, also `Dockerfile`,
+   `.dockerignore`, `.github/workflows/publish-docker.yml` and the commented `docker` job in
    `.github/workflows/ci.yml`.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
@@ -211,8 +218,9 @@ In a project that isn't Python, `ci/changes.py` keeps its lines on the Python jo
    to state only the default it gives (for the supported versions, `Report against the
    latest release.`), and delete the comment with the example table.
 3. Run the grep again. It should print only this page, the marker on its `docs/index.md`
-   entry, which Finish deletes, and `.scaffold-sync`, which the next section fills or, in a
-   fork, deletes.
+   entry, which Finish deletes, `.scaffold-sync`, which the next section fills or, in a
+   fork, deletes, and, if you kept the dnf repository, the markers in `packaging/RPM-GPG-KEY`
+   and `RELEASING.md`, which [Making a key](signing-key.md#making-a-key) resolves.
 
 ## Record the sync point
 
@@ -266,6 +274,8 @@ git merge upstream/main   # resolve conflicts, keeping your customizations
 - [ ] Discussions (Settings > General > Features): the issue template config links to it
 - [ ] For each publishing target you kept, its `pypi` or `ghcr` environment
       ([details](#publishing-environments))
+- [ ] If you kept the dnf repository, its `rpm-signing` environment and the `RPM_SIGNING_KEY`
+      secret ([details](#publishing-environments))
 
 ### Dependabot labels
 
@@ -296,13 +306,38 @@ token secret is stored. Until it is configured, `publish-pypi.yml` fails on ever
 `pypi` also clears the GitHub Actions VS Code extension's "environment `pypi` is not valid"
 warning.
 
+If you kept the dnf repository, `release.yml`'s `sign` job runs in `rpm-signing`, which holds
+the signing key. Create it, open to `v*` tags only, with no bypass for admins:
+
+```bash
+gh api -X PUT repos/{owner}/{repo}/environments/rpm-signing \
+  -F can_admins_bypass=false \
+  -F 'deployment_branch_policy[protected_branches]=false' \
+  -F 'deployment_branch_policy[custom_branch_policies]=true' \
+  --jq .can_admins_bypass
+gh api -X POST repos/{owner}/{repo}/environments/rpm-signing/deployment-branch-policies \
+  -f name='v*' -f type=tag
+```
+
+The first command prints the `can_admins_bypass` value GitHub stored, which must be `false`:
+GitHub's REST reference doesn't list the field, and an environment created without it lets
+admins bypass its required reviewers.
+
+Then add required reviewers to it (Settings > Environments). Every tag's `sign` job then waits
+for a required reviewer's approval, which may be the person who pushed the tag, so a project
+with one maintainer can still release. With more than one maintainer, also tick Prevent
+self-review there, so someone other than the tag's pusher approves the key's use. On GitHub
+Free, Pro and Team, required reviewers need a public repository, which the dnf repository
+needs anyway. Make the first key as [Making a key](signing-key.md#making-a-key) says.
+
 ## Finish
 
 1. [ ] Replace `README.md` with your own, carrying over its badges adjusted for your repo
        ([details](#readme-badges)).
 2. [ ] Delete this page, its entry in `docs/index.md` with the marker above it (unless
        tearing down Python deleted `docs/index.md`), and `.claude/commands/onboard.md`.
-3. [ ] Run `git grep -n 'TODO(/onboard)'`. It must print nothing.
+3. [ ] Run `git grep -n 'TODO(/onboard)'`. It must print nothing, or, until you make the
+       signing key, only the markers in `packaging/RPM-GPG-KEY` and `RELEASING.md`.
 4. [ ] Run `make check`.
 
 ### README badges
@@ -322,7 +357,7 @@ Copy the badge lines from the top of the template README into yours, then:
 | `.claude/` | Claude Code project files — the `/onboard` command, which onboarding deletes, and `workspace/`, where agents keep plans and other working files, git-ignored |
 | `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates |
 | `pyproject.toml`, `ci/`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use, each with its release files' hashes, so an install rejects a download that doesn't match. The tools' own dependencies are not pinned. `ci/release_notes.py` makes the release notes `release.yml` publishes, `ci/versions.py` chooses the image tags `publish-docker.yml` pushes, `ci/changes.py` decides which of `ci.yml`'s gated jobs a change runs, and `ci/dnf-repo-test.sh` and `ci/dnf_repo_server.py` test the repository `dnf-repo.sh` builds. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
-| `packaging/` | `rpm.sh` and the spec stub for the RPM each GitHub Release attaches, which `.github/workflows/rpm.yml` builds and installs, `dnf.repo` and `RPM-GPG-KEY`, the dnf repository's definition and public key, which the RPM installs, `dnf-repo.sh`, which signs RPMs and builds signed dnf repository metadata for them, and `fedora.Containerfile`, which pins the Fedora image those jobs run in for Dependabot to update its digest |
+| `packaging/` | `rpm.sh` and the spec stub for the RPM each GitHub Release attaches, which `.github/workflows/rpm.yml` builds and installs, `dnf.repo` and `RPM-GPG-KEY`, the dnf repository's definition and public key, which the RPM installs, `dnf-repo.sh`, which `release.yml`'s `sign` job runs to sign RPMs and build signed dnf repository metadata for them, and `fedora.Containerfile`, which pins the Fedora image those jobs run in for Dependabot to update its digest |
 | `src/`, `tests/` | The package (src layout, PEP 561 typed) and its tests; the template ships a CLI entry point and logging setup |
 | `Makefile`, `.pre-commit-config.yaml` | Task runner (`make install`/`lint`/`fix`/`test`/`check`/`docs`, backed by [uv](https://docs.astral.sh/uv/), installing into the checkout's `.venv`, else the active environment, else the devcontainer's system Python) + the single lint source, whose hooks `make lint` and CI both run, and the source of ruff's and codespell's versions |
 | `docs/`, `.readthedocs.yaml.example` | Sphinx docs site (Markdown via MyST, API reference from docstrings); `make docs` builds it. [Publishing targets](#publishing-targets) says how to publish it |

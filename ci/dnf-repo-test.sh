@@ -65,7 +65,8 @@ build() {
         rpm=$("$src/packaging/rpm.sh" "$v" "$work/rpms/v$v")
         name=$(basename "$rpm" .noarch.rpm)
         # 0.0.3 stays unsigned, as a release made before signing would be.
-        [[ $v == 0.0.3 ]] || "$root/packaging/dnf-repo.sh" sign "$fingerprint" "$rpm"
+        [[ $v == 0.0.3 ]] ||
+            "$root/packaging/dnf-repo.sh" sign "$fingerprint" "$work/RPM-GPG-KEY" "$rpm"
         cp -R "$work/rpms/v$v" "$www/assets/"
     done
 
@@ -80,16 +81,31 @@ build() {
     done < <(sed -n 's|.*<location href="repodata/\([^"/]*\)".*|\1|p' \
         "$www/v1/repodata/repomd.xml")
 
-    # A package signed by another key fails the whole run.
+    # sign refuses a key the key file doesn't hold. A package signed by another key fails
+    # metadata, and prune deletes it.
     other=$(new_key 'dnf-repo CI, another key <other@example.invalid>')
+    gpg --armor --export "$other" >"$work/other-key"
     mkdir -p "$work/in-other/v0.0.3"
     cp "$work/rpms/v0.0.3/$name.noarch.rpm" "$work/in-other/v0.0.3/"
-    "$root/packaging/dnf-repo.sh" sign "$other" "$work/in-other/v0.0.3/$name.noarch.rpm"
-    if "$root/packaging/dnf-repo.sh" metadata "$fingerprint" "$work/RPM-GPG-KEY" \
-        "$url/releases/download/" "$work/in-other" "$work/out-other" 2>"$work/other.err"; then
-        die "dnf-repo.sh indexed a package signed by another key"
-    fi
-    grep -q 'a key not in the key file' "$work/other.err" || die "$(cat "$work/other.err")"
+    refused "doesn't hold the key $other" \
+        sign "$other" "$work/RPM-GPG-KEY" "$work/in-other/v0.0.3/$name.noarch.rpm"
+    "$root/packaging/dnf-repo.sh" sign "$other" "$work/other-key" \
+        "$work/in-other/v0.0.3/$name.noarch.rpm"
+    refused 'a key not in the key file' metadata "$fingerprint" "$work/RPM-GPG-KEY" \
+        "$url/releases/download/" "$work/in-other" "$work/out-other"
+    # On a copy: the otherkey scenario below serves the package.
+    cp -R "$work/in-other" "$work/pruned"
+    "$root/packaging/dnf-repo.sh" prune "$work/RPM-GPG-KEY" "$work/pruned"
+    [[ ! -e $work/pruned/v0.0.3/$name.noarch.rpm ]] ||
+        die "dnf-repo.sh prune kept a package signed by another key"
+    # A damaged one fails prune and stays, so the release fails on it.
+    local damaged=$work/damaged/v0.0.3/$name.noarch.rpm
+    mkdir -p "$work/damaged/v0.0.3"
+    cp "$work/in-other/v0.0.3/$name.noarch.rpm" "$damaged"
+    printf 'XXXXXXXX' |
+        dd of="$damaged" bs=1 seek=$(($(stat -c %s "$damaged") - 200)) conv=notrunc status=none
+    refused 'has a bad signature, or is damaged' prune "$work/RPM-GPG-KEY" "$work/damaged"
+    [[ -e $damaged ]] || die "dnf-repo.sh prune deleted a damaged package"
 
     # Signed metadata that lists an unsigned package, which gpgcheck refuses.
     mkdir "$www/unsigned"
@@ -119,6 +135,37 @@ build() {
     createrepo_c --quiet "$www/otherkey"
     gpg --batch --armor --detach-sign --local-user "$other" "$www/otherkey/repodata/repomd.xml"
     gpg --armor --export "$other" >"$www/otherkey/RPM-GPG-KEY-$name"
+
+    # A signing subkey isn't a key the package installs, though the key file holds it. After
+    # every signature by $other, as gpg would sign with the subkey from now on.
+    gpg --batch --quiet --passphrase '' --quick-add-key "$other" ed25519 sign never
+    local subkey
+    subkey=$(gpg --with-colons --with-subkey-fingerprint --list-keys "$other" |
+        awk -F: '$1 == "sub" { s = 1; next } s && $1 == "fpr" { print $10; exit }') # codespell:ignore fpr
+    [[ -n $subkey ]] || die "gpg added no subkey"
+    gpg --armor --export "$other" >"$work/other-key"
+    refused "doesn't hold the key $subkey" \
+        sign "$subkey" "$work/other-key" "$work/rpms/v0.0.3/$name.noarch.rpm"
+
+    # fingerprint refuses this keyring, which holds two secret keys, and names a key with a
+    # signing subkey by its primary key.
+    refused 'must hold one secret key' fingerprint
+    local one=$work/one-key
+    mkdir -m 700 "$one"
+    gpg --batch --armor --export-secret-keys "$other" |
+        GNUPGHOME=$one gpg --batch --quiet --import
+    [[ $(GNUPGHOME=$one "$root/packaging/dnf-repo.sh" fingerprint) == "$other" ]] ||
+        die "dnf-repo.sh fingerprint didn't print the primary key's fingerprint, $other"
+}
+
+# Runs dnf-repo.sh with the arguments after $1, which must fail with the message $1.
+refused() {
+    local message=$1
+    shift
+    if "$root/packaging/dnf-repo.sh" "$@" 2>"$work/refused.err"; then
+        die "dnf-repo.sh $1 succeeded where it should fail with: $message"
+    fi
+    grep -qF -- "$message" "$work/refused.err" || die "$(cat "$work/refused.err")"
 }
 
 # Builds the bundle of the RPMs in RPMDIR, signed by FINGERPRINT, into OUTDIR as a release

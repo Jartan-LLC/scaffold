@@ -14,5 +14,6 @@ source docstrings.
 getting-started
 reference
 scaffold
+signing-key
 onboard
 ```

@@ -1,1 +1,1 @@
-TODO(/onboard): replace this file with the public key that signs the RPMs and the dnf repository: an RSA-4096 key with no expiry, exported with gpg --armor --export FINGERPRINT.
+TODO(/onboard): replace this file with the public key that signs the RPMs and the dnf repository, made as docs/signing-key.md's Making a key section says.

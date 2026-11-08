@@ -56,11 +56,18 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 The tag starts `release.yml`, `publish-pypi.yml` and `publish-docker.yml`. While
 `packaging/rpm.spec` exists, a failed RPM build or attestation leaves the tag without a GitHub
 Release; if the failure was transient, such as a mirror timeout, `gh run rerun <run ID> --failed`
-on the `release.yml` run creates it.
+on the `release.yml` run creates it. While `packaging/dnf.repo` exists, a failed or rejected
+`sign` job also leaves the tag without a GitHub Release: after a rejection, the same re-run asks
+for approval again and, once approved, creates it, and [Signing key](docs/signing-key.md) says
+what to fix first when the job failed.
 
 1. Approve the `publish-pypi.yml` and `publish-docker.yml` runs: open each from
    `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits for this only when
-   its environment (`pypi`, `ghcr`) has required reviewers.
+   its environment (`pypi`, `ghcr`) has required reviewers. While `packaging/dnf.repo` exists,
+   approve the `release.yml` run's `sign` job the same way, in the `rpm-signing` environment,
+   earlier tags first, and reject a `sign` job you won't approve, or cancel its run: a tag's
+   `release.yml` run waits until the previous tag's run finishes, so until then later tags get
+   no GitHub Release.
 2. Check that every run succeeded:
 
    ```bash
@@ -70,7 +77,8 @@ on the `release.yml` run creates it.
 3. Check the notes with `gh release view vX.Y.Z`. If the `release.yml` run warns that it used
    generated notes, `CHANGELOG.md` had nothing under `## [X.Y.Z]` at the tag; the warning says
    why. While `packaging/rpm.spec` exists, check that it lists `NAME.noarch.rpm` too, where
-   `NAME` is `Name` in `packaging/rpm.spec`.
+   `NAME` is `Name` in `packaging/rpm.spec`. While `packaging/dnf.repo` exists, a full release
+   lists `NAME-dnf-repo.tar.gz` as well, the dnf repository's signed metadata.
 
 ## Pre-releases
 
@@ -80,6 +88,8 @@ For a tag with a pre-release version, such as `v1.2.0-rc.1`:
 - `publish-pypi.yml` publishes a PyPI pre-release, with the version normalized (`1.2.0rc1`);
 - while `packaging/rpm.spec` exists, the RPM's version is `1.2.0~rc.1`, which `dnf` upgrades in
   place to `1.2.0`;
+- while `packaging/dnf.repo` exists, the RPM is signed, but stays out of the dnf repository,
+  which would otherwise upgrade every user to it;
 - `publish-docker.yml` tags the image `1.2.0-rc.1` only, leaving `1.2` and `latest` where they
   were.
 
@@ -93,12 +103,18 @@ Users install the RPM, and later upgrade it in place, with:
 sudo dnf install https://github.com/ORG/REPO/releases/latest/download/NAME.noarch.rpm
 ```
 
-The package is unsigned, so `dnf` prints `Warning: skipped OpenPGP checks for 1 package`. In a
-public repository, to check that a release built it, download it and verify its attestation
-before installing it:
+`dnf` checks no signature on a package installed from a URL, so it prints `Warning: skipped
+OpenPGP checks for 1 package`. In a public repository, to check that a release built it,
+download it and verify its attestation before installing it:
 
 ```bash
 gh release download --repo ORG/REPO --pattern NAME.noarch.rpm
 gh attestation verify NAME.noarch.rpm --repo ORG/REPO
 sudo dnf install ./NAME.noarch.rpm
 ```
+
+<!-- TODO(/onboard): while packaging/dnf.repo exists, replace FINGERPRINT below with the signing key's fingerprint once you make it, as step 4 of docs/signing-key.md's Making a key says. -->
+
+While `packaging/dnf.repo` exists, the key that signs the RPMs and the dnf repository has the
+fingerprint `FINGERPRINT`; `gpg --show-keys /etc/pki/rpm-gpg/RPM-GPG-KEY-NAME` prints the
+fingerprints of the keys the package installed.

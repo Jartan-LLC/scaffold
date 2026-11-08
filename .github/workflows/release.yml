@@ -5,15 +5,19 @@ on:
     tags:
       - "v*"
 
+# One run at a time across tags, in push order: the sign job lists the earlier full releases,
+# and an earlier tag's Release exists only once its own run has finished.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}
+  queue: max
 
 permissions: {}
 
 jobs:
   # The notes and rpm jobs read the tagged checkout with a read-only token; only the
-  # attest and release jobs, which run no repository code, hold write tokens.
+  # attest and release jobs, which run no repository code, hold write tokens. The sign job
+  # holds the signing key and a read-only token, and runs only packaging/dnf-repo.sh from
+  # the tag.
   notes:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -24,6 +28,8 @@ jobs:
       notes: ${{ steps.notes.outputs.notes }}
       prerelease: ${{ steps.notes.outputs.prerelease }}
       rpm: ${{ steps.packaging.outputs.rpm }}
+      dnf_repo: ${{ steps.packaging.outputs.dnf_repo }}
+      artifact: ${{ steps.packaging.outputs.artifact }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -51,11 +57,18 @@ jobs:
             echo "source=generated" >>"$GITHUB_OUTPUT"
           fi
 
-      # Each release attaches an RPM while the project ships one.
+      # Each release attaches an RPM while packaging/rpm.spec exists, signed while
+      # packaging/dnf.repo exists.
       - id: packaging
         run: |
           if [ -f packaging/rpm.spec ]; then
             echo "rpm=true" >>"$GITHUB_OUTPUT"
+          fi
+          if [ -f packaging/dnf.repo ]; then
+            echo "dnf_repo=true" >>"$GITHUB_OUTPUT"
+            echo "artifact=release-assets" >>"$GITHUB_OUTPUT"
+          else
+            echo "artifact=release-rpm" >>"$GITHUB_OUTPUT"
           fi
 
   rpm:
@@ -69,11 +82,73 @@ jobs:
       version: ${{ github.ref_name }}
       artifact: release-rpm
 
+  # Signs the RPM, and on a full release builds the dnf repository's signed metadata for it
+  # and the earlier full releases published most recently, so dnf downgrade and dnf history
+  # undo have the previous version. A pre-release stays out of the repository.
+  sign:
+    needs: [notes, rpm]
+    if: needs.notes.outputs.dnf_repo == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: rpm-signing
+    permissions:
+      contents: read # checkout, and the earlier releases' assets
+    # rpm.yml's image job fails unless the ref is pinned by digest.
+    container: ${{ needs.rpm.outputs.image }} # zizmor: ignore[unpinned-images]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Before checkout, which without git ignores sparse-checkout and downloads the whole
+      # tree.
+      - run: dnf -y install createrepo_c rpm-sign gnupg2 gh git-core
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            packaging/dnf-repo.sh
+            packaging/RPM-GPG-KEY
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-rpm
+          path: rpm
+
+      - name: Find the RPM
+        run: |
+          shopt -s nullglob
+          rpms=(rpm/*.noarch.rpm)
+          if ((${#rpms[@]} != 1)); then
+            echo "::error::The release-rpm artifact holds ${#rpms[@]} noarch RPMs, not 1"
+            exit 1
+          fi
+          echo "RPM=${rpms[0]}" >>"$GITHUB_ENV"
+
+      - name: Sign the RPM, and build the repository bundle on a full release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          KEEP: 4
+          PRERELEASE: ${{ needs.notes.outputs.prerelease }}
+          RPM_SIGNING_KEY: ${{ secrets.RPM_SIGNING_KEY }}
+        run: packaging/dnf-repo.sh release "$RPM" packaging/RPM-GPG-KEY out
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ needs.notes.outputs.artifact }}
+          path: out
+          if-no-files-found: error
+
   attest:
-    needs: rpm
+    needs: [notes, rpm, sign]
     # Attestations need a public repository, or a private one on GitHub Enterprise Cloud,
-    # which can drop this condition. Elsewhere the action fails and the tag gets no Release.
-    if: ${{ !github.event.repository.private }}
+    # which can drop the private condition. Elsewhere the action fails and the tag gets no
+    # Release. While packaging/dnf.repo exists, it attests the sign job's files.
+    if: >-
+      !cancelled() && !github.event.repository.private && needs.rpm.result == 'success'
+      && (needs.notes.outputs.dnf_repo != 'true' || needs.sign.result == 'success')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -82,16 +157,21 @@ jobs:
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-rpm
+          name: ${{ needs.notes.outputs.artifact }}
           path: assets
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: assets/*
 
   release:
-    # A skipped rpm job attaches nothing; a failed one stops the release.
-    needs: [notes, rpm, attest]
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    # A skipped rpm job attaches nothing; a failed rpm or sign job stops the release. While
+    # packaging/dnf.repo exists, the RPM comes only from the sign job's files, and only once
+    # that job succeeds, so the unsigned RPM is never released.
+    needs: [notes, rpm, sign, attest]
+    if: >-
+      !cancelled() && !contains(needs.*.result, 'failure')
+      && (needs.rpm.result != 'success' || needs.notes.outputs.dnf_repo != 'true'
+      || needs.sign.result == 'success')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -100,7 +180,7 @@ jobs:
       - if: needs.rpm.result == 'success'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-rpm
+          name: ${{ needs.notes.outputs.artifact }}
           path: assets
 
       # No checkout needed: gh talks to the API and resolves the repo from

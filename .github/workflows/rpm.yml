@@ -14,6 +14,10 @@ on:
         required: false
         type: string
         default: ""
+    outputs:
+      image:
+        description: The Fedora image the build ran in, pinned by digest.
+        value: ${{ jobs.image.outputs.ref }}
 
 permissions: {}
 
