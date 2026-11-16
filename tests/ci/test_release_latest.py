@@ -163,6 +163,9 @@ def test_a_rerun_replaces_the_draft_a_cancelled_upload_left(tmp_path: Path) -> N
     (tmp_path / "assets" / "app.noarch.rpm").touch()
     step = run_step(tmp_path, "v1.0.0", [], release="draft")
     assert subcommands(step) == ["view", "delete", "list", "create"]
+    assert "release view v1.0.0 --json isDraft --jq .isDraft" in step.calls
     assert "release delete v1.0.0 --yes" in step.calls
+    notice = "::notice::v1.0.0 has a draft release; deleting it to create the release again"
+    assert notice in step.output.splitlines()
     assert "assets/app.noarch.rpm" in step.created
     assert "--latest" in step.created

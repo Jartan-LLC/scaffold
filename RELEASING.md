@@ -112,8 +112,9 @@ Nothing has published while `gh release view` prints `release not found` or `tru
 neither the `publish-pypi.yml` run nor the `publish-docker.yml` run started its upload step,
 `pypa/gh-action-pypi-publish` or `docker/build-push-action`. A run cancelled while it waited
 for approval started neither. A `true` is a draft release left by a `release.yml` run
-cancelled while it uploaded the release's files. Delete it with
-`gh release delete vX.Y.Z --yes`, which leaves the tag.
+cancelled while it uploaded the release's files. Delete it first with
+`gh release delete vX.Y.Z --yes`, which leaves the tag: deleting the tag would leave the draft
+behind.
 
 Where the `v*` tag rulesets exist, an admin then removes the tag by disabling the
 `v* tag updates and deletions` ruleset, deleting the tag, then enabling the ruleset again.
