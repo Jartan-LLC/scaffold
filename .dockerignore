@@ -21,6 +21,7 @@ packaging
 **/__pycache__/
 **/*.py[cod]
 .pytest_cache/
+.hypothesis/
 .ruff_cache/
 .mypy_cache/
 .coverage
