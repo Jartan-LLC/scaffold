@@ -6,7 +6,7 @@
 # A package that a newer hatchling starts to depend on has no pin here, so after that bump
 # the build fails until the lines below this header are replaced with the output of
 #   uv pip compile --no-header --no-annotate --generate-hashes - <<<'hatchling'
-# Each pin must also satisfy [build-system] requires; a package added there joins the input.
+# Each pin must also satisfy [build-system] requires, whose packages are the command's input.
 
 hatchling==1.33.0 \
     --hash=sha256:415290b84f464d2884303fca8974d38e7b85579069fab02a15db0828fbb1446d \
