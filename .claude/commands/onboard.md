@@ -26,7 +26,7 @@ Work through `docs/onboard.md` in order, from Decide through GitHub settings: ca
 
 ### 5. Report
 
-List the GitHub settings you could not apply, for the user to set. Name **private vulnerability reporting** (Settings > Security) first: until it is on, the advisory form `.github/SECURITY.md` sends every reporter to does not exist. Then give the steps you left because they can't run inside the container, in their order, ending with the rebuild.
+List the GitHub settings you could not apply, for the user to set, in the page's order, so auto-merge comes after the `main` ruleset. Name **private vulnerability reporting** (Settings > Security) first: until it is on, the advisory form `.github/SECURITY.md` sends every reporter to does not exist. Then give the steps you left because they can't run inside the container, in their order, ending with the rebuild.
 
 ### 6. Clean up
 

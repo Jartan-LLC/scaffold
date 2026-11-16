@@ -50,6 +50,8 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 
    The tag is `v` and the version exactly as the changelog heading writes it: the release and
    publish workflows run on `v*` tags, and `release.yml` takes the notes from `## [X.Y.Z]`.
+   Only an admin can push a `v*` tag, and once pushed it can't be moved or deleted, so check
+   the tag name and `$sha` before pushing.
 
 ## After the tag
 

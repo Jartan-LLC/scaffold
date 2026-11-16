@@ -268,12 +268,18 @@ git merge upstream/main   # resolve conflicts, keeping your customizations
 - [ ] Private vulnerability reporting (Settings > Security): until it is on, the advisory
       form `SECURITY.md` links to does not exist
 - [ ] The `major`/`minor`/`patch` labels Dependabot adds to its PRs ([details](#dependabot-labels))
-- [ ] A branch ruleset for `main`: require PR reviews, require the `check` status to pass,
-      block force pushes
+- [ ] A ruleset for `main`: changes arrive through a PR whose `check` status passed, history
+      stays linear, and nobody force-pushes or deletes the branch ([details](#rulesets))
+- [ ] Two rulesets for `v*` tags: only admins create one, and nobody moves or deletes one
+      ([details](#rulesets))
 - [ ] CodeQL default setup (Settings > Security > Code scanning)
 - [ ] Secret scanning with push protection (Settings > Security > Secret Protection)
-- [ ] Auto-merge (Settings > General > Allow auto-merge): Dependabot minor and patch PRs
-      merge after CI passes
+- [ ] Allow GitHub Actions to create and approve pull requests (Settings > Actions > General
+      > Workflow permissions): `dependabot-automerge.yml` approves each Dependabot PR it
+      merges, and fails on every one without it ([details](#dependabot-auto-merge))
+- [ ] Auto-merge (Settings > General > Allow auto-merge), only once the `main` ruleset
+      requires `check`: Dependabot minor and patch PRs then merge after CI passes
+      ([details](#dependabot-auto-merge))
 - [ ] Discussions (Settings > General > Features): the issue template config links to it
 - [ ] For each publishing target you kept, its `pypi` or `ghcr` environment
       ([details](#publishing-environments))
@@ -290,6 +296,121 @@ gh label create major --color B60205 --description "Major version update" --forc
 gh label create minor --color FBCA04 --description "Minor version update" --force
 gh label create patch --color 0E8A16 --description "Patch version update" --force
 ```
+
+### Rulesets
+
+A private repository needs GitHub Pro, Team or Enterprise Cloud for rulesets. A ruleset
+with no bypass list binds admins too.
+
+Create the `main` ruleset, the one scaffold runs:
+
+```bash
+gh api -X POST repos/{owner}/{repo}/rulesets --input - --jq .id <<'EOF'
+{
+  "name": "main",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {"ref_name": {"include": ["~DEFAULT_BRANCH"], "exclude": []}},
+  "rules": [
+    {"type": "deletion"},
+    {"type": "non_fast_forward"},
+    {"type": "required_linear_history"},
+    {"type": "pull_request", "parameters": {
+      "required_approving_review_count": 0,
+      "dismiss_stale_reviews_on_push": false,
+      "require_code_owner_review": false,
+      "require_last_push_approval": false,
+      "required_review_thread_resolution": false}},
+    {"type": "required_status_checks", "parameters": {
+      "strict_required_status_checks_policy": false,
+      "required_status_checks": [{"context": "check", "integration_id": 15368}]}}
+  ]
+}
+EOF
+```
+
+Its rules, and what changing them costs:
+
+- `pull_request`, with no required approvals: every change reaches `main` through a PR.
+  Requiring an approval holds each PR until someone other than its author approves it, so a
+  project with one maintainer can't merge its own PRs.
+- `required_status_checks`: a PR merges only once CI's `check` job passes. `integration_id`
+  15368 is the GitHub Actions app, so only a workflow run can report `check`. The check is
+  not strict: a PR needn't be up to date with `main`. A strict check makes every open PR
+  update from `main`, and run CI again, each time `main` moves. Without it, two PRs that each
+  pass can break `main` together, which CI's run on each push to `main` then reports.
+- `required_linear_history`: `main` takes no merge commits.
+- `non_fast_forward` and `deletion`: nobody force-pushes to `main` or deletes it.
+
+Then create the two `v*` tag rulesets. A ruleset's bypass list covers all of its rules, so
+letting admins create release tags while nobody moves or deletes one takes two rulesets.
+`actor_id` 5 is the repository admin role:
+
+```bash
+gh api -X POST repos/{owner}/{repo}/rulesets --input - --jq .id <<'EOF'
+{
+  "name": "v* tag creation",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": {"ref_name": {"include": ["refs/tags/v*"], "exclude": []}},
+  "rules": [{"type": "creation"}],
+  "bypass_actors": [{"actor_type": "RepositoryRole", "actor_id": 5, "bypass_mode": "always"}]
+}
+EOF
+gh api -X POST repos/{owner}/{repo}/rulesets --input - --jq .id <<'EOF'
+{
+  "name": "v* tag updates and deletions",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": {"ref_name": {"include": ["refs/tags/v*"], "exclude": []}},
+  "rules": [{"type": "update"}, {"type": "deletion"}, {"type": "non_fast_forward"}]
+}
+EOF
+```
+
+With both, only admins can push a `v*` tag, which starts the release and publish workflows,
+and a pushed tag stays on the commit its run published. To remove a wrong tag, an admin
+first disables the second ruleset (Settings > Rules > Rulesets), then enables it again.
+
+Each command prints the new ruleset's ID. Run again, it fails with `Name must be unique` and
+changes nothing.
+
+Check the rules through the rules endpoints below.
+`gh api repos/{owner}/{repo}/branches/main/protection` reads classic branch protection only,
+and answers 404 `Branch not protected` for a branch that a ruleset protects:
+
+```bash
+gh api repos/{owner}/{repo}/rules/branches/main --jq '.[].type'
+gh api repos/{owner}/{repo}/rulesets --jq '.[] | [.name, .target, .enforcement] | @tsv'
+```
+
+The first prints the rule types of the `main` ruleset above, and the second prints each
+ruleset, which must read `active`.
+
+### Dependabot auto-merge
+
+`dependabot-automerge.yml` approves each Dependabot minor or patch PR, then turns on
+auto-merge for it. Auto-merge merges a PR once the `main` ruleset's requirements pass, so it
+waits for CI only once the ruleset requires `check`: create the ruleset first. Then allow
+Actions to approve PRs, and allow auto-merge, which a private repository also needs GitHub
+Pro, Team or Enterprise Cloud for:
+
+```bash
+gh api -X PUT repos/{owner}/{repo}/actions/permissions/workflow \
+  -F can_approve_pull_request_reviews=true
+gh api -X PATCH repos/{owner}/{repo} -F allow_auto_merge=true --jq .allow_auto_merge
+```
+
+The second command prints `true`. Check the first with
+`gh api repos/{owner}/{repo}/actions/permissions/workflow --jq .can_approve_pull_request_reviews`,
+which prints `true`; for a minute or so after the change it can still print `false`. Until
+the setting is on, the workflow fails on every Dependabot PR with
+`422 ... GitHub Actions is not permitted to approve pull requests.` A repository in an
+organization starts with the organization's setting, and if the organization forbids it, an
+organization owner allows it there (Organization settings > Actions > General) first.
+
+With approvals required, the setting also lets a workflow approve a PR that no person
+reviewed. The `main` ruleset above requires none.
 
 ### Publishing environments
 
