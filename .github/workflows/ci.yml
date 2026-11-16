@@ -180,9 +180,9 @@ jobs:
           version-file: ci/requirements.txt
           enable-cache: true
 
-      # Install so the docs toolchain and the package's runtime deps are importable
-      # by autodoc.
-      - run: uv pip install -e '.[docs]'
+      # Installs as pages.yml.example's docs job does, which says why, so this checks the
+      # build it publishes.
+      - run: uv pip install --exclude-newer "7 days" -r pyproject.toml --extra docs
       - run: sphinx-build -W -b html docs docs/_build/html
 
   # Integration tests against a docker-compose stack, with coverage uploaded as an
