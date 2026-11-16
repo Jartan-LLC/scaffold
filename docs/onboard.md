@@ -338,9 +338,7 @@ Its rules, and what changing them costs:
 - `required_status_checks`: a PR merges only once CI's `check` job passes. `integration_id`
   15368 is the GitHub Actions app, so only a workflow run can report `check`. The check is
   not strict: a PR needn't be up to date with `main`. A strict check makes every open PR
-  update from `main`, and run CI again, each time `main` moves. With the check not strict, two
-  PRs that each pass can break `main` together, which CI's run on each push to `main` then
-  reports.
+  update from `main`, and run CI again, each time `main` moves.
 - `required_linear_history`: `main` takes no merge commits.
 - `non_fast_forward` and `deletion`: nobody force-pushes to `main` or deletes it.
 
@@ -372,9 +370,7 @@ EOF
 
 With both, only admins can push a `v*` tag, which starts the release and publish workflows,
 and a pushed tag stays on the commit its run published. To remove a wrong tag before
-anything has published from it, an admin disables the second ruleset, deletes the tag, then
-enables the ruleset again; `RELEASING.md`'s Removing a wrong tag gives the checks and the
-commands.
+anything has published from it, follow `RELEASING.md`'s Removing a wrong tag.
 
 Each command prints the new ruleset's ID. Run again, it fails with `Name must be unique` and
 changes nothing.
@@ -389,9 +385,9 @@ gh api repos/{owner}/{repo}/rulesets --jq '.[] | [.id, .name, .target, .enforcem
 gh api repos/{owner}/{repo}/rulesets/<ID> --jq '{rules: [.rules[].type], bypass_actors}'
 ```
 
-The first prints the rule types of the `main` ruleset above, and the second prints each
-ruleset with its ID, and each must read `active`. Run the third with each tag ruleset's
-ID: it prints the ruleset's rules and bypass list, which must match its command above.
+The first prints the `main` ruleset's rule types. The second prints each ruleset with its
+ID, and every one must read `active`. Run the third with each tag ruleset's ID: it prints
+the ruleset's rules and bypass list, which must match its command above.
 
 ### Dependabot auto-merge
 
