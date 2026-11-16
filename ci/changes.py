@@ -1,8 +1,9 @@
 """Print which of `ci.yml`'s gated jobs a change needs.
 
 The `changes` job runs this and appends what it prints to `$GITHUB_OUTPUT`:
-``devcontainer=true`` when the dev container job must run, ``python=true`` when
-the `python` and `test` jobs must, and nothing for a job that can be skipped.
+``devcontainer=true`` when the dev container job must run, ``docker=true`` when
+the `docker` job must, ``python=true`` when the `python` and `test` jobs must, and
+nothing for a job that can be skipped.
 `check` counts a skipped job as passing, so a path wrongly skipped here skips
 its checks and the PR still merges green.
 
@@ -34,6 +35,21 @@ _DEVCONTAINER_INPUTS = (
     r"^Makefile$",
     r"^\.gitignore$",
     r"^ci/requirements\.txt$",
+)
+# What the image build reads: the Dockerfile, the .dockerignore that decides what the
+# build context holds, and the files the Dockerfile copies by name; and ci.yml, which
+# defines the job. Its `COPY . .` adds the rest of the context after the install, and no
+# file there can fail the build. A file the Dockerfile comes to copy by name joins this
+# list; test_changes.py checks the Dockerfile's COPY sources against it.
+_DOCKER_INPUTS = (
+    r"^Dockerfile$",
+    r"^\.dockerignore$",
+    r"^\.github/workflows/ci\.yml$",
+    r"^pyproject\.toml$",
+    r"^README\.md$",
+    r"^LICENSE",
+    r"^src/",
+    r"^ci/build-requirements\.txt$",
 )
 # The paths the Python jobs don't read.
 _PYTHON_SKIPS = (
@@ -67,13 +83,16 @@ def outputs(changed: Sequence[str] | None) -> list[str]:
         changed: The changed paths, or None when the run has no base.
 
     Returns:
-        ``devcontainer``, ``python``, both or neither, in that order.
+        Those of ``devcontainer``, ``docker`` and ``python`` the change needs, in
+        that order.
     """
     if changed is None:
-        return ["devcontainer", "python"]
+        return ["devcontainer", "docker", "python"]
     names: list[str] = []
     if any(_matches(path, _DEVCONTAINER_INPUTS) for path in changed):
         names.append("devcontainer")
+    if any(_matches(path, _DOCKER_INPUTS) for path in changed):
+        names.append("docker")
     if not changed or any(_needs_python(path) for path in changed):
         names.append("python")
     return names
@@ -110,7 +129,7 @@ def changed_paths(event: str, before: str) -> list[str] | None:
             return None
     # git quotes a path holding a non-ASCII or control character, a double quote or
     # a backslash, so the patterns miss it: such a path runs the Python jobs and
-    # not the dev container job, even under .devcontainer/.
+    # neither the dev container nor the docker job, even under .devcontainer/ or src/.
     diff = subprocess.run(  # noqa: S603 -- fixed git command; base is HEAD^1 or a verified commit
         ["git", "diff", "--no-renames", "--name-only", base, "HEAD"],  # noqa: S607 -- the runner's git
         stdout=subprocess.PIPE,

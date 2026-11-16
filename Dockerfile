@@ -1,7 +1,9 @@
 # Minimal Python image. It BUILDS as-is (installs the package); give it a real
-# entrypoint before you run it. publish-docker.yml builds this on v* tags.
+# entrypoint before you run it. ci.yml's docker job builds this when a change touches
+# its inputs (ci/changes.py), and publish-docker.yml on v* tags.
 # TODO(/onboard): if the project isn't containerized, delete this file, .dockerignore,
-# publish-docker.yml and ci.yml's commented docker job.
+# publish-docker.yml, and ci.yml's docker job, its two check entries and the changes
+# job's docker output.
 
 # Build stage, not an inline COPY --from: Dependabot only parses FROM lines.
 FROM ghcr.io/astral-sh/uv:0.13.8@sha256:5cc1805e2426484abca4ad46ea783bab281fdb225fd82d8ce6d66a81254bac85 AS uv-bin

@@ -154,12 +154,14 @@ them as they are. `ci/changes.py` still describes the `python` and `test` jobs a
    `signing-key.md` and this page, `.readthedocs.yaml.example`, `ci/build-requirements.txt`,
    `.github/workflows/publish-pypi.yml` and `.github/workflows/dependency-audit.yml`, and,
    unless you keep the dnf repository, `.github/workflows/pages.yml.example`. If not
-   containerized, also `Dockerfile`, `.dockerignore`, `.github/workflows/publish-docker.yml`
-   and the commented `docker` job in `.github/workflows/ci.yml`.
+   containerized, also `Dockerfile`, `.dockerignore` and `.github/workflows/publish-docker.yml`.
 3. In `.pre-commit-config.yaml`, remove the `ruff-pre-commit` entry. Keep the other hooks.
 4. In `.github/workflows/ci.yml`, remove the `python`, `test` and `docs` jobs and their
    `check` entries (`docs/scaffold.md`, CI), and the commented `integration-tests` job. In
-   the `changes` job, remove the `python:` line under `outputs`. `lint` stays.
+   the `changes` job, remove the `python:` line under `outputs`. `lint` stays. If not
+   containerized, also remove the `docker` job, its `check` entries and the `docker:` line
+   under `outputs`. If containerized, remove the `docker` job's `needs` and `if` lines, so
+   it builds on every change: `ci/changes.py` lists the Python image's inputs, not yours.
 5. Keep the `Makefile`: it is the verify entry point in every stack. Point its `lint`, `fix`,
    `typecheck`, `test` and `docs` targets at your stack's commands, and replace the Python
    lines in `check` (`uv build`, `twine check`, `pip-audit`), so `make check` stays the one
@@ -508,14 +510,14 @@ Copy the badge lines from the top of the template README into yours, then:
 |------|----------|
 | `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI with the `gh stack` extension, and the [enchantments](https://github.com/Jartan-LLC/enchantments) Features: Claude Code, the GitHub CLI login, Liza and its agent toolchain ([Features](#features) drops one). `post-create.sh` runs `make install`, which installs the project's dependencies into the system Python, as CI does: `containerEnv` sets `UV_SYSTEM_PYTHON`, so the container has no project `.venv`. It also installs the ruff version in the ruff hook's `# frozen:` comment, so the ruff extension formats on save as `make lint` does |
 | `.claude/` | Claude Code project files — the `/onboard` command, which onboarding deletes, and `workspace/`, where agents keep plans and other working files, git-ignored |
-| `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates, and `FUNDING.yml`, which names the account the repo's Sponsor button links to |
+| `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build + image build; Node steps + the image's smoke test commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates, and `FUNDING.yml`, which names the account the repo's Sponsor button links to |
 | `pyproject.toml`, `ci/`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use, each with its release files' hashes, so an install rejects a download that doesn't match. The tools' own dependencies are not pinned. `ci/build-requirements.txt` pins the build backend and its dependencies, with hashes, and every `uv build` (`ci.yml`, `publish-pypi.yml`, `make check`, the `Dockerfile`) refuses a build package it doesn't list. `ci/release_notes.py` makes the release notes `release.yml` publishes, `ci/versions.py` chooses the image tags `publish-docker.yml` pushes, `ci/changes.py` decides which of `ci.yml`'s gated jobs a change runs, and `ci/dnf-repo-test.sh` and `ci/dnf_repo_server.py` test the repository `dnf-repo.sh` builds. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
 | `packaging/` | `rpm.sh` and the spec stub for the RPM each GitHub Release attaches, which `.github/workflows/rpm.yml` builds and installs, `dnf.repo` and `RPM-GPG-KEY`, the dnf repository's definition and public key, which the RPM installs, `dnf-repo.sh`, which `release.yml`'s `sign` job runs to sign RPMs and build signed dnf repository metadata for them, and `fedora.Containerfile`, which pins the Fedora image those jobs run in for Dependabot to update its digest |
 | `src/`, `tests/` | The package (src layout, PEP 561 typed) and its tests; the template ships a CLI entry point and logging setup |
 | `Makefile`, `.pre-commit-config.yaml` | Task runner (`make install`/`lint`/`fix`/`test`/`check`/`docs`, backed by [uv](https://docs.astral.sh/uv/), installing into the checkout's `.venv`, else the active environment, else the devcontainer's system Python) + the single lint source, whose hooks `make lint` and CI both run, and the source of ruff's and codespell's versions |
 | `docs/`, `.readthedocs.yaml.example` | Sphinx docs site (Markdown via MyST, API reference from docstrings); `make docs` builds it. [Publishing targets](#publishing-targets) says how to publish it |
 | `AGENTS.md` | Instructions every coding agent reads (Claude Code through `CLAUDE.md`): points to the project rules; corrections, verification commands, skill index |
-| `Dockerfile`, `.dockerignore` | Minimal Python image stub — pairs with `publish-docker.yml` |
+| `Dockerfile`, `.dockerignore` | Minimal Python image stub — pairs with `publish-docker.yml` and `ci.yml`'s `docker` job |
 | `CHANGELOG.md`, `CONTRIBUTING.md`, `RELEASING.md` | Keep-a-Changelog skeleton, a Python contributor guide and the release procedure |
 | `.env.example`, `.prettierrc` | Env-var template and Prettier config (for JS/TS work) |
 | `.editorconfig` | Language-aware formatting — 4-space Python, 2-space JS/TS, tabs for Makefiles |
