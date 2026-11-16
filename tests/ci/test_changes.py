@@ -111,8 +111,8 @@ def files_the_tests_name() -> list[str]:
 
 
 def test_a_change_to_a_file_a_test_reads_runs_the_python_jobs() -> None:
-    # GIVEN the repository files the tests name, this file's SCRIPT and a skipped
-    # path among them
+    # GIVEN the files the tests name, which include this file's SCRIPT and a skipped
+    # path, so a scan that finds nothing fails here
     paths = files_the_tests_name()
     assert "ci/changes.py" in paths
     assert ".github/workflows/release.yml" in paths
