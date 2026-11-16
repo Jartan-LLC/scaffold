@@ -58,9 +58,8 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
   Pages workflow as for the docs site, which deploys the docs too while `docs/conf.py` exists.
   To leave the docs off Pages, delete the workflow's `docs` job, and in the `site` job,
   `needs: docs` and the two steps that download the docs and refuse docs that write `rpm/`.
-  Then rename the workflow's `name: Docs`, for example to `name: dnf repository`, because its
-  badge and its runs in the Actions tab show that name; use the new name as the badge's alt
-  text in [README badges](#readme-badges).
+  Then change `name: Docs` in the workflow to a name that fits, for example
+  `name: dnf repository`, because its badge and its runs in the Actions tab show that name.
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
@@ -366,7 +365,8 @@ Copy the badge lines from the top of the template README into yours, then:
   badge text on `-`, so write each `-` in the name as `--` (`license-Apache--2.0-blue`).
 - Delete the OpenSSF Scorecard badge if you deleted `scorecard.yml` or the repo is private.
 - If you renamed `pages.yml.example` to `pages.yml`, add its badge after the CI badge, with
-  your org and repo in place of `OWNER/REPO`:
+  your org and repo in place of `OWNER/REPO`. If you changed the workflow's `name:`, put the new
+  name in place of the alt text `Docs`:
 
   ```markdown
   [![Docs](https://github.com/OWNER/REPO/actions/workflows/pages.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/pages.yml)
