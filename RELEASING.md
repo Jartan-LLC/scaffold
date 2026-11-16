@@ -50,8 +50,10 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 
    The tag is `v` and the version exactly as the changelog heading writes it: the release and
    publish workflows run on `v*` tags, and `release.yml` takes the notes from `## [X.Y.Z]`.
-   Only an admin can push a `v*` tag, and once pushed it can't be moved or deleted, so check
-   the tag name and `$sha` before pushing.
+   Where the `v*` tag rulesets exist, only an admin can push a `v*` tag, and nobody can move
+   or delete a pushed one without first disabling a ruleset
+   ([Removing a wrong tag](#removing-a-wrong-tag)), so check the tag name and `$sha` before
+   pushing.
 
 ## After the tag
 
@@ -93,6 +95,23 @@ what to fix first when the job failed.
    ```bash
    gh run list --workflow pages.yml --limit 5
    ```
+
+## Removing a wrong tag
+
+Where the `v*` tag rulesets exist, an admin removes a tag by disabling the
+`v* tag updates and deletions` ruleset, deleting the tag, then enabling the ruleset again.
+Each `PUT` prints the ruleset's new state:
+
+```bash
+id=$(gh api repos/{owner}/{repo}/rulesets --jq '.[] | select(.name == "v* tag updates and deletions") | .id')
+gh api -X PUT "repos/{owner}/{repo}/rulesets/$id" -f enforcement=disabled --jq .enforcement
+gh api -X DELETE repos/{owner}/{repo}/git/refs/tags/vX.Y.Z
+gh api -X PUT "repos/{owner}/{repo}/rulesets/$id" -f enforcement=active --jq .enforcement
+git tag -d vX.Y.Z
+```
+
+The last `PUT` must print `active`; until it does, anyone with write access can move or
+delete any `v*` tag.
 
 ## Pre-releases
 

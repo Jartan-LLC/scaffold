@@ -370,7 +370,8 @@ EOF
 
 With both, only admins can push a `v*` tag, which starts the release and publish workflows,
 and a pushed tag stays on the commit its run published. To remove a wrong tag, an admin
-first disables the second ruleset (Settings > Rules > Rulesets), then enables it again.
+disables the second ruleset, deletes the tag, then enables the ruleset again;
+`RELEASING.md`'s Removing a wrong tag gives the commands.
 
 Each command prints the new ruleset's ID. Run again, it fails with `Name must be unique` and
 changes nothing.
