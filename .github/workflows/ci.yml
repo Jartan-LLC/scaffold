@@ -114,10 +114,12 @@ jobs:
       - run: pyright
 
       # These run whatever pyright found, so one run reports every failing check.
-      # `uv build` builds the project in its own isolated env.
+      # `uv build` builds the project in its own isolated env. It builds as publish-pypi.yml
+      # does, so a ci/build-requirements.txt that no longer covers the build backend fails
+      # here rather than at the tag.
       - id: build
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: uv build
+        run: uv build --build-constraints ci/build-requirements.txt --require-hashes
       - if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python -m twine check dist/*
 

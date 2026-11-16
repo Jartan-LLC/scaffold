@@ -50,11 +50,9 @@ jobs:
             exit 1
           fi
 
-      - run: uv pip install -r ci/requirements.txt
-
-      - run: uv build
-
-      - run: python -m twine check dist/*
+      - run: uv build --build-constraints ci/build-requirements.txt --require-hashes
 
       # Any v* tag publishes without waiting for CI, so a broken tagged commit can ship.
+      # The action runs `twine check` on dist/ before it uploads (its `verify-metadata`
+      # input), with the twine its own image pins.
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1

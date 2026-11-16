@@ -3,7 +3,8 @@
 # and the audit jobs install this file with the dev/docs extras, and a lock resolved
 # without those extras conflicts with their bounds.
 # The other gate tools are versioned in pyproject.toml's extras, and the lint tools by
-# their hook revs in .pre-commit-config.yaml.
+# their hook revs in .pre-commit-config.yaml. build-requirements.txt locks the build
+# backend and its dependencies.
 # A new entry's hashes:
 #   uv pip compile --no-deps --generate-hashes --no-header --no-annotate - <<<'name==X.Y.Z'
 
@@ -34,7 +35,7 @@ pre-commit==4.7.0 \
     --hash=sha256:1f3deee12b914c8fa184bd2b5953391c2e4f36763e403d4a23dc9983fa7c6e86 \
     --hash=sha256:2e229038ad3656081b70c27913157e4b636ef306f643f024a8a8e3f0f7b2f877
 
-# sdist/wheel metadata check before publish
+# sdist/wheel metadata check
 twine==7.0.0 \
     --hash=sha256:85cdb29c518efef867360ae4acd4b0dfd61c8654a22fca08e6f8539f05022177 \
     --hash=sha256:b854164df26db268af05f49aa5c0344b10e27a494343ff05b1e0bad3b135f5a7

@@ -74,6 +74,7 @@ PATHS = [
     pytest.param(["LICENSE"], PYTHON, id="LICENSE"),
     pytest.param(["ci/changes.py"], PYTHON, id="ci/ script"),
     pytest.param(["ci/requirements.txt"], BOTH, id="ci/requirements.txt"),
+    pytest.param(["ci/build-requirements.txt"], PYTHON, id="ci/build-requirements.txt"),
     pytest.param([".devcontainer/devcontainer.json"], BOTH, id=".devcontainer/"),
     pytest.param([".devcontainer/README.md"], DEVCONTAINER, id="Markdown under .devcontainer/"),
     pytest.param(["Makefile"], BOTH, id="Makefile"),
