@@ -63,7 +63,9 @@ Release; if the failure was transient, such as a mirror timeout, `gh run rerun <
 on the `release.yml` run creates it. While `packaging/dnf.repo` exists, a failed or rejected
 `sign` job also leaves the tag without a GitHub Release: after a rejection, the same re-run asks
 for approval again and, once approved, creates it, and [Signing key](docs/signing-key.md) says
-what to fix first when the job failed.
+what to fix first when the job failed. A `release.yml` run cancelled while it uploaded the
+release's files leaves only a draft release; `gh run rerun <run ID>` on that run deletes the draft
+and creates the release.
 
 1. Approve the `publish-pypi.yml` and `publish-docker.yml` runs: open each from
    `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits for this only when

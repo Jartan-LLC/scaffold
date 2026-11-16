@@ -65,7 +65,7 @@ def run_step(
     releases: list[str],
     release: Literal["none", "draft", "published"] = "none",
 ) -> Step:
-    """Runs the step with ``release`` the state of the tag's own release.
+    """Runs the step; ``release`` is the state of the tag's own release.
 
     ``Step.created`` is empty when ``gh release create`` didn't run.
     """
