@@ -11,7 +11,9 @@
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "moby": false
     },
-    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "extensions": "github/gh-stack"
+    },
     "ghcr.io/jartan-llc/enchantments/claude-code:1": {},
     "ghcr.io/jartan-llc/enchantments/liza:1": {},
     "ghcr.io/jartan-llc/enchantments/liza-toolchain:1": {},
