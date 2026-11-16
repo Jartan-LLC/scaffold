@@ -66,15 +66,16 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
 `RELEASING.md` that names that workflow. For the image, also delete `ci.yml`'s `docker` job,
-its `check` entries and the `docker:` line under the `changes` job's `outputs`, and drop the
-image from what `CONTRIBUTING.md`'s Verify section says CI builds. To drop the
-RPM, delete `packaging/`, `tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`,
-`docs/signing-key.md` and its entry in `docs/index.md`, the `docker` entry for `/packaging` in
-`.github/dependabot.yml`, the codespell hook's `exclude` in `.pre-commit-config.yaml`, the
-`rpm.yml` and `sign` rows in Publishing, and, in `RELEASING.md`, the Installing the RPM section
-and each sentence and list item that opens with "while `packaging/rpm.spec` exists" or "while
-`packaging/dnf.repo` exists". Keep `.github/workflows/rpm.yml` and the RPM jobs in `ci.yml` and
-`release.yml`: they skip while the spec is missing.
+its `check` entries, the `docker:` line under the `changes` job's `outputs` and the `docker`
+paragraph in [CI](scaffold.md#ci), and drop the image from what `CONTRIBUTING.md`'s Verify
+section says CI builds. To drop the RPM, delete `packaging/`, `tests/packaging/`,
+`ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, `docs/signing-key.md` and its entry in
+`docs/index.md`, the `docker` entry for `/packaging` in `.github/dependabot.yml`, the codespell
+hook's `exclude` in `.pre-commit-config.yaml`, the `rpm.yml` and `sign` rows in Publishing,
+and, in `RELEASING.md`, the Installing the RPM section and each sentence and list item that
+opens with "while `packaging/rpm.spec` exists" or "while `packaging/dnf.repo` exists". Keep
+`.github/workflows/rpm.yml` and the RPM jobs in `ci.yml` and `release.yml`: they skip while the
+spec is missing.
 
 To keep the RPM without the dnf repository, as a private repository must, delete
 `packaging/dnf.repo`, `packaging/RPM-GPG-KEY`, `packaging/dnf-repo.sh`,
@@ -181,7 +182,8 @@ them as they are. `ci/changes.py` still describes the `python` and `test` jobs a
    section says CI builds.
 9. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
    table, delete the `publish-pypi.yml` row, the `pages.yml` row unless you keep the dnf
-   repository, and, if not containerized, the `publish-docker.yml` row.
+   repository, and, if not containerized, the `publish-docker.yml` row and the `docker`
+   paragraph in its CI section.
 10. In `RELEASING.md`, delete or rewrite each sentence that names `publish-pypi.yml` and,
     if not containerized, `publish-docker.yml`.
 
