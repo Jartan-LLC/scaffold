@@ -95,7 +95,9 @@ def test_changed_paths_set_the_outputs(paths: list[str], expected: str) -> None:
 # How a test names a repository file: `Path(__file__).resolve().parents[N]`, then
 # the path's parts as string literals, each after a `/`. A path built any other
 # way, or a file a script under test reads, escapes this check.
-REPOSITORY_PATH = re.compile(r"\.parents\[(\d+)\]((?:\s*/\s*\"[^\"]+\")+)")
+REPOSITORY_PATH = re.compile(
+    r"Path\(__file__\)\.resolve\(\)\.parents\[(\d+)\]((?:\s*/\s*\"[^\"]+\")+)"
+)
 
 
 def files_the_tests_name() -> list[str]:
