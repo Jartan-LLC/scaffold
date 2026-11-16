@@ -193,8 +193,8 @@ them as they are. `ci/changes.py` still describes the `python` and `test` jobs a
 - `ci/build-requirements.txt`: in a Python project, if `[build-system] requires` lists more
   than hatchling, or names another backend, set the input of the `uv pip compile` command
   in the file's header to the packages it lists, and replace the lines below the header
-  with the command's output. Until then, the build in `make check` and CI fails on the
-  packages the file lacks.
+  with the command's output. Until then, the build in `make check`, CI and the `Dockerfile`
+  fails on the packages the file lacks.
 - `.github/dependabot.yml`: remove the ecosystems you don't use, add the ones you need, and
   adjust `directory` where manifests aren't at the root. Keep the `pip` entry for `/ci`: it
   updates `ci/requirements.txt` and, in a Python project, `ci/build-requirements.txt`.

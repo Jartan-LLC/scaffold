@@ -24,9 +24,10 @@ RUN useradd --create-home --uid 1000 appuser
 COPY pyproject.toml README.md LICENSE* ./
 COPY src/ ./src/
 COPY ci/build-requirements.txt ./ci/
-# uv build, not `uv pip install .`, whose flag that refuses a build package the lock lacks
-# is experimental. --exclude-newer keeps runtime dependencies to releases at least a week old, so a
-# compromised release is less likely to reach the image before PyPI removes it.
+# uv build, not uv pip install: uv pip install refuses a build package the lock lacks
+# only with --require-build-hashes, which uv marks experimental. --exclude-newer keeps
+# runtime dependencies to releases at least a week old, so a compromised release is
+# less likely to reach the image before PyPI removes it.
 RUN uv build --no-cache --wheel --out-dir /tmp/dist \
         --build-constraints ci/build-requirements.txt --require-hashes \
     && uv pip install --system --no-cache --exclude-newer "7 days" /tmp/dist/*.whl \
