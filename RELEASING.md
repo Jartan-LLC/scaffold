@@ -50,6 +50,10 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 
    The tag is `v` and the version exactly as the changelog heading writes it: the release and
    publish workflows run on `v*` tags, and `release.yml` takes the notes from `## [X.Y.Z]`.
+   Check the tag name and `$sha` before pushing: a pushed tag can be removed only until
+   something publishes from it ([Removing a wrong tag](#removing-a-wrong-tag)). Where the `v*`
+   tag rulesets exist, only an admin can push a `v*` tag, and nobody can move or delete a
+   pushed one without first disabling a ruleset.
 
 ## After the tag
 
@@ -91,6 +95,55 @@ what to fix first when the job failed.
    ```bash
    gh run list --workflow pages.yml --limit 5
    ```
+
+## Removing a wrong tag
+
+Remove a tag only while nothing has published from it: a version PyPI took can't be published
+again. First cancel each of the tag's runs that hasn't completed, then check what the runs did:
+
+```bash
+gh run list --branch vX.Y.Z
+gh run cancel <run ID>       # each run not yet completed
+gh run view <run ID> -v      # each run: lists the steps of its jobs
+gh release view vX.Y.Z --json isDraft --jq .isDraft
+```
+
+Nothing has published while `gh release view` prints `release not found` or `true` and
+neither the `publish-pypi.yml` run nor the `publish-docker.yml` run started its upload step,
+`pypa/gh-action-pypi-publish` or `docker/build-push-action`. A run cancelled while it waited
+for approval started neither. A `true` is a draft release left by a `release.yml` run
+cancelled while it uploaded the release's files. Delete it with
+`gh release delete vX.Y.Z --yes`: `release.yml` creates no release for a tag that already has
+one, a draft included.
+
+Where the `v*` tag rulesets exist, an admin then removes the tag by disabling the
+`v* tag updates and deletions` ruleset, deleting the tag, then enabling the ruleset again.
+Without them, the `DELETE` and `git tag -d` lines alone remove it. Each `PUT` prints the
+ruleset's new state:
+
+```bash
+id=$(gh api repos/{owner}/{repo}/rulesets --jq '.[] | select(.name == "v* tag updates and deletions") | .id')
+gh api -X PUT "repos/{owner}/{repo}/rulesets/$id" -f enforcement=disabled --jq .enforcement
+gh api -X DELETE repos/{owner}/{repo}/git/refs/tags/vX.Y.Z
+gh api -X PUT "repos/{owner}/{repo}/rulesets/$id" -f enforcement=active --jq .enforcement
+git tag -d vX.Y.Z
+```
+
+Run the last `PUT` even if the `DELETE` fails. It must print `active`; until it does, anyone
+with write access can move or delete any `v*` tag.
+
+## A published version is bad
+
+Once anything has published from a tag, fix forward instead of removing the tag:
+
+1. Fix or revert the change on a branch from `main`, and release it as the next patch version,
+   as [Cut a release](#cut-a-release) says. Its tag publishes everywhere the bad version's
+   did, and replaces it as the newest version.
+2. Leave the bad version's tag, and what it published, in place. A moved tag would serve
+   different content under a version already published, and a registry may refuse the same
+   version twice.
+3. If nobody should install the bad version, withdraw it where its registry allows (on PyPI,
+   yank it), and name the fixed version in its release notes.
 
 ## Pre-releases
 

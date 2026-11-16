@@ -14,6 +14,9 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      # The action approves the PR before it turns on auto-merge, so it fails with a 422 unless
+      # Settings > Actions > General > "Allow GitHub Actions to create and approve pull
+      # requests" is on.
       - uses: fastify/github-action-merge-dependabot@73ec4cbb5e56df5591eae286972d5b2201ffe90f # v3.15.0
         with:
           target: minor

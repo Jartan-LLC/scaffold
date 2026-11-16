@@ -1,6 +1,7 @@
 # TODO(/onboard): uncomment the rules below, replacing @your-username with the owners'
 # GitHub usernames or @org/team-name. Until then this file has no effect.
-# CODEOWNERS only enforces reviews when branch protection requires PR reviews.
+# CODEOWNERS enforces reviews only once the `main` ruleset requires review from code owners
+# (require_code_owner_review).
 
 # Default owner for everything
 # * @your-username
