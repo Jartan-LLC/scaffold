@@ -166,10 +166,8 @@ them as they are. `ci/changes.py` still describes the `python` and `test` jobs a
    pinned nor hashed.", and replace the two sentences on where the other tools' versions
    live and on `build-requirements.txt` with "The lint tools are versioned by their hook
    revs in .pre-commit-config.yaml."
-7. In `.github/dependabot.yml`, delete the `pip` entry for `/` and keep the one for `/ci`. In
-   the `/ci` entry's comment, delete the sentence "Separate from the "/" entry above so a
-   CI-tool bump lands as its own reviewable PR rather than riding along with a project
-   dependency."
+7. In `.github/dependabot.yml`, delete the `pip` entry for `/` and keep the one for `/ci`.
+   Make the `/ci` entry's comment "The gate's own tools (ci/requirements.txt), exact-pinned."
 8. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
    uv" line for your stack.
 9. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)

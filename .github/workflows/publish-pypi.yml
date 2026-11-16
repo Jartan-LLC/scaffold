@@ -54,5 +54,5 @@ jobs:
 
       # Any v* tag publishes without waiting for CI, so a broken tagged commit can ship.
       # The action runs `twine check` on dist/ before it uploads (its `verify-metadata`
-      # input), with the twine its own image pins, so this job installs no twine of its own.
+      # input), with the twine its own image pins.
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
