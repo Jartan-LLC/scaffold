@@ -18,6 +18,8 @@ An item whose answer needs neither, such as which workflows to keep, says what t
 - [ ] License, and the author and copyright holder ([License](#license))
 - [ ] Contacts for conduct reports and security reports, one address or two. Both are
       published, so give addresses you are willing to publish
+- [ ] The GitHub Sponsors account, user or organization, that takes the project's
+      sponsorships, or none
 - [ ] Which enchantments Features to keep ([Features](#features))
 - [ ] Publishing targets: the PyPI package, the container image, the docs site, an RPM for
       Fedora, with or without a dnf repository (with one, also the email address its signing
@@ -275,6 +277,8 @@ git merge upstream/main   # resolve conflicts, keeping your customizations
 - [ ] Auto-merge (Settings > General > Allow auto-merge): Dependabot minor and patch PRs
       merge after CI passes
 - [ ] Discussions (Settings > General > Features): the issue template config links to it
+- [ ] If you kept `.github/FUNDING.yml`, Sponsorships (Settings > General > Features): the
+      repo shows its Sponsor button only while this is on
 - [ ] For each publishing target you kept, its `pypi` or `ghcr` environment
       ([details](#publishing-environments))
 - [ ] If you kept the dnf repository, its `rpm-signing` environment and the `RPM_SIGNING_KEY`
@@ -361,6 +365,8 @@ Copy the badge lines from the top of the template README into yours, then:
 - Replace `Jartan-LLC/scaffold` with your org and repo in each badge.
 - License badge: replace `MIT` in `license-MIT-blue` with your license. shields.io splits the
   badge text on `-`, so write each `-` in the name as `--` (`license-Apache--2.0-blue`).
+- Sponsor badge: replace `Jartan-LLC` in its link with the account in `.github/FUNDING.yml`,
+  or delete the badge if you deleted that file.
 - Delete the OpenSSF Scorecard badge if you deleted `scorecard.yml` or the repo is private.
 
 ## What's included
@@ -369,7 +375,7 @@ Copy the badge lines from the top of the template README into yours, then:
 |------|----------|
 | `.devcontainer/` | Reproducible dev environment — Python 3.12, Node.js LTS, Docker, GitHub CLI, and the [enchantments](https://github.com/Jartan-LLC/enchantments) Features: Claude Code, the GitHub CLI login, Liza and its agent toolchain ([Features](#features) drops one). `post-create.sh` runs `make install`, which installs the project's dependencies into the system Python, as CI does: `containerEnv` sets `UV_SYSTEM_PYTHON`, so the container has no project `.venv`. It also installs the ruff version in the ruff hook's `# frozen:` comment, so the ruff extension formats on save as `make lint` does |
 | `.claude/` | Claude Code project files — the `/onboard` command, which onboarding deletes, and `workspace/`, where agents keep plans and other working files, git-ignored |
-| `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates |
+| `.github/` | CI pipeline (active lint incl. workflow security lint via actionlint/zizmor, + Python typecheck/test/build + advisory dependency audit + docs build; Node steps + Docker job commented), Dependabot auto-patching, publish/release + OpenSSF Scorecard + devcontainer (build + verify) workflows, weekly dependency-audit and external-link-check workflows that track findings in one issue each and close it on a clean run, issue/PR + code-of-conduct + security templates, and `FUNDING.yml`, the account the repo's Sponsor button links to |
 | `pyproject.toml`, `ci/`, `.python-version` | Python packaging + tool config (ruff, pytest, pyright, codespell), src layout. `ci/requirements.txt` exact-pins the tools that only run the gate, and the one uv version CI, the devcontainer and `make` all use, each with its release files' hashes, so an install rejects a download that doesn't match. The tools' own dependencies are not pinned. `ci/release_notes.py` makes the release notes `release.yml` publishes, `ci/versions.py` chooses the image tags `publish-docker.yml` pushes, `ci/changes.py` decides which of `ci.yml`'s gated jobs a change runs, and `ci/dnf-repo-test.sh` and `ci/dnf_repo_server.py` test the repository `dnf-repo.sh` builds. `.python-version` sets the Python of `ci.yml`'s single-version jobs and the weekly audit (the `test` matrix lists its own); `uv venv` and `uv build` read it too |
 | `packaging/` | `rpm.sh` and the spec stub for the RPM each GitHub Release attaches, which `.github/workflows/rpm.yml` builds and installs, `dnf.repo` and `RPM-GPG-KEY`, the dnf repository's definition and public key, which the RPM installs, `dnf-repo.sh`, which `release.yml`'s `sign` job runs to sign RPMs and build signed dnf repository metadata for them, and `fedora.Containerfile`, which pins the Fedora image those jobs run in for Dependabot to update its digest |
 | `src/`, `tests/` | The package (src layout, PEP 561 typed) and its tests; the template ships a CLI entry point and logging setup |
