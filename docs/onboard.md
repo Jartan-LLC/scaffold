@@ -362,7 +362,7 @@ needs anyway. Make the first key as [Making a key](signing-key.md#making-a-key) 
 
 Copy the badge lines from the top of the template README into yours, then:
 
-- Replace `Jartan-LLC/scaffold` with your org and repo in each badge.
+- Replace `Jartan-LLC/scaffold` with your org and repo in each badge that has it.
 - License badge: replace `MIT` in `license-MIT-blue` with your license. shields.io splits the
   badge text on `-`, so write each `-` in the name as `--` (`license-Apache--2.0-blue`).
 - Sponsor badge: replace `Jartan-LLC` in its link with the account in `.github/FUNDING.yml`,
