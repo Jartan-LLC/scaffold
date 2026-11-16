@@ -362,6 +362,12 @@ Copy the badge lines from the top of the template README into yours, then:
 - License badge: replace `MIT` in `license-MIT-blue` with your license. shields.io splits the
   badge text on `-`, so write each `-` in the name as `--` (`license-Apache--2.0-blue`).
 - Delete the OpenSSF Scorecard badge if you deleted `scorecard.yml` or the repo is private.
+- If you renamed `pages.yml.example` to `pages.yml`, add its badge after the CI badge, with
+  your org and repo in place of `OWNER/REPO`:
+
+  ```markdown
+  [![Docs](https://github.com/OWNER/REPO/actions/workflows/pages.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/pages.yml)
+  ```
 
 ## What's included
 
