@@ -134,8 +134,8 @@ def test_a_change_to_a_file_a_test_reads_runs_the_python_jobs() -> None:
 
 
 def files_the_dockerfile_copies() -> list[str]:
-    # The sources of each uppercase COPY from the build context, which a --from COPY is
-    # not, bar `.`: `COPY . .` adds the rest of the context after the install.
+    # The sources of each uppercase COPY from the build context (not a --from one),
+    # except `.`: `COPY . .` adds the rest of the context after the install.
     root = SCRIPT.parents[1]
     paths: set[str] = set()
     for line in DOCKERFILE.read_text(encoding="utf-8").replace("\\\n", " ").splitlines():
@@ -151,6 +151,7 @@ def files_the_dockerfile_copies() -> list[str]:
     return sorted(paths)
 
 
+@pytest.mark.skipif(not DOCKERFILE.exists(), reason="no Dockerfile: the project ships no image")
 def test_a_change_to_a_file_the_image_build_copies_runs_the_docker_job() -> None:
     # GIVEN the files the Dockerfile copies, which include a file and a directory's
     # contents, so a parse that finds nothing fails here
