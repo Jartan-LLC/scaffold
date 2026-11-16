@@ -63,7 +63,9 @@ Release; if the failure was transient, such as a mirror timeout, `gh run rerun <
 on the `release.yml` run creates it. While `packaging/dnf.repo` exists, a failed or rejected
 `sign` job also leaves the tag without a GitHub Release: after a rejection, the same re-run asks
 for approval again and, once approved, creates it, and [Signing key](docs/signing-key.md) says
-what to fix first when the job failed.
+what to fix first when the job failed. A `release.yml` run cancelled while it uploaded the
+release's files leaves only a draft release; `gh run rerun <run ID>` on that run deletes the draft
+and creates the release.
 
 1. Approve the `publish-pypi.yml` and `publish-docker.yml` runs: open each from
    `gh run list --branch vX.Y.Z` and choose Review deployments. A run waits for this only when
@@ -112,9 +114,9 @@ Nothing has published while `gh release view` prints `release not found` or `tru
 neither the `publish-pypi.yml` run nor the `publish-docker.yml` run started its upload step,
 `pypa/gh-action-pypi-publish` or `docker/build-push-action`. A run cancelled while it waited
 for approval started neither. A `true` is a draft release left by a `release.yml` run
-cancelled while it uploaded the release's files. Delete it with
-`gh release delete vX.Y.Z --yes`: `release.yml` creates no release for a tag that already has
-one, a draft included.
+cancelled while it uploaded the release's files. Delete it first with
+`gh release delete vX.Y.Z --yes`, which leaves the tag: deleting the tag would leave the draft
+behind.
 
 Where the `v*` tag rulesets exist, an admin then removes the tag by disabling the
 `v* tag updates and deletions` ruleset, deleting the tag, then enabling the ruleset again.

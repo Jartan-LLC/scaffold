@@ -185,8 +185,9 @@ jobs:
           path: assets
 
       # No checkout needed: gh talks to the API and resolves the repo from
-      # GH_REPO. The view-or-create guard keeps re-runs on the same tag
-      # idempotent instead of failing with "release already exists".
+      # GH_REPO. A re-run of a run that published does nothing. A run cancelled
+      # mid-upload leaves a draft, which a re-run deletes and creates again, so the
+      # release gets every file and Latest is chosen as on a first run.
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -197,8 +198,10 @@ jobs:
           # than that fails this step, on a re-run too.
           NOTES: ${{ needs.notes.outputs.notes }}
         run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            exit 0
+          if draft=$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq .isDraft 2>/dev/null); then
+            [ "$draft" = true ] || exit 0
+            echo "::notice::$GITHUB_REF_NAME has a draft release; deleting it to create the release again"
+            gh release delete "$GITHUB_REF_NAME" --yes
           fi
           case "$NOTES_SOURCE" in
             changelog)
