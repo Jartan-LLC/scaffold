@@ -369,9 +369,10 @@ EOF
 ```
 
 With both, only admins can push a `v*` tag, which starts the release and publish workflows,
-and a pushed tag stays on the commit its run published. To remove a wrong tag, an admin
-disables the second ruleset, deletes the tag, then enables the ruleset again;
-`RELEASING.md`'s Removing a wrong tag gives the commands.
+and a pushed tag stays on the commit its run published. To remove a wrong tag before
+anything has published from it, an admin disables the second ruleset, deletes the tag, then
+enables the ruleset again; `RELEASING.md`'s Removing a wrong tag gives the checks and the
+commands.
 
 Each command prints the new ruleset's ID. Run again, it fails with `Name must be unique` and
 changes nothing.
@@ -406,9 +407,9 @@ The second command prints `true`. Check the first with
 `gh api repos/{owner}/{repo}/actions/permissions/workflow --jq .can_approve_pull_request_reviews`,
 which prints `true`; for a minute or so after the change it can still print `false`. Until
 the setting is on, the workflow fails on every Dependabot PR with
-`422 ... GitHub Actions is not permitted to approve pull requests.` A repository in an
-organization starts with the organization's setting, and if the organization forbids it, an
-organization owner allows it there (Organization settings > Actions > General) first.
+`422 ... GitHub Actions is not permitted to approve pull requests.` A new repository in an
+organization starts with the organization's setting (Organization settings > Actions >
+General).
 
 With approvals required, the setting also lets a workflow approve a PR that no person
 reviewed. The `main` ruleset above requires none.

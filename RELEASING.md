@@ -50,10 +50,10 @@ How to cut a release from `main`. The workflows a tag runs are listed in
 
    The tag is `v` and the version exactly as the changelog heading writes it: the release and
    publish workflows run on `v*` tags, and `release.yml` takes the notes from `## [X.Y.Z]`.
-   Where the `v*` tag rulesets exist, only an admin can push a `v*` tag, and nobody can move
-   or delete a pushed one without first disabling a ruleset
-   ([Removing a wrong tag](#removing-a-wrong-tag)), so check the tag name and `$sha` before
-   pushing.
+   Check the tag name and `$sha` before pushing: a pushed tag can be removed only until
+   something publishes from it ([Removing a wrong tag](#removing-a-wrong-tag)). Where the `v*`
+   tag rulesets exist, only an admin can push a `v*` tag, and nobody can move or delete a
+   pushed one without first disabling a ruleset.
 
 ## After the tag
 
@@ -98,7 +98,22 @@ what to fix first when the job failed.
 
 ## Removing a wrong tag
 
-Where the `v*` tag rulesets exist, an admin removes a tag by disabling the
+Remove a tag only while nothing has published from it: a version PyPI took can't be published
+again. First cancel each of the tag's runs that hasn't completed, then check what the runs did:
+
+```bash
+gh run list --branch vX.Y.Z
+gh run cancel <run ID>       # each run not yet completed
+gh run view <run ID> -v      # each run: lists the steps of its jobs
+gh release view vX.Y.Z
+```
+
+Nothing has published while `gh release view` prints `release not found` and neither the
+`publish-pypi.yml` run nor the `publish-docker.yml` run started its upload step,
+`pypa/gh-action-pypi-publish` or `docker/build-push-action`. A run cancelled while it waited
+for approval started neither.
+
+Where the `v*` tag rulesets exist, an admin then removes the tag by disabling the
 `v* tag updates and deletions` ruleset, deleting the tag, then enabling the ruleset again.
 Each `PUT` prints the ruleset's new state:
 
