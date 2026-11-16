@@ -217,18 +217,23 @@ jobs:
   #       if: always()
   #       run: docker compose -f docker-compose.test.yml down -v
 
-  # Docker build + smoke test (pairs with publish-docker.yml). Uncomment once the
-  # Dockerfile has a start command. Swap `--help` for a /health curl if it's a server.
-  # Add `docker` to the `check` job below when enabling.
-  # docker:
-  #   runs-on: ubuntu-24.04
-  #   timeout-minutes: 10
-  #   steps:
-  #     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-  #       with:
-  #         persist-credentials: false
-  #     - run: docker build -t app:ci .
-  #     - run: docker run --rm app:ci --help
+  # The image publish-docker.yml pushes, built from this commit for the runner's platform
+  # only, so a change that breaks the build fails here rather than at the tag.
+  docker:
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: docker build -t app:ci .
+      # Smoke test: uncomment once the Dockerfile has a start command. Swap `--help` for a
+      # /health curl if it's a server.
+      # - run: docker run --rm app:ci --help
 
   # The RPM a release attaches, built from this commit with its %check, then installed.
   rpm:
@@ -281,6 +286,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       devcontainer: ${{ steps.diff.outputs.devcontainer }}
+      docker: ${{ steps.diff.outputs.docker }}
       python: ${{ steps.diff.outputs.python }}
       rpm: ${{ steps.packaging.outputs.rpm }}
       dnf_repo: ${{ steps.packaging.outputs.dnf_repo }}
@@ -336,14 +342,14 @@ jobs:
 
   check:
     if: always()
-    # When you uncomment integration-tests / docker above, add them to BOTH the
-    # needs list and the results array below.
-    needs: [lint, python, test, docs, rpm, dnf-repo, changes, devcontainer]
+    # When you uncomment integration-tests above, add it to BOTH the needs list and
+    # the results array below.
+    needs: [lint, python, test, docs, docker, rpm, dnf-repo, changes, devcontainer]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - run: |
-          results=("${{ needs.lint.result }}" "${{ needs.python.result }}" "${{ needs.test.result }}" "${{ needs.docs.result }}" "${{ needs.rpm.result }}" "${{ needs.dnf-repo.result }}" "${{ needs.changes.result }}" "${{ needs.devcontainer.result }}")
+          results=("${{ needs.lint.result }}" "${{ needs.python.result }}" "${{ needs.test.result }}" "${{ needs.docs.result }}" "${{ needs.docker.result }}" "${{ needs.rpm.result }}" "${{ needs.dnf-repo.result }}" "${{ needs.changes.result }}" "${{ needs.devcontainer.result }}")
           for r in "${results[@]}"; do
             if [[ "$r" != "success" && "$r" != "skipped" ]]; then
               echo "Check failed: $r"

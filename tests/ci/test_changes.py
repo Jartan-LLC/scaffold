@@ -16,11 +16,14 @@ import pytest
 pytestmark = pytest.mark.unit
 
 SCRIPT = Path(__file__).resolve().parents[2] / "ci" / "changes.py"
+DOCKERFILE = Path(__file__).resolve().parents[2] / "Dockerfile"
 
+# The script prints its outputs in this order, so a sum of them is its whole stdout.
 NONE = ""
 DEVCONTAINER = "devcontainer=true\n"
+DOCKER = "docker=true\n"
 PYTHON = "python=true\n"
-BOTH = DEVCONTAINER + PYTHON
+ALL = DEVCONTAINER + DOCKER + PYTHON
 
 # The git tests must not see the repository the suite runs in, which GIT_DIR or
 # GIT_INDEX_FILE point at inside a git hook, nor the user's config.
@@ -50,38 +53,46 @@ def run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]
 
 
 # One row per path class `docs/scaffold.md`'s CI section names, and each of the
-# dev container job's build inputs.
+# dev container and docker jobs' build inputs.
 PATHS = [
     pytest.param(["docs/conf.py"], NONE, id="docs/"),
     pytest.param([".claude/settings.json"], NONE, id=".claude/"),
     pytest.param([".github/dependabot.yml"], NONE, id=".github/"),
     pytest.param([".github/workflows/rpm.yml"], NONE, id="other workflow"),
-    pytest.param([".github/workflows/ci.yml"], BOTH, id="ci.yml"),
+    pytest.param([".github/workflows/ci.yml"], ALL, id="ci.yml"),
+    pytest.param([".github/workflows/publish-docker.yml"], NONE, id="publish-docker.yml"),
     pytest.param([".github/workflows/release.yml"], PYTHON, id="release.yml"),
     pytest.param([".pre-commit-config.yaml"], NONE, id=".pre-commit-config.yaml"),
     pytest.param(["CONTRIBUTING.md"], NONE, id="root Markdown"),
     pytest.param(["examples/guide.md"], NONE, id="nested Markdown"),
-    pytest.param(["README.md"], PYTHON, id="README.md"),
+    pytest.param(["README.md"], DOCKER + PYTHON, id="README.md"),
     pytest.param(["docs/README.md"], NONE, id="README.md not at the root"),
-    pytest.param(["src/app/README.md"], PYTHON, id="Markdown under src/"),
+    pytest.param(["src/app/README.md"], DOCKER + PYTHON, id="Markdown under src/"),
     pytest.param(["tests/README.md"], PYTHON, id="Markdown under tests/"),
     pytest.param(["docs/src/page.md"], NONE, id="src/ not at the root"),
-    pytest.param(["src/app/__init__.py"], PYTHON, id="src/"),
+    pytest.param(["src/app/__init__.py"], DOCKER + PYTHON, id="src/"),
     pytest.param(["tests/test_smoke.py"], PYTHON, id="tests/"),
-    pytest.param(["pyproject.toml"], PYTHON, id="pyproject.toml"),
+    pytest.param(["pyproject.toml"], DOCKER + PYTHON, id="pyproject.toml"),
     pytest.param(["conftest.py"], PYTHON, id="conftest.py"),
     pytest.param([".python-version"], PYTHON, id=".python-version"),
-    pytest.param(["LICENSE"], PYTHON, id="LICENSE"),
+    pytest.param(["LICENSE"], DOCKER + PYTHON, id="LICENSE"),
+    pytest.param(["LICENSE.Apache-2.0"], DOCKER + PYTHON, id="LICENSE.*"),
+    pytest.param(["Dockerfile"], DOCKER + PYTHON, id="Dockerfile"),
+    pytest.param([".dockerignore"], DOCKER + PYTHON, id=".dockerignore"),
+    pytest.param(["docs/Dockerfile"], NONE, id="Dockerfile not at the root"),
     pytest.param(["ci/changes.py"], PYTHON, id="ci/ script"),
-    pytest.param(["ci/requirements.txt"], BOTH, id="ci/requirements.txt"),
-    pytest.param(["ci/build-requirements.txt"], PYTHON, id="ci/build-requirements.txt"),
-    pytest.param([".devcontainer/devcontainer.json"], BOTH, id=".devcontainer/"),
+    pytest.param(["ci/requirements.txt"], DEVCONTAINER + PYTHON, id="ci/requirements.txt"),
+    pytest.param(["ci/build-requirements.txt"], DOCKER + PYTHON, id="ci/build-requirements.txt"),
+    pytest.param([".devcontainer/devcontainer.json"], DEVCONTAINER + PYTHON, id=".devcontainer/"),
     pytest.param([".devcontainer/README.md"], DEVCONTAINER, id="Markdown under .devcontainer/"),
-    pytest.param(["Makefile"], BOTH, id="Makefile"),
-    pytest.param([".gitignore"], BOTH, id=".gitignore"),
+    pytest.param(["Makefile"], DEVCONTAINER + PYTHON, id="Makefile"),
+    pytest.param([".gitignore"], DEVCONTAINER + PYTHON, id=".gitignore"),
     pytest.param(["docs/index.md", ".claude/x.md", "NOTES.md"], NONE, id="only skippable"),
-    pytest.param(["docs/index.md", "src/app/__init__.py"], PYTHON, id="one Python input"),
-    pytest.param(["docs/index.md", "Makefile"], BOTH, id="one dev container input"),
+    pytest.param(["docs/index.md", "tests/test_smoke.py"], PYTHON, id="one Python input"),
+    pytest.param(
+        ["docs/index.md", "Makefile"], DEVCONTAINER + PYTHON, id="one dev container input"
+    ),
+    pytest.param(["docs/index.md", "src/app/__init__.py"], DOCKER + PYTHON, id="one image input"),
     pytest.param([], PYTHON, id="empty diff"),
 ]
 
@@ -122,6 +133,37 @@ def test_a_change_to_a_file_a_test_reads_runs_the_python_jobs() -> None:
     assert skipped == []
 
 
+def files_the_dockerfile_copies() -> list[str]:
+    # The sources of each uppercase COPY from the build context (not a --from one),
+    # except `.`: `COPY . .` adds the rest of the context after the install.
+    root = SCRIPT.parents[1]
+    paths: set[str] = set()
+    for line in DOCKERFILE.read_text(encoding="utf-8").replace("\\\n", " ").splitlines():
+        words = line.split()
+        if words[:1] != ["COPY"] or any(word.startswith("--from=") for word in words):
+            continue
+        for source in words[1:-1]:
+            if source.startswith("--") or source == ".":
+                continue
+            for match in root.glob(source.rstrip("/")):
+                files = [match] if match.is_file() else match.rglob("*")
+                paths.update(f.relative_to(root).as_posix() for f in files if f.is_file())
+    return sorted(paths)
+
+
+@pytest.mark.skipif(not DOCKERFILE.exists(), reason="no Dockerfile: the project ships no image")
+def test_a_change_to_a_file_the_image_build_copies_runs_the_docker_job() -> None:
+    # GIVEN the files the Dockerfile copies, which include a file and a directory's
+    # contents, so a parse that finds nothing fails here. The package under src/ goes
+    # unnamed because onboarding renames the app stub.
+    paths = files_the_dockerfile_copies()
+    assert "ci/build-requirements.txt" in paths
+    assert any(path.startswith("src/") and path.endswith(".py") for path in paths)
+    # THEN changing any one of them builds the image
+    skipped = [path for path in paths if DOCKER not in run("--paths", path).stdout]
+    assert skipped == []
+
+
 @pytest.mark.parametrize(
     ("event", "before"),
     [
@@ -134,7 +176,7 @@ def test_run_with_no_base_runs_every_gated_job(tmp_path: Path, event: str, befor
     # tmp_path is no repository, so a git call would fail the run.
     result = run(event, before, cwd=tmp_path)
     assert result.returncode == 0
-    assert result.stdout == BOTH
+    assert result.stdout == ALL
 
 
 def git(repo: Path, *args: str) -> str:
@@ -174,7 +216,7 @@ def test_pull_request_diffs_from_the_merge_commits_first_parent(repo: Path) -> N
     commit(repo, ".devcontainer/devcontainer.json")
     git(repo, "merge", "--quiet", "--no-ff", "--no-edit", "feature")
     # THEN only the pull request's own change counts
-    assert run("pull_request", "", cwd=repo).stdout == PYTHON
+    assert run("pull_request", "", cwd=repo).stdout == DOCKER + PYTHON
 
 
 def test_push_diffs_from_the_previous_tip(repo: Path) -> None:
@@ -183,7 +225,7 @@ def test_push_diffs_from_the_previous_tip(repo: Path) -> None:
     commit(repo, "src/app/__init__.py")
     commit(repo, "docs/index.md")
     # THEN both commits count
-    assert run("push", before, cwd=repo).stdout == PYTHON
+    assert run("push", before, cwd=repo).stdout == DOCKER + PYTHON
 
 
 def test_push_of_docs_only_skips_every_gated_job(repo: Path) -> None:
@@ -202,7 +244,7 @@ def test_push_of_docs_only_skips_every_gated_job(repo: Path) -> None:
 )
 def test_push_with_no_previous_tip_runs_every_gated_job(repo: Path, before: str) -> None:
     commit(repo, "docs/index.md")
-    assert run("push", before, cwd=repo).stdout == BOTH
+    assert run("push", before, cwd=repo).stdout == ALL
 
 
 def test_rename_counts_the_old_path(repo: Path) -> None:

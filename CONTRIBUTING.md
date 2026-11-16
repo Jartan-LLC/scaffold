@@ -23,7 +23,8 @@ make check
 
 Runs CI's lint, typecheck, test, build and docs checks, which must pass before merge.
 It also runs the dependency audit, which is advisory. CI alone runs the tests on each
-supported Python and builds the dev container when a change touches its inputs.
+supported Python, and builds the dev container and the image when a change touches their
+inputs.
 
 ## Conventions
 
