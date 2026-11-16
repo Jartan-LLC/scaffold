@@ -38,9 +38,9 @@ _DEVCONTAINER_INPUTS = (
 )
 # What the image build reads: the Dockerfile, the .dockerignore that decides what the
 # build context holds, and the files the Dockerfile copies by name; and ci.yml, which
-# defines the job. Its `COPY . .` adds the rest of the context after the install, and no
-# file there can fail the build. A file the Dockerfile comes to copy by name joins this
-# list; test_changes.py checks the Dockerfile's one-line COPY sources against it.
+# defines the job. The Dockerfile's final `COPY . .` adds the rest of the context after
+# the install, and no file there can fail the build. A file the Dockerfile comes to copy
+# by name joins this list; test_changes.py checks the Dockerfile's COPY sources against it.
 _DOCKER_INPUTS = (
     r"^Dockerfile$",
     r"^\.dockerignore$",

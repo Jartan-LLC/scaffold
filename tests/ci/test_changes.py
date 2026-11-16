@@ -134,11 +134,11 @@ def test_a_change_to_a_file_a_test_reads_runs_the_python_jobs() -> None:
 
 
 def files_the_dockerfile_copies() -> list[str]:
-    # The sources of each one-line, uppercase COPY from the build context, which a
-    # --from COPY is not, bar `.`: `COPY . .` adds the rest of the context after the install.
+    # The sources of each uppercase COPY from the build context, which a --from COPY is
+    # not, bar `.`: `COPY . .` adds the rest of the context after the install.
     root = SCRIPT.parents[1]
     paths: set[str] = set()
-    for line in DOCKERFILE.read_text(encoding="utf-8").splitlines():
+    for line in DOCKERFILE.read_text(encoding="utf-8").replace("\\\n", " ").splitlines():
         words = line.split()
         if words[:1] != ["COPY"] or any(word.startswith("--from=") for word in words):
             continue
