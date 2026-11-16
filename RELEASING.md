@@ -132,6 +132,19 @@ git tag -d vX.Y.Z
 Run the last `PUT` even if the `DELETE` fails. It must print `active`; until it does, anyone
 with write access can move or delete any `v*` tag.
 
+## A published version is bad
+
+Once anything has published from a tag, fix forward instead of removing the tag:
+
+1. Fix or revert the change on a branch from `main`, and release it as the next patch version,
+   as [Cut a release](#cut-a-release) says. Its tag publishes everywhere the bad version's
+   did, and replaces it as the newest version.
+2. Leave the bad version's tag, and what it published, in place. A moved tag would serve
+   different content under a version already published, and a registry may refuse the same
+   version twice.
+3. If nobody should install the bad version, withdraw it where its registry allows (on PyPI,
+   yank it), and name the fixed version in its release notes.
+
 ## Pre-releases
 
 For a tag with a pre-release version, such as `v1.2.0-rc.1`:
