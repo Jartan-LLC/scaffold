@@ -2,7 +2,7 @@
 # entrypoint before you run it. ci.yml's docker job builds this when a change touches
 # its inputs (ci/changes.py), and publish-docker.yml on v* tags.
 # TODO(/onboard): if the project isn't containerized, delete this file, .dockerignore,
-# publish-docker.yml, and ci.yml's docker job, its two check entries and the changes
+# publish-docker.yml, and ci.yml's docker job, its check entries and the changes
 # job's docker output.
 
 # Build stage, not an inline COPY --from: Dependabot only parses FROM lines.

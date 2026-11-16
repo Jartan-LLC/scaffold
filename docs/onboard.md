@@ -65,14 +65,15 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
 
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
-`RELEASING.md` that names that workflow. To drop the RPM, delete `packaging/`,
-`tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`, `docs/signing-key.md` and
-its entry in `docs/index.md`, the `docker` entry for `/packaging` in `.github/dependabot.yml`,
-the codespell hook's `exclude` in `.pre-commit-config.yaml`, the `rpm.yml` and `sign` rows in
-Publishing, and, in `RELEASING.md`, the Installing the RPM section and each sentence and list
-item that opens with "while `packaging/rpm.spec` exists" or "while `packaging/dnf.repo`
-exists". Keep `.github/workflows/rpm.yml` and the RPM jobs in
-`ci.yml` and `release.yml`: they skip while the spec is missing.
+`RELEASING.md` that names that workflow. For the image, also delete `ci.yml`'s `docker` job,
+its `check` entries and the `docker:` line under the `changes` job's `outputs`. To drop the
+RPM, delete `packaging/`, `tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`,
+`docs/signing-key.md` and its entry in `docs/index.md`, the `docker` entry for `/packaging` in
+`.github/dependabot.yml`, the codespell hook's `exclude` in `.pre-commit-config.yaml`, the
+`rpm.yml` and `sign` rows in Publishing, and, in `RELEASING.md`, the Installing the RPM section
+and each sentence and list item that opens with "while `packaging/rpm.spec` exists" or "while
+`packaging/dnf.repo` exists". Keep `.github/workflows/rpm.yml` and the RPM jobs in `ci.yml` and
+`release.yml`: they skip while the spec is missing.
 
 To keep the RPM without the dnf repository, as a private repository must, delete
 `packaging/dnf.repo`, `packaging/RPM-GPG-KEY`, `packaging/dnf-repo.sh`,
@@ -146,8 +147,8 @@ Keep `ci/`. `ci.yml`'s `changes` job runs `ci/changes.py`, `release.yml` runs
 `ci/release_notes.py` and `publish-docker.yml` runs `ci/versions.py`, all on the runner's
 `python3`. This repository doesn't test, lint or type-check those scripts: scaffold does,
 and its changes to them come in by [syncing](scaffold.md#syncing-template-updates), so leave
-them as they are. `ci/changes.py` still describes the `python` and `test` jobs and prints a
-`python` output that nothing reads.
+them as they are. `ci/changes.py` still describes the `python` and `test` jobs and prints
+`python` and `docker` outputs that nothing reads.
 
 1. Move `[tool.codespell]` from `pyproject.toml` to a `.codespellrc`.
 2. Delete `pyproject.toml`, `src/`, `tests/`, everything in `docs/` but `scaffold.md`,

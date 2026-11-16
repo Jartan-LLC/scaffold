@@ -76,9 +76,10 @@ The `docker` job builds the image `publish-docker.yml` pushes, for the runner's 
 only, when a change touches one of its build inputs, which `_DOCKER_INPUTS` in
 `ci/changes.py` lists: the `Dockerfile`, `.dockerignore`, `.github/workflows/ci.yml` and the
 files the `Dockerfile` copies by name. If the `Dockerfile` comes to copy another file by
-name, add it there; `tests/ci/test_changes.py` fails when the list misses a `COPY` source. The
-job doesn't run the image: uncomment its smoke-test step once the `Dockerfile` has a start
-command.
+name, add it there; `tests/ci/test_changes.py` fails when the list misses a source of a
+`COPY` written on one line in uppercase. An `ADD`, or a `COPY` written any other way,
+escapes that check. The job doesn't run the image: uncomment its smoke-test step once the
+`Dockerfile` has a start command.
 
 The dev container job runs only when a change touches one of its build inputs, which
 `_DEVCONTAINER_INPUTS` in `ci/changes.py` lists. `pyproject.toml`, `package.json` and pnpm's
