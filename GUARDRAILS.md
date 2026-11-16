@@ -16,9 +16,6 @@ rules for every agent, and imports it for Claude Code; Liza agents also enforce 
   review.
 - Ask first before changing public API signatures or database schemas, deleting files, or
   removing features.
-- Commit or push only when explicitly asked or instructed by a command. A Liza workflow
-  step that commits counts as that instruction; none counts for pushing or opening pull
-  requests, which stay human-initiated.
 - State the reason for every dependency you add.
 
 ## Tier 2 (Strong Defaults)
