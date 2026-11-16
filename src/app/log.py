@@ -5,8 +5,9 @@ in messages built from untrusted input — on both the message and the exception
 traceback. The unsafe characters are every control character but tab, plus the
 Unicode line and paragraph separators and the invisible format characters, such as
 bidirectional controls and zero-width characters. Each is written as its Python
-escape: ``\x1b``, ``\u2028``, ``\u202e``. Call :func:`setup_logging` once at
-startup; get named loggers elsewhere with ``logging.getLogger(__name__)``.
+escape: ``\x1b``, ``\u2028``, ``\u202e``. Tracebacks and stack info keep
+their own line breaks. Call :func:`setup_logging` once at startup; get named
+loggers elsewhere with ``logging.getLogger(__name__)``.
 """
 
 from __future__ import annotations
