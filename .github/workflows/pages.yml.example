@@ -2,7 +2,7 @@
 # repository under rpm/ while packaging/dnf.repo exists. Dormant by name, like
 # .readthedocs.yaml.example: docs/onboard.md's Publishing targets says when to rename it to
 # pages.yml. ci.yml's docs job already checks the docs build on every PR; this only publishes.
-name: Deploy Pages
+name: Docs
 
 on:
   push:
