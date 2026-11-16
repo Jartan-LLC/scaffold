@@ -150,7 +150,7 @@ def test_plain_formatter_uses_utc_timestamps() -> None:
 
 
 # The escaping guarantee, stated against the running Python's Unicode database rather than
-# app.log's own table: every control character except tab, line and paragraph separators,
+# app.log's own table: every control character but tab, plus line and paragraph separators
 # and format characters.
 _UNSAFE_CATEGORIES = ("Cc", "Cf", "Zl", "Zp")
 
@@ -224,6 +224,18 @@ def test_every_unsafe_character_is_escaped() -> None:
     payload = json.loads(JsonFormatter().format(record))
     assert not _unsafe_in(payload["message"])
     assert _unsafe_in(payload["stack"]) == {"\n"}
+
+
+def test_every_safe_character_passes_unchanged() -> None:
+    # Surrogates are left out: json.loads joins an adjacent high and low surrogate into
+    # one character.
+    safe = "".join(
+        c
+        for c in map(chr, range(sys.maxunicode + 1))
+        if not _is_unsafe(c) and unicodedata.category(c) != "Cs"
+    )
+    assert PlainFormatter().format(_record(safe)).endswith(f" {safe}")
+    assert json.loads(JsonFormatter().format(_record(safe)))["message"] == safe
 
 
 @pytest.mark.parametrize(
