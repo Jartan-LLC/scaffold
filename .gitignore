@@ -33,6 +33,7 @@ Thumbs.db
 coverage.xml
 htmlcov/
 .pytest_cache/
+.hypothesis/
 .mypy_cache/
 .ruff_cache/
 

@@ -27,6 +27,7 @@ dependencies = []
 # that bump as a PR rather than CI picking it up unannounced.
 dev = [
     "pytest>=9.2.0,<10",     # test runner
+    "hypothesis>=6.170.15,<7", # property-based tests (app.log's escaping)
     "pyright==1.1.414",    # static type checker; every release is 1.1.x
 ]
 # Docs site toolchain (Sphinx + MyST + furo). Install with `uv pip install -e '.[docs]'`.
