@@ -2,8 +2,8 @@ r"""Logging setup — plain text or single-line JSON, with unsafe characters esc
 
 Escaping neutralizes terminal-escape and log-forging sequences that can arrive
 in messages built from untrusted input — on both the message and the exception
-traceback. The unsafe characters are the control characters but tab, the Unicode
-line and paragraph separators, and the invisible format characters, such as
+traceback. The unsafe characters are every control character except tab, the
+Unicode line and paragraph separators, and the invisible format characters, such as
 bidirectional controls and zero-width characters. Each is written as its Python
 escape: ``\x1b``, ``\u2028``, ``\u202e``. Call :func:`setup_logging` once at
 startup; get named loggers elsewhere with ``logging.getLogger(__name__)``.
