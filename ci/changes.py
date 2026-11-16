@@ -44,13 +44,16 @@ _PYTHON_SKIPS = (
     r"^\.pre-commit-config\.yaml$",
 )
 # The exceptions inside those paths that the Python jobs do read: README.md (the
-# package's readme), Markdown under src/ or tests/, and ci.yml, which defines
-# them. A skipped file that a Python job comes to use, such as a local action
-# under .github/actions/, joins this list.
+# package's readme), Markdown under src/ or tests/, ci.yml, which defines them,
+# and release.yml, whose Create GitHub Release step a test runs. A skipped file
+# that a Python job or a test comes to use, such as a local action under
+# .github/actions/, joins this list. test_changes.py checks the files the tests
+# name against it.
 _PYTHON_READS = (
     r"^README\.md$",
     r"^(src|tests)/",
     r"^\.github/workflows/ci\.yml$",
+    r"^\.github/workflows/release\.yml$",
 )
 
 
