@@ -105,17 +105,21 @@ again. First cancel each of the tag's runs that hasn't completed, then check wha
 gh run list --branch vX.Y.Z
 gh run cancel <run ID>       # each run not yet completed
 gh run view <run ID> -v      # each run: lists the steps of its jobs
-gh release view vX.Y.Z
+gh release view vX.Y.Z --json isDraft --jq .isDraft
 ```
 
-Nothing has published while `gh release view` prints `release not found` and neither the
-`publish-pypi.yml` run nor the `publish-docker.yml` run started its upload step,
+Nothing has published while `gh release view` prints `release not found` or `true` and
+neither the `publish-pypi.yml` run nor the `publish-docker.yml` run started its upload step,
 `pypa/gh-action-pypi-publish` or `docker/build-push-action`. A run cancelled while it waited
-for approval started neither.
+for approval started neither. A `true` is a draft release left by a `release.yml` run
+cancelled while it uploaded the release's files. Delete it with
+`gh release delete vX.Y.Z --yes`: `release.yml` creates no release for a tag that already has
+one, a draft included.
 
 Where the `v*` tag rulesets exist, an admin then removes the tag by disabling the
 `v* tag updates and deletions` ruleset, deleting the tag, then enabling the ruleset again.
-Each `PUT` prints the ruleset's new state:
+Without them, the `DELETE` and `git tag -d` lines alone remove it. Each `PUT` prints the
+ruleset's new state:
 
 ```bash
 id=$(gh api repos/{owner}/{repo}/rulesets --jq '.[] | select(.name == "v* tag updates and deletions") | .id')

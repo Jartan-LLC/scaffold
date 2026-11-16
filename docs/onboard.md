@@ -383,11 +383,13 @@ and answers 404 `Branch not protected` for a branch that a ruleset protects:
 
 ```bash
 gh api repos/{owner}/{repo}/rules/branches/main --jq '.[].type'
-gh api repos/{owner}/{repo}/rulesets --jq '.[] | [.name, .target, .enforcement] | @tsv'
+gh api repos/{owner}/{repo}/rulesets --jq '.[] | [.id, .name, .target, .enforcement] | @tsv'
+gh api repos/{owner}/{repo}/rulesets/<ID> --jq '{rules: [.rules[].type], bypass_actors}'
 ```
 
 The first prints the rule types of the `main` ruleset above, and the second prints each
-ruleset, which must read `active`.
+ruleset with its ID, and each must read `active`. Run the third with each tag ruleset's
+ID: it prints the ruleset's rules and bypass list, which must match its command above.
 
 ### Dependabot auto-merge
 
@@ -410,9 +412,6 @@ the setting is on, the workflow fails on every Dependabot PR with
 `422 ... GitHub Actions is not permitted to approve pull requests.` A new repository in an
 organization starts with the organization's setting (Organization settings > Actions >
 General).
-
-With approvals required, the setting also lets a workflow approve a PR that no person
-reviewed. The `main` ruleset above requires none.
 
 ### Publishing environments
 
