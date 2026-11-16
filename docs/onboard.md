@@ -66,7 +66,8 @@ stack. If you keep the RPM, a tag in a form the `rpm.yml` row in
 For the PyPI package or the container image, if you drop it, delete its publish workflow and
 its row in [Publishing](scaffold.md#publishing), and delete or rewrite each sentence in
 `RELEASING.md` that names that workflow. For the image, also delete `ci.yml`'s `docker` job,
-its `check` entries and the `docker:` line under the `changes` job's `outputs`. To drop the
+its `check` entries and the `docker:` line under the `changes` job's `outputs`, and drop the
+image from what `CONTRIBUTING.md`'s Verify section says CI builds. To drop the
 RPM, delete `packaging/`, `tests/packaging/`, `ci/dnf-repo-test.sh`, `ci/dnf_repo_server.py`,
 `docs/signing-key.md` and its entry in `docs/index.md`, the `docker` entry for `/packaging` in
 `.github/dependabot.yml`, the codespell hook's `exclude` in `.pre-commit-config.yaml`, the
@@ -176,7 +177,8 @@ them as they are. `ci/changes.py` still describes the `python` and `test` jobs a
 7. In `.github/dependabot.yml`, delete the `pip` entry for `/` and keep the one for `/ci`.
    Make the `/ci` entry's comment "The gate's own tools (ci/requirements.txt), exact-pinned."
 8. In `CONTRIBUTING.md`, rewrite the `make install` setup and the "Requires Python 3.12+ and
-   uv" line for your stack.
+   uv" line for your stack. If not containerized, also drop the image from what its Verify
+   section says CI builds.
 9. Trim the Python parts of `docs/scaffold.md`. In its [Publishing](scaffold.md#publishing)
    table, delete the `publish-pypi.yml` row, the `pages.yml` row unless you keep the dnf
    repository, and, if not containerized, the `publish-docker.yml` row.

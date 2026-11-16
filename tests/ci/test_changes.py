@@ -154,10 +154,11 @@ def files_the_dockerfile_copies() -> list[str]:
 @pytest.mark.skipif(not DOCKERFILE.exists(), reason="no Dockerfile: the project ships no image")
 def test_a_change_to_a_file_the_image_build_copies_runs_the_docker_job() -> None:
     # GIVEN the files the Dockerfile copies, which include a file and a directory's
-    # contents, so a parse that finds nothing fails here
+    # contents, so a parse that finds nothing fails here. The package under src/ goes
+    # unnamed because onboarding renames the app stub.
     paths = files_the_dockerfile_copies()
     assert "ci/build-requirements.txt" in paths
-    assert "src/app/__init__.py" in paths
+    assert any(path.startswith("src/") and path.endswith(".py") for path in paths)
     # THEN changing any one of them builds the image
     skipped = [path for path in paths if DOCKER not in run("--paths", path).stdout]
     assert skipped == []
