@@ -1,15 +1,18 @@
-"""Tests for which full release `release.yml` marks Latest, which the Pages workflow serves.
+"""Tests for `release.yml`'s Create GitHub Release step.
 
-The release job runs no repository code, so the rule lives in its Create GitHub
-Release step. Each test runs that step's script as the runner does, with
-``bash -e``, and a stub ``gh`` first on ``PATH`` that lists the given releases
-and records the arguments ``gh release create`` gets.
+They cover which full release it marks Latest, which the Pages workflow serves, and
+what a re-run does to the release an earlier run of the tag left. The release job
+runs no repository code, so these rules live in that step. Each test runs the step's
+script as the runner does, with ``bash -e``, and a stub ``gh`` first on ``PATH``
+that finds the tag's release in the given state, lists the given releases, and
+records each call and the arguments ``gh release create`` gets.
 """
 
 import os
 import subprocess
 import textwrap
 from pathlib import Path
+from typing import Literal, NamedTuple
 
 import pytest
 
@@ -19,8 +22,16 @@ WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "rele
 
 GH = """\
 #!/usr/bin/env bash
+printf '%s\\n' "$*" >>"$CALLS"
 case "$1 $2" in
-    "release view") exit 1 ;;
+    "release view")
+        case "$RELEASE" in
+            draft) echo true ;;
+            published) echo false ;;
+            *) echo "release not found" >&2; exit 1 ;;
+        esac
+        ;;
+    "release delete") ;;
     "release list") printf '%s' "$TAGS" ;;
     "release create") shift 2; printf '%s\\n' "$@" >"$CREATED" ;;
     *) echo "unexpected: gh $*" >&2; exit 2 ;;
@@ -40,8 +51,24 @@ def step_script() -> str:
     return textwrap.dedent("\n".join(body)) + "\n"
 
 
-def run_step(tmp_path: Path, tag: str, releases: list[str]) -> tuple[list[str], str]:
-    """Returns the arguments ``gh release create`` got, and the step's output."""
+class Step(NamedTuple):
+    """What a run of the step did."""
+
+    calls: list[str]
+    created: list[str]
+    output: str
+
+
+def run_step(
+    tmp_path: Path,
+    tag: str,
+    releases: list[str],
+    release: Literal["none", "draft", "published"] = "none",
+) -> Step:
+    """Runs the step with ``release`` the state of the tag's own release.
+
+    ``Step.created`` is empty when ``gh release create`` didn't run.
+    """
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     gh = bin_dir / "gh"
@@ -49,11 +76,14 @@ def run_step(tmp_path: Path, tag: str, releases: list[str]) -> tuple[list[str], 
     gh.chmod(0o755)
     script = tmp_path / "step.sh"
     script.write_text(step_script(), encoding="utf-8")
+    calls = tmp_path / "calls"
     created = tmp_path / "created"
     env = {
         **os.environ,
         "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
         "TAGS": "".join(f"{r}\n" for r in releases),
+        "RELEASE": release,
+        "CALLS": str(calls),
         "CREATED": str(created),
         "GITHUB_REF_NAME": tag,
         "NOTES_SOURCE": "generated",
@@ -69,7 +99,11 @@ def run_step(tmp_path: Path, tag: str, releases: list[str]) -> tuple[list[str], 
         cwd=tmp_path,
     )
     assert result.returncode == 0, result.stderr
-    return created.read_text(encoding="utf-8").splitlines(), result.stdout
+    return Step(
+        calls=calls.read_text(encoding="utf-8").splitlines(),
+        created=created.read_text(encoding="utf-8").splitlines() if created.exists() else [],
+        output=result.stdout,
+    )
 
 
 @pytest.mark.parametrize(
@@ -88,8 +122,8 @@ def run_step(tmp_path: Path, tag: str, releases: list[str]) -> tuple[list[str], 
 def test_latest_goes_to_the_highest_full_release(
     tmp_path: Path, tag: str, releases: list[str], latest: str
 ) -> None:
-    args, _ = run_step(tmp_path, tag, releases)
-    assert [arg for arg in args if arg.startswith("--latest")] == [latest]
+    created = run_step(tmp_path, tag, releases).created
+    assert [arg for arg in created if arg.startswith("--latest")] == [latest]
 
 
 NOT_A_VERSION = "::notice::vnext doesn't start with v and a digit, so it is not marked Latest"
@@ -111,5 +145,24 @@ NOT_A_VERSION = "::notice::vnext doesn't start with v and a digit, so it is not 
 def test_the_notice_says_why_a_release_is_not_latest(
     tmp_path: Path, tag: str, releases: list[str], notice: str
 ) -> None:
-    _, output = run_step(tmp_path, tag, releases)
+    output = run_step(tmp_path, tag, releases).output
     assert notice in output.splitlines()
+
+
+def subcommands(step: Step) -> list[str]:
+    return [call.split()[1] for call in step.calls]
+
+
+def test_a_rerun_after_the_release_published_changes_nothing(tmp_path: Path) -> None:
+    step = run_step(tmp_path, "v1.0.0", ["v1.0.0"], release="published")
+    assert subcommands(step) == ["view"]
+
+
+def test_a_rerun_replaces_the_draft_a_cancelled_upload_left(tmp_path: Path) -> None:
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "assets" / "app.noarch.rpm").touch()
+    step = run_step(tmp_path, "v1.0.0", [], release="draft")
+    assert subcommands(step) == ["view", "delete", "list", "create"]
+    assert "release delete v1.0.0 --yes" in step.calls
+    assert "assets/app.noarch.rpm" in step.created
+    assert "--latest" in step.created
