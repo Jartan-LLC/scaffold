@@ -69,7 +69,7 @@ docs:  ## Build the docs site, warnings-as-errors
 
 check:  ## Run CI's lint, typecheck, test, build and docs checks, and the advisory audit
 	$(MAKE) lint typecheck test
-	uv build
+	uv build --build-constraints ci/build-requirements.txt --require-hashes
 	python -m twine check dist/*
 # Advisory, as in CI: known vulnerabilities are reported without failing the gate.
 	-pip-audit
