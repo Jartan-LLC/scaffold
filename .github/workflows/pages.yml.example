@@ -54,7 +54,8 @@ jobs:
           version-file: ci/requirements.txt
           enable-cache: true
       # The docs toolchain and the package's runtime deps, for autodoc. docs/conf.py puts src/
-      # on the path, so the package isn't built and no unpinned build backend runs.
+      # on the path, so the package isn't built and, while `dependencies` is static, no
+      # unpinned build backend runs.
       # --exclude-newer keeps out releases less than a week old, so a compromised release is
       # less likely to reach the site before PyPI removes it.
       - if: steps.docs.outputs.docs == 'true'
