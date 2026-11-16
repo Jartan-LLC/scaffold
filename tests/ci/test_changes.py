@@ -6,6 +6,7 @@ the changed paths, and the git tests run it in a throwaway repository.
 """
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -54,8 +55,9 @@ PATHS = [
     pytest.param(["docs/conf.py"], NONE, id="docs/"),
     pytest.param([".claude/settings.json"], NONE, id=".claude/"),
     pytest.param([".github/dependabot.yml"], NONE, id=".github/"),
-    pytest.param([".github/workflows/release.yml"], NONE, id="other workflow"),
+    pytest.param([".github/workflows/rpm.yml"], NONE, id="other workflow"),
     pytest.param([".github/workflows/ci.yml"], BOTH, id="ci.yml"),
+    pytest.param([".github/workflows/release.yml"], PYTHON, id="release.yml"),
     pytest.param([".pre-commit-config.yaml"], NONE, id=".pre-commit-config.yaml"),
     pytest.param(["CONTRIBUTING.md"], NONE, id="root Markdown"),
     pytest.param(["examples/guide.md"], NONE, id="nested Markdown"),
@@ -88,6 +90,31 @@ def test_changed_paths_set_the_outputs(paths: list[str], expected: str) -> None:
     result = run("--paths", *paths)
     assert result.returncode == 0
     assert result.stdout == expected
+
+
+# How a test names a repository file: `Path(__file__).resolve().parents[N]`, then
+# the path's parts as string literals, each after a `/`. A path built any other
+# way, or a file a script under test reads, escapes this check.
+REPOSITORY_PATH = re.compile(r"\.parents\[(\d+)\]((?:\s*/\s*\"[^\"]+\")+)")
+
+
+def files_the_tests_name() -> list[str]:
+    root = SCRIPT.parents[1]
+    paths: set[str] = set()
+    for test in (root / "tests").rglob("*.py"):
+        for depth, parts in REPOSITORY_PATH.findall(test.read_text(encoding="utf-8")):
+            path = test.resolve().parents[int(depth)].joinpath(*re.findall(r'"([^"]+)"', parts))
+            paths.add(path.relative_to(root).as_posix())
+    return sorted(paths)
+
+
+def test_a_change_to_a_file_a_test_reads_runs_the_python_jobs() -> None:
+    # GIVEN the repository files the tests name, this file's SCRIPT among them
+    paths = files_the_tests_name()
+    assert "ci/changes.py" in paths
+    # THEN changing any one of them runs the tests that read it
+    skipped = [path for path in paths if PYTHON not in run("--paths", path).stdout]
+    assert skipped == []
 
 
 @pytest.mark.parametrize(

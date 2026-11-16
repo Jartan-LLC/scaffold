@@ -59,9 +59,11 @@ to the `python` check.
 
 The `changes` job skips `python` and `test` when every changed file is Markdown,
 `.pre-commit-config.yaml`, or under `docs/`, `.claude/` or `.github/`. A change to
-`README.md`, `.github/workflows/ci.yml` or anything under `src/` or `tests/` always runs
-them. If a Python job comes to use a file in a skipped path, such as a local action under
-`.github/actions/`, add it to `_PYTHON_READS` in `ci/changes.py`.
+`README.md`, `.github/workflows/ci.yml`, `.github/workflows/release.yml` or anything under
+`src/` or `tests/` always runs them. If a Python job or a test comes to read a file in a
+skipped path, such as a local action under `.github/actions/`, add it to `_PYTHON_READS` in
+`ci/changes.py`. `tests/ci/test_changes.py` fails when a test builds the path of such a file
+from `Path(__file__)` and `_PYTHON_READS` lacks it.
 
 The `rpm` job runs on every change while `packaging/rpm.spec` exists: it builds the RPM,
 running the spec's `%check`, and installs it in Fedora. While `packaging/dnf.repo` also exists,
