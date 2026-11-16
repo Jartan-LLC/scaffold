@@ -300,7 +300,8 @@ gh label create patch --color 0E8A16 --description "Patch version update" --forc
 ### Rulesets
 
 A private repository needs GitHub Pro, Team or Enterprise Cloud for rulesets. A ruleset
-with no bypass list binds admins too.
+with no bypass list binds admins too. Once the `main` ruleset is active, every change, the
+rest of the onboarding included, reaches `main` only through a PR whose `check` passed.
 
 Create the `main` ruleset, the one scaffold runs:
 
@@ -337,8 +338,9 @@ Its rules, and what changing them costs:
 - `required_status_checks`: a PR merges only once CI's `check` job passes. `integration_id`
   15368 is the GitHub Actions app, so only a workflow run can report `check`. The check is
   not strict: a PR needn't be up to date with `main`. A strict check makes every open PR
-  update from `main`, and run CI again, each time `main` moves. Without it, two PRs that each
-  pass can break `main` together, which CI's run on each push to `main` then reports.
+  update from `main`, and run CI again, each time `main` moves. With the check not strict, two
+  PRs that each pass can break `main` together, which CI's run on each push to `main` then
+  reports.
 - `required_linear_history`: `main` takes no merge commits.
 - `non_fast_forward` and `deletion`: nobody force-pushes to `main` or deletes it.
 

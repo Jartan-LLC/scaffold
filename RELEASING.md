@@ -129,8 +129,8 @@ gh api -X PUT "repos/{owner}/{repo}/rulesets/$id" -f enforcement=active --jq .en
 git tag -d vX.Y.Z
 ```
 
-The last `PUT` must print `active`; until it does, anyone with write access can move or
-delete any `v*` tag.
+Run the last `PUT` even if the `DELETE` fails. It must print `active`; until it does, anyone
+with write access can move or delete any `v*` tag.
 
 ## Pre-releases
 
