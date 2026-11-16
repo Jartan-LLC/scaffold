@@ -26,7 +26,6 @@ from typing import Any, Literal
 # show as escapes, but outside one it hides in text as U+200B does. Listed as of Unicode
 # 16.0, because deriving the list from unicodedata at import scans every code point; the
 # tests check it against the running Python's database.
-_TAB = 0x09  # the one C0 control we keep literal
 _UNSAFE_RANGES = (
     (0x0000, 0x001F),  # C0 controls
     (0x007F, 0x009F),  # DEL, C1 controls
@@ -65,6 +64,7 @@ def _escapes(*, keep: frozenset[int]) -> dict[int, str]:
     )
 
 
+_TAB = 0x09  # the one C0 control we keep literal
 _ESCAPES = _escapes(keep=frozenset({_TAB}))
 # Same, but keep LF so multi-line tracebacks stay readable — only embedded
 # unsafe chars (e.g. an ESC smuggled into an exception message) are escaped.
@@ -129,7 +129,7 @@ class PlainFormatter(logging.Formatter):
 class JsonFormatter(logging.Formatter):
     """One line of JSON per record, for log aggregators.
 
-    ``json.dumps`` escapes non-ASCII characters and most controls in the JSON it
+    ``json.dumps`` escapes every control and non-ASCII character in the JSON it
     emits, but a consumer that *decodes* a field (e.g. ``jq -r '.logger'`` to a
     terminal) undoes that — so every string field (logger name included, since it
     can be built from untrusted input) is escaped here too, keeping decoded values

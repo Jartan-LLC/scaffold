@@ -238,6 +238,14 @@ def test_every_unsafe_character_is_escaped() -> None:
     ],
 )
 def test_unsafe_character_becomes_its_escape(char: str, escape: str) -> None:
-    message = f"a{char}b"
-    assert PlainFormatter().format(_record(message)).endswith(f" a{escape}b")
-    assert json.loads(JsonFormatter().format(_record(message)))["message"] == f"a{escape}b"
+    text, escaped = f"a{char}b", f"a{escape}b"
+    assert PlainFormatter().format(_record(text)).endswith(f" {escaped}")
+    assert PlainFormatter().format(_record("hi", name=text)).endswith(f" {escaped} hi")
+    plain = PlainFormatter().format(_error_record(text))
+    assert f"ValueError: {escaped}\n" in plain
+    assert plain.endswith(f"\n  {escaped}")
+    payload = json.loads(JsonFormatter().format(_record(text, name=text)))
+    assert payload["message"] == payload["logger"] == escaped
+    payload = json.loads(JsonFormatter().format(_error_record(text)))
+    assert payload["exc"].endswith(f"ValueError: {escaped}")
+    assert payload["stack"].endswith(f"\n  {escaped}")
