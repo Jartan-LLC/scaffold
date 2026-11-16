@@ -34,9 +34,10 @@ updates:
       default-days: 7
       semver-major-days: 7
 
-  # The gate's own tools (ci/requirements.txt), exact-pinned. Separate from the
-  # "/" entry above so a CI-tool bump lands as its own reviewable PR rather than
-  # riding along with a project dependency.
+  # The gate's own tools (ci/requirements.txt) and the build backend's lock
+  # (ci/build-requirements.txt), exact-pinned. Separate from the "/" entry above
+  # so a CI-tool bump lands as its own reviewable PR rather than riding along with
+  # a project dependency.
   - package-ecosystem: "pip"
     directory: "/ci"
     schedule:

@@ -188,6 +188,10 @@ them as they are. `ci/changes.py` still describes the `python` and `test` jobs a
 - `.gitignore` and `.editorconfig`: add your stack's patterns and rules.
 - `.github/workflows/ci.yml`: prune it to your stack. [CI](scaffold.md#ci) says how a job
   leaves the `check` gate.
+- `ci/build-requirements.txt`: if `[build-system] requires` lists more than hatchling, or
+  names another backend, put those packages in the input of the `uv pip compile` command
+  in the file's header and replace the lines below the header with its output. Until then,
+  the build in `make check` and CI fails on the packages the file lacks.
 - `.github/dependabot.yml`: remove the ecosystems you don't use, add the ones you need, and
   adjust `directory` where manifests aren't at the root. Keep the `pip` entry for `/ci`: it
   updates `ci/requirements.txt` and `ci/build-requirements.txt`.
