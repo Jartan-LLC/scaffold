@@ -53,8 +53,13 @@ jobs:
         with:
           version-file: ci/requirements.txt
           enable-cache: true
+      # The docs toolchain and the package's runtime deps, for autodoc. docs/conf.py puts src/
+      # on the path, so the package isn't built and, while `dependencies` is static, no
+      # unpinned build backend runs.
+      # --exclude-newer keeps out releases less than a week old, so a compromised release is
+      # less likely to reach the site before PyPI removes it.
       - if: steps.docs.outputs.docs == 'true'
-        run: uv pip install -e '.[docs]'
+        run: uv pip install --exclude-newer "7 days" -r pyproject.toml --extra docs
       - if: steps.docs.outputs.docs == 'true'
         run: sphinx-build -W -b html docs docs/_build/html
       - if: steps.docs.outputs.docs == 'true'
