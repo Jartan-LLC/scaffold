@@ -5,7 +5,7 @@
 # and drop the image as docs/onboard.md's Publishing targets says.
 
 # Build stage, not an inline COPY --from: Dependabot only parses FROM lines.
-FROM ghcr.io/astral-sh/uv:0.13.8@sha256:5cc1805e2426484abca4ad46ea783bab281fdb225fd82d8ce6d66a81254bac85 AS uv-bin
+FROM ghcr.io/astral-sh/uv:0.13.9@sha256:d3b601f0c7b118bc1753febf7c41cc80981df678445e0254284eecf84db79a7d AS uv-bin
 
 # x.y.z, not 3.12-slim: Dependabot can suppress digest-only bumps (dependabot/dependabot-core#15103).
 FROM python:3.12.16-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
